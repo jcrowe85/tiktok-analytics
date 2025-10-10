@@ -1,4 +1,4 @@
-import { FiSearch, FiTrendingUp } from 'react-icons/fi'
+import { FiSearch, FiTrendingUp, FiX } from 'react-icons/fi'
 import type { Filters as FilterType } from '../types'
 
 interface FiltersProps {
@@ -29,112 +29,86 @@ function Filters({ filters, setFilters }: FiltersProps) {
     filters.hashtag ||
     filters.showTopMovers
 
-  const inputClass = "w-full px-3 py-2 glass-card rounded-lg focus:ring-2 focus:ring-white/30 focus:border-fleur-border-strong outline-none text-white placeholder-white/40 transition-all"
+  const compactInputClass = "px-3 py-1.5 bg-white/10 border border-white/20 rounded-lg focus:ring-1 focus:ring-white/30 focus:border-white/40 outline-none text-white placeholder-white/50 transition-all text-sm"
   
   return (
-    <div className="glass-card p-6 mb-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full flex items-center justify-center glass-card">
-            <FiSearch className="w-4 h-4 text-white" />
-          </div>
-          <h2 className="text-lg font-bold text-white">Filters</h2>
-        </div>
-        {hasActiveFilters && (
-          <button
-            onClick={resetFilters}
-            className="text-sm text-white hover:text-white/80 font-semibold underline transition-colors"
-          >
-            Clear All
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="mb-6">
+      <div className="glass-card p-4 rounded-xl">
+        <div className="flex items-center gap-3 flex-wrap">
         {/* Search */}
-        <div>
-          <label className="block text-sm font-semibold text-white/70 mb-2">
-            Search Caption
-          </label>
+        <div className="relative">
+          <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
             type="text"
             value={filters.searchText}
             onChange={(e) => updateFilter('searchText', e.target.value)}
-            placeholder="Search captions..."
-            className={inputClass}
+            placeholder="Search..."
+            className={`${compactInputClass} pl-9 w-48`}
           />
         </div>
 
-        {/* Date Range Start */}
-        <div>
-          <label className="block text-sm font-semibold text-white/70 mb-2">
-            From Date
-          </label>
+        {/* Date Range */}
+        <div className="flex items-center gap-2">
           <input
             type="date"
             value={filters.dateRange.start}
             onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, start: e.target.value })}
-            className={inputClass}
+            className={`${compactInputClass} w-32`}
           />
-        </div>
-
-        {/* Date Range End */}
-        <div>
-          <label className="block text-sm font-semibold text-white/70 mb-2">
-            To Date
-          </label>
+          <span className="text-white/40 text-sm">to</span>
           <input
             type="date"
             value={filters.dateRange.end}
             onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, end: e.target.value })}
-            className={inputClass}
+            className={`${compactInputClass} w-32`}
           />
         </div>
 
-        {/* Duration Bucket */}
-        <div>
-          <label className="block text-sm font-semibold text-white/70 mb-2">
-            Duration
-          </label>
-          <select
-            value={filters.durationBucket}
-            onChange={(e) => updateFilter('durationBucket', e.target.value)}
-            className={inputClass}
-          >
-            <option value="all">All Durations</option>
-            <option value="short">&lt;10s (Short)</option>
-            <option value="medium">10-20s (Medium)</option>
-            <option value="long">&gt;20s (Long)</option>
-          </select>
-        </div>
+        {/* Duration */}
+        <select
+          value={filters.durationBucket}
+          onChange={(e) => updateFilter('durationBucket', e.target.value)}
+          className={`${compactInputClass} w-28`}
+        >
+          <option value="all">All</option>
+          <option value="short">&lt;10s</option>
+          <option value="medium">10-20s</option>
+          <option value="long">&gt;20s</option>
+        </select>
 
-        {/* Hashtag Filter */}
-        <div>
-          <label className="block text-sm font-semibold text-white/70 mb-2">
-            Hashtag
-          </label>
-          <input
-            type="text"
-            value={filters.hashtag}
-            onChange={(e) => updateFilter('hashtag', e.target.value)}
-            placeholder="#hashtag"
-            className={inputClass}
-          />
-        </div>
+        {/* Hashtag */}
+        <input
+          type="text"
+          value={filters.hashtag}
+          onChange={(e) => updateFilter('hashtag', e.target.value)}
+          placeholder="#hashtag"
+          className={`${compactInputClass} w-24`}
+        />
 
         {/* Top Movers Toggle */}
-        <div className="flex items-end">
-          <label className="flex items-center space-x-2 cursor-pointer glass-card px-3 py-2 rounded-lg glass-card-hover transition-all">
-            <input
-              type="checkbox"
-              checked={filters.showTopMovers}
-              onChange={(e) => updateFilter('showTopMovers', e.target.checked)}
-              className="w-4 h-4 text-white border-fleur-border rounded focus:ring-white/30"
-            />
-            <span className="text-sm font-semibold text-white flex items-center gap-1">
-              Top Movers (24h) <FiTrendingUp className="w-4 h-4" />
-            </span>
-          </label>
+        <label className="flex items-center gap-2 cursor-pointer bg-white/10 hover:bg-white/15 border border-white/20 rounded-lg px-3 py-1.5 transition-all">
+          <input
+            type="checkbox"
+            checked={filters.showTopMovers}
+            onChange={(e) => updateFilter('showTopMovers', e.target.checked)}
+            className="w-3 h-3 text-white border-fleur-border rounded focus:ring-white/30"
+          />
+          <span className="text-sm text-white flex items-center gap-1">
+            Top Movers <FiTrendingUp className="w-3 h-3" />
+          </span>
+        </label>
+
+        {/* Clear All */}
+        {hasActiveFilters && (
+          <button
+            onClick={resetFilters}
+            className="flex items-center gap-1 text-sm text-white/60 hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/5"
+            title="Clear all filters"
+          >
+            <FiX className="w-3 h-3" />
+            Clear
+          </button>
+        )}
         </div>
       </div>
     </div>

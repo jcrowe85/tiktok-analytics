@@ -4,6 +4,7 @@ import Overview from './components/Overview'
 import VideoTable from './components/VideoTable'
 import Filters from './components/Filters'
 import type { VideoMetrics, Filters as FilterType } from './types'
+import fleurLogo from '../assets/logo.jpg'
 
 function App() {
   const [videos, setVideos] = useState<VideoMetrics[]>([])
@@ -163,21 +164,16 @@ function App() {
       <div className="relative z-10">
       {/* Header */}
       <header className="glass-card border-0 border-b border-fleur-border rounded-none">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6 lg:px-8 py-3">
+          <div className="flex items-center gap-2">
+            <img 
+              src={fleurLogo} 
+              alt="Fleur Logo"
+              className="w-8 h-8 object-cover shadow-lg rounded-full flex-shrink-0"
+            />
             <div>
-              <h1 className="text-2xl font-bold text-white">TikTok Analytics</h1>
-              <p className="text-sm text-white/70 mt-1">
-                Your organic video performance in one place
-              </p>
+              <h1 className="text-lg font-bold text-white">TikTok Analytics</h1>
             </div>
-            <button
-              onClick={fetchData}
-              className="px-4 py-2 glass-card glass-card-hover rounded-full flex items-center gap-2 transition-all border border-fleur-border-strong"
-            >
-              <FiRefreshCw className="w-4 h-4" />
-              <span className="font-semibold text-white">Refresh</span>
-            </button>
           </div>
         </div>
       </header>
