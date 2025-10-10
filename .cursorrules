@@ -1,0 +1,48 @@
+# TikTok Analytics Project Rules
+
+## Code Style
+- Use TypeScript for all .ts/.tsx files
+- Follow functional React patterns with hooks
+- Use async/await over promises
+- Include error handling for all API calls
+- Add JSDoc comments for complex functions
+
+## Logging Convention
+Use emoji prefixes for console logs:
+- 🚩 Step N: Major workflow steps
+- ✅ Success messages
+- ❌ Errors
+- ⚠️  Warnings
+- 📊 Data/statistics
+- 🔄 Refreshing/updating
+- ℹ️  Informational
+
+## File Organization
+- Backend: `/src/backend/`
+- Frontend: `/src/frontend/`
+- Components: `/src/frontend/components/`
+- Types: Shared in `types.ts` files
+- Data: `/data/` (gitignored except .gitkeep)
+
+## API Design
+- All TikTok API calls go through `tiktokClient.ts`
+- Handle rate limits with delays
+- Auto-refresh expired tokens
+- Batch requests when possible (max 20 IDs per query)
+
+## Data Flow
+1. OAuth → tokens stored in .env
+2. fetchJob → pulls data → computes KPIs → saves CSV/JSON
+3. Server → serves JSON to frontend
+4. Frontend → fetches from /api/data → renders dashboard
+
+## Dependencies
+- No new dependencies without justification
+- Prefer native APIs when possible
+- Keep bundle size minimal for frontend
+
+## Environment Variables
+- Never commit .env
+- Always update .env.example when adding new vars
+- Validate required vars at startup
+

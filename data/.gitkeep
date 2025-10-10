@@ -1,0 +1,9 @@
+# This directory stores analytics data
+
+Files in this directory (except .gitkeep) are gitignored.
+
+Generated files:
+- tiktok_video_metrics.csv - Video metrics in CSV format
+- data.json - JSON data for the frontend
+- snapshots.json - Historical snapshots for velocity calculation
+
