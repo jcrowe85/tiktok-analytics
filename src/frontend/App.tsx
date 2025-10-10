@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { FiRefreshCw } from 'react-icons/fi'
 import Overview from './components/Overview'
 import VideoTable from './components/VideoTable'
 import Filters from './components/Filters'
