@@ -9,10 +9,11 @@ build/
 .env
 .env.local
 
-# Data
-data/*.csv
-data/*.json
-data/*.sqlite
+# Data (user-specific analytics data)
+data/
+*.csv
+*.json
+!data/.gitkeep
 
 # Logs
 *.log
