@@ -2,6 +2,8 @@ import dotenv from 'dotenv';
 import { TikTokClient } from './tiktokClient.js';
 import { enrichVideoWithKPIs, createSnapshot } from './kpis.js';
 import { writeCSV, writeJSON, loadSnapshots, appendSnapshots } from './persist.js';
+import { addVideoForAnalysis } from './queue/queue.js';
+import { executeQuery } from './database/connection.js';
 
 dotenv.config();
 
@@ -56,6 +58,48 @@ async function runFetchJob(): Promise<void> {
     writeJSON(enrichedVideos);
     appendSnapshots(newSnapshots);
 
+    // Queue new videos for AI analysis
+    console.log('🚩 Step 7: Queue videos for AI analysis');
+    let queuedCount = 0;
+    let skippedCount = 0;
+    let alreadyAnalyzedCount = 0;
+    
+    // Get list of videos that already have AI analysis
+    const existingAnalyses = await executeQuery(
+      'SELECT video_id FROM video_ai_analysis WHERE status = $1',
+      ['completed']
+    );
+    const analyzedVideoIds = new Set(existingAnalyses.map(row => row.video_id));
+    
+    for (const video of enrichedVideos) {
+      if (video.share_url) {
+        // Skip if already analyzed
+        if (analyzedVideoIds.has(video.id)) {
+          alreadyAnalyzedCount++;
+          continue;
+        }
+        
+        try {
+          await addVideoForAnalysis(video.id, video.share_url);
+          queuedCount++;
+        } catch (error) {
+          console.log(`   ⚠️  Failed to queue video ${video.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+          skippedCount++;
+        }
+      } else {
+        console.log(`   ⚠️  Skipping video ${video.id}: No share_url available`);
+        skippedCount++;
+      }
+    }
+    
+    console.log(`   ✅ Queued ${queuedCount} new videos for AI analysis`);
+    if (alreadyAnalyzedCount > 0) {
+      console.log(`   ℹ️  Skipped ${alreadyAnalyzedCount} videos (already analyzed)`);
+    }
+    if (skippedCount > 0) {
+      console.log(`   ⚠️  Skipped ${skippedCount} videos (missing share_url or queue errors)`);
+    }
+
     // Summary stats
     console.log('\n📊 Summary Statistics');
     console.log('════════════════════════════════════════');
@@ -74,9 +118,12 @@ async function runFetchJob(): Promise<void> {
     console.log(`   Total Comments: ${totalComments.toLocaleString()}`);
     console.log(`   Total Shares: ${totalShares.toLocaleString()}`);
     console.log(`   Median Engagement Rate: ${(medianER * 100).toFixed(2)}%`);
+    console.log(`   AI Analysis Queued: ${queuedCount} videos`);
 
     console.log('\n✅ Fetch job complete!');
-    console.log('   Run "npm run dev" to view the dashboard\n');
+    console.log('   📊 Data saved to data/data.json and data/videos.csv');
+    console.log('   🤖 AI analysis jobs queued and processing in background');
+    console.log('   🌐 Run "npm run dev" to view the dashboard\n');
 
   } catch (error) {
     console.error('\n❌ Fetch job failed:', error);

@@ -1,23 +1,77 @@
 import { useState } from 'react'
-import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp } from 'react-icons/fi'
+import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 import fleurLogo from '../../assets/logo.jpg'
 
 interface VideoTableProps {
   videos: VideoMetrics[]
+  showFilters: boolean
+  setShowFilters: (show: boolean) => void
+  hasActiveFilters: () => boolean
 }
 
-type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h'
+type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h' | 'ai_overall_score' | 'ai_pass' | 'ai_revise' | 'ai_reshoot'
 type SortDirection = 'asc' | 'desc'
 
-function VideoTable({ videos }: VideoTableProps) {
+// Tooltips for each AI metric
+const scoreTooltips: Record<string, string> = {
+  'Hook': 'First 3 seconds - How well does it grab attention?',
+  'Depth': 'How much valuable information or narrative is conveyed?',
+  'Clarity': 'Is the message easy to understand and follow?',
+  'Pacing': 'Is the rhythm engaging? (shot changes, speech speed)',
+  'CTA': 'Is there a clear, compelling call to action?',
+  'Brand Fit': 'How well does it align with brand values?',
+}
+
+function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
+  const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
 
-  const sortedVideos = [...videos].sort((a, b) => {
-    let aVal: any = a[sortKey]
-    let bVal: any = b[sortKey]
+  const formatNumber = (num: number) => {
+    if (num >= 1000000) {
+      return `${(num / 1000000).toFixed(1)}M`
+    } else if (num >= 1000) {
+      return `${(num / 1000).toFixed(1)}K`
+    }
+    return num.toLocaleString()
+  }
+
+
+  // First filter videos based on AI quality selection
+  const filteredVideos = videos.filter((video) => {
+    if (sortKey === 'ai_pass') {
+      if (!video.ai_scores?.overall_100) return false
+      return video.ai_scores.overall_100 >= 80
+    } else if (sortKey === 'ai_revise') {
+      if (!video.ai_scores?.overall_100) return false
+      const score = video.ai_scores.overall_100
+      return score >= 60 && score < 80
+    } else if (sortKey === 'ai_reshoot') {
+      if (!video.ai_scores?.overall_100) return false
+      return video.ai_scores.overall_100 < 60
+    }
+    return true // Show all videos for other sort options
+  })
+
+  // Then sort the filtered videos
+  const sortedVideos = [...filteredVideos].sort((a, b) => {
+    let aVal: any
+    let bVal: any
+
+    // Handle AI quality sorting
+    if (sortKey === 'ai_overall_score') {
+      aVal = a.ai_scores?.overall_100 || -1
+      bVal = b.ai_scores?.overall_100 || -1
+    } else if (sortKey === 'ai_pass' || sortKey === 'ai_revise' || sortKey === 'ai_reshoot') {
+      // For AI quality bands, sort by overall score within the filtered group
+      aVal = a.ai_scores?.overall_100 || -1
+      bVal = b.ai_scores?.overall_100 || -1
+    } else {
+      aVal = a[sortKey]
+      bVal = b[sortKey]
+    }
 
     // Handle undefined values
     if (aVal === undefined) aVal = -Infinity
@@ -120,7 +174,25 @@ function VideoTable({ videos }: VideoTableProps) {
                 Top Videos ({videos.length})
               </h2>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className={`px-3 py-1 rounded-lg border transition-all flex items-center gap-2 ${
+                  showFilters || hasActiveFilters() 
+                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' 
+                    : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80'
+                }`}
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+                <span className="text-sm font-medium">
+                  Filters
+                </span>
+                {hasActiveFilters() && (
+                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                )}
+              </button>
               <span className="text-sm text-white/70">Sort by:</span>
               <select 
                 value={`${sortKey}-${sortDirection}`}
@@ -135,67 +207,69 @@ function VideoTable({ videos }: VideoTableProps) {
                 <option value="view_count-desc">Most Views</option>
                 <option value="engagement_rate-desc">Best Engagement</option>
                 <option value="velocity_24h-desc">Highest Velocity</option>
+                <option disabled>──────────────</option>
+                <option value="ai_overall_score-desc">AI Score (High to Low)</option>
+                <option value="ai_pass-desc">✅ Pass (80+)</option>
+                <option value="ai_revise-desc">⚠️ Revise (60-79)</option>
+                <option value="ai_reshoot-desc">❌ Reshoot (&lt;60)</option>
               </select>
             </div>
           </div>
         </div>
 
         <div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
             {sortedVideos.map((video) => (
               <div 
                 key={video.id}
-                className="glass-card rounded-xl overflow-hidden hover:ring-2 hover:ring-white/20 transition-all cursor-pointer group"
+                className="modern-card overflow-hidden cursor-pointer group"
                 onClick={() => setSelectedVideo(video)}
               >
                 {/* Header Section */}
-                <div className="p-4 border-b border-white/10">
+                <div className="p-4 border-b border-white/5">
                   <div className="flex items-center justify-between">
-                    {/* Fleur Logo on the left */}
-                    <img 
-                      src={fleurLogo} 
-                      alt="Fleur Logo"
-                      className="w-12 h-12 object-cover shadow-lg rounded-full flex-shrink-0"
-                    />
-                    
-                    {/* Right side - Engagement bar, TikTok icon and timestamp */}
-                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                      {/* Top row - Engagement bar and TikTok Logo */}
-                      <div className="flex items-center gap-2">
-                        {/* Engagement Progress Bar */}
-                        <div className="flex items-center gap-1.5">
-                          <div className="w-16">
-                            <div className="h-2 bg-white/10 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-white transition-all duration-300"
-                                style={{ width: `${Math.min(video.engagement_rate * 100, 100)}%` }}
-                              />
-                            </div>
-                          </div>
-                          <span className="text-xs text-white/70 font-medium">
-                            {(video.engagement_rate * 100).toFixed(1)}%
-                          </span>
-                        </div>
-                        
-                        {/* TikTok Logo */}
-                        <div className="w-7 h-7 rounded bg-black flex items-center justify-center">
-                          <svg viewBox="0 0 24 24" className="w-4 h-4 text-white">
-                            <path fill="currentColor" d="M19.321 5.562a5.124 5.124 0 0 1-.443-.258 6.228 6.228 0 0 1-1.137-.966c-.849-.942-1.304-2.077-1.304-3.338V.936h-3.18v13.66c0 1.9-1.54 3.44-3.44 3.44s-3.44-1.54-3.44-3.44 1.54-3.44 3.44-3.44c.353 0 .694.053 1.013.153v-3.27a6.67 6.67 0 0 0-1.013-.078c-3.67 0-6.64 2.97-6.64 6.64s2.97 6.64 6.64 6.64 6.64-2.97 6.64-6.64V8.247c1.27.78 2.7 1.2 4.18 1.2v-3.18c-1.03 0-2.01-.35-2.78-.98z"/>
-                          </svg>
-                        </div>
+                    {/* Left: AI Quality Badge (if available) or Date */}
+                    {video.ai_scores ? (
+                      <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                        video.ai_scores.overall_100 >= 80 ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                        video.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                        'bg-red-500/20 text-red-400 border border-red-500/30'
+                      }`}>
+                        {video.ai_scores.overall_100 >= 80 ? '✅ Pass' :
+                         video.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
+                         '❌ Reshoot'}
                       </div>
-                      
-                      {/* Timestamp */}
-                      <div className="text-xs text-white/60 whitespace-nowrap">
+                    ) : (
+                      <div className="text-xs text-white/50 font-medium">
                         {formatFullDate(video.posted_at_iso)}
                       </div>
+                    )}
+                    
+                    {/* Right side - Engagement */}
+                    <div className="flex flex-col items-end gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-16">
+                          <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div 
+                              className="h-full bg-white transition-all duration-300"
+                              style={{ width: `${Math.min(video.engagement_rate * 100, 100)}%` }}
+                            />
+                          </div>
+                        </div>
+                        <span className="text-xs text-white/70 font-semibold">
+                          {(video.engagement_rate * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                      <span className="text-[10px] text-white/40 uppercase tracking-wide font-medium">
+                        Engagement
+                      </span>
                     </div>
                   </div>
                 </div>
 
                 {/* Video Thumbnail */}
-                <div className="p-3">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg">
+                <div className="px-4 pt-4">
+                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg">
                     {(video.share_url || video.embed_link || video.username) ? (
                       <a
                         href={
@@ -213,7 +287,7 @@ function VideoTable({ videos }: VideoTableProps) {
                           <img 
                             src={video.cover_image_url} 
                             alt="Video thumbnail"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover transition-opacity duration-300"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5">
@@ -227,7 +301,7 @@ function VideoTable({ videos }: VideoTableProps) {
                           <img 
                             src={video.cover_image_url} 
                             alt="Video thumbnail"
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover transition-opacity duration-300"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5">
@@ -238,9 +312,22 @@ function VideoTable({ videos }: VideoTableProps) {
                     )}
                     
 
+                    {/* Views Badge - Top Left */}
+                    <div className="absolute top-2.5 left-2.5">
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
+                        <FiEye className="w-3 h-3" />
+                        {video.view_count > 1000000 
+                          ? `${(video.view_count / 1000000).toFixed(1)}M`
+                          : video.view_count > 1000 
+                          ? `${(video.view_count / 1000).toFixed(1)}K`
+                          : video.view_count.toLocaleString()
+                        }
+                      </span>
+                    </div>
+
                     {/* Duration Badge */}
-                    <div className="absolute bottom-2 right-2">
-                      <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-black/60 text-white backdrop-blur-sm">
+                    <div className="absolute bottom-2.5 right-2.5">
+                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
                         {video.duration}s
                       </span>
                     </div>
@@ -248,131 +335,138 @@ function VideoTable({ videos }: VideoTableProps) {
                 </div>
 
                 {/* Card Content */}
-                <div className="p-4 space-y-3">
+                <div className="px-4 pt-4 pb-5 space-y-4">
 
                   {/* Caption */}
-                  <p className="text-sm text-white line-clamp-2 leading-relaxed">
+                  <p className="text-sm text-white/90 line-clamp-2 leading-relaxed">
                     {truncate(video.caption, 80)}
                   </p>
 
                   {/* Hashtags */}
                   {video.hashtags.length > 0 && (
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap gap-1.5">
                       {video.hashtags.slice(0, 2).map((tag, i) => (
                         <span 
                           key={i}
-                          className="text-xs text-white/80 bg-white/10 px-2 py-1 rounded-full"
+                          className="text-[11px] text-white/70 bg-white/10 px-2.5 py-0.5 rounded-full font-medium"
                         >
                           #{tag}
                         </span>
                       ))}
                       {video.hashtags.length > 2 && (
-                        <span className="text-xs text-white/50">
+                        <span className="text-[11px] text-white/40 font-medium">
                           +{video.hashtags.length - 2}
                         </span>
                       )}
                     </div>
                   )}
 
-                  {/* Metrics */}
-                  <div className="pt-3 border-t border-white/10 space-y-3">
-                    {/* Views */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiEye className="w-4 h-4 text-white/60" />
-                        <div>
-                          <div className="text-sm font-semibold text-white">Views</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
+                  {/* Metrics - New Hierarchy */}
+                  <div className="space-y-3.5">
+                    {/* CENTER: AI Scores - If available */}
+                    {video.ai_scores && (
+                      <div className="space-y-2 pt-3.5 border-t border-white/10">
+                        {/* AI Overall Score at top */}
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-bold text-white/90 uppercase tracking-wide">🧠 AI Score</span>
+                          <span className={`text-base font-bold tabular-nums ${
+                            video.ai_scores.overall_100 >= 80 ? 'text-green-400' :
+                            video.ai_scores.overall_100 >= 60 ? 'text-yellow-400' :
+                            'text-red-400'
+                          }`}>
+                            {video.ai_scores.overall_100}<span className="text-xs text-white/50">/100</span>
+                          </span>
                         </div>
-                      </div>
-                      <div className="text-sm text-white">
-                        {video.view_count > 1000000 
-                          ? `${(video.view_count / 1000000).toFixed(1)}M`
-                          : video.view_count > 1000 
-                          ? `${(video.view_count / 1000).toFixed(1)}K`
-                          : video.view_count.toLocaleString()
-                        }
-                      </div>
-                    </div>
 
-                    {/* Likes */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiHeart className="w-4 h-4 text-red-400" />
-                        <div>
-                          <div className="text-sm text-white/80">Likes</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
-                        </div>
+                        {Object.entries({
+                          'Hook': video.ai_scores.hook_strength,
+                          'Depth': video.ai_scores.depth,
+                          'Clarity': video.ai_scores.clarity,
+                          'Pacing': video.ai_scores.pacing,
+                          'CTA': video.ai_scores.cta,
+                          'Brand Fit': video.ai_scores.brand_fit,
+                        }).map(([label, score]) => {
+                          const tooltipId = `${video.id}-${label}`
+                          return (
+                            <div key={label} className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-1 relative group/tooltip">
+                                <span className="text-[11px] text-white/60 font-medium">{label}</span>
+                                <div 
+                                  className="cursor-help"
+                                  onMouseEnter={() => setHoveredTooltip(tooltipId)}
+                                  onMouseLeave={() => setHoveredTooltip(null)}
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <FiInfo className="w-2.5 h-2.5 text-white/30 hover:text-white/60 transition-colors" />
+                                </div>
+                                {/* Tooltip */}
+                                {hoveredTooltip === tooltipId && (
+                                  <div className="absolute left-0 bottom-full mb-2 z-50 w-48 px-3 py-2 bg-black/95 text-white text-[10px] rounded-lg shadow-xl border border-white/10 pointer-events-none">
+                                    {scoreTooltips[label]}
+                                    <div className="absolute left-4 top-full w-2 h-2 bg-black/95 border-r border-b border-white/10 transform rotate-45 -mt-1"></div>
+                                  </div>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full transition-all duration-500 ease-out ${
+                                      score >= 7 ? 'bg-green-400' :
+                                      score >= 5 ? 'bg-yellow-400' :
+                                      'bg-red-400'
+                                    }`}
+                                    style={{ width: `${(score / 10) * 100}%` }}
+                                  />
+                                </div>
+                                <span className="text-xs font-bold text-white/90 w-6 text-right tabular-nums">
+                                  {score}
+                                </span>
+                              </div>
+                            </div>
+                          )
+                        })}
                       </div>
-                      <div className="text-sm text-white">
-                        {video.like_count > 1000000 
-                          ? `${(video.like_count / 1000000).toFixed(1)}M`
-                          : video.like_count > 1000 
-                          ? `${(video.like_count / 1000).toFixed(1)}K`
-                          : video.like_count.toLocaleString()
-                        }
-                      </div>
-                    </div>
+                    )}
 
-                    {/* Comments */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiMessageCircle className="w-4 h-4 text-blue-400" />
-                        <div>
-                          <div className="text-sm text-white/80">Comments</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
+                    {/* BOTTOM: Social Metrics */}
+                    <div className="pt-3 border-t border-white/5 flex items-center justify-between">
+                      {/* Bottom Left: Likes, Comments, Shares */}
+                      <div className="flex items-center gap-2.5">
+                        <div className="flex items-center gap-0.5">
+                          <FiHeart className="w-3 h-3 text-red-400/80" />
+                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                            {video.like_count > 1000 
+                              ? `${(video.like_count / 1000).toFixed(0)}K`
+                              : video.like_count.toLocaleString()
+                            }
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <FiMessageCircle className="w-3 h-3 text-blue-400/80" />
+                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                            {video.comment_count > 1000 
+                              ? `${(video.comment_count / 1000).toFixed(0)}K`
+                              : video.comment_count.toLocaleString()
+                            }
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-0.5">
+                          <FiShare2 className="w-3 h-3 text-green-400/80" />
+                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                            {video.share_count > 1000 
+                              ? `${(video.share_count / 1000).toFixed(0)}K`
+                              : video.share_count.toLocaleString()
+                            }
+                          </span>
                         </div>
                       </div>
-                      <div className="text-sm text-white">
-                        {video.comment_count > 1000 
-                          ? `${(video.comment_count / 1000).toFixed(1)}K`
-                          : video.comment_count.toLocaleString()
-                        }
-                      </div>
-                    </div>
 
-                    {/* Shares */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiShare2 className="w-4 h-4 text-green-400" />
-                        <div>
-                          <div className="text-sm text-white/80">Shares</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-white">
-                        {video.share_count > 1000 
-                          ? `${(video.share_count / 1000).toFixed(1)}K`
-                          : video.share_count.toLocaleString()
-                        }
-                      </div>
-                    </div>
-
-                    {/* Engagement Rate */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiTrendingUp className="w-4 h-4 text-yellow-400" />
-                        <div>
-                          <div className="text-sm text-white/80">Engagement</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-white">
-                        {(video.engagement_rate * 100).toFixed(1)}%
-                      </div>
-                    </div>
-
-                    {/* Velocity */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <FiTrendingUp className="w-4 h-4 text-purple-400" />
-                        <div>
-                          <div className="text-sm text-white/80">Velocity</div>
-                          <div className="w-full h-px border-dotted border-white/20 mt-1"></div>
-                        </div>
-                      </div>
-                      <div className="text-sm text-white">
-                        {video.velocity_24h ? video.velocity_24h.toFixed(0) : '0'}/hr
+                      {/* Bottom Right: Velocity - Ensure perfect alignment */}
+                      <div className="flex items-center gap-0.5 h-[18px]">
+                        <FiTrendingUp className="w-3 h-3 text-purple-400/80" />
+                        <span className="text-[11px] text-white/70 font-medium tabular-nums leading-none">
+                          {video.velocity_24h ? video.velocity_24h.toFixed(0) : '0'}/hr
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -391,139 +485,255 @@ function VideoTable({ videos }: VideoTableProps) {
         </div>
       </div>
 
-      {/* Video Detail Modal */}
+      {/* Modern Video Detail Modal */}
       {selectedVideo && (
         <div 
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
           onClick={() => setSelectedVideo(null)}
         >
-          {/* Background Image */}
           <div 
-            className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-30 pointer-events-none"
-            style={{ backgroundImage: 'url(/dashboard.png)' }}
-          />
-          <div 
-            className="glass-card max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-fleur-border-strong relative z-10"
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <div className="flex items-start justify-between mb-4">
-                <h3 className="text-xl font-bold text-white">Video Details</h3>
+            {/* Modal Header */}
+            <div className="sticky top-0 bg-white/5 backdrop-blur-xl border-b border-white/10 p-6 z-20 rounded-t-2xl">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <FiVideo className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-white">
+                      Video Analytics
+                    </h3>
+                    <p className="text-sm text-white/60 font-medium">
+                      Detailed performance insights
+                    </p>
+                  </div>
+                </div>
                 <button
                   onClick={() => setSelectedVideo(null)}
-                  className="text-white/60 hover:text-white transition-colors"
+                  className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
                 >
-                  <FiX className="w-5 h-5" />
+                  <FiX className="w-4 h-4 text-white/80" />
                 </button>
               </div>
+            </div>
 
-              <div className="space-y-4">
-                {/* TikTok Embed Player */}
-                {selectedVideo.username ? (
-                  <div className="flex justify-center">
-                    <div className="w-[300px] h-[533px] rounded-lg border border-fleur-border overflow-hidden bg-black/20">
-                      <iframe
-                        src={`https://www.tiktok.com/embed/v2/${selectedVideo.id}?lang=en`}
-                        className="w-full h-full"
-                        allowFullScreen
-                        scrolling="no"
-                        allow="encrypted-media;"
-                      />
+            <div className="p-6 pt-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Video & Basic Info */}
+                <div className="lg:col-span-1 space-y-4">
+                  {/* Video Player/Thumbnail */}
+                  {selectedVideo.cover_image_url ? (
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden">
+                        <img 
+                          src={selectedVideo.cover_image_url} 
+                          alt="Video thumbnail"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Basic Info */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-white/70 mb-3">Video Details</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between">
+                        <span className="text-white/60 text-sm">Posted</span>
+                        <span className="text-white font-medium">{formatFullDate(selectedVideo.posted_at_iso)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-white/60 text-sm">Duration</span>
+                        <span className="text-white font-medium">{selectedVideo.duration}s</span>
+                      </div>
+                      {selectedVideo.velocity_24h && (
+                        <div className="flex justify-between">
+                          <span className="text-white/60 text-sm">24h Velocity</span>
+                          <span className="text-white font-medium">{selectedVideo.velocity_24h.toFixed(0)}/hr</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                ) : selectedVideo.cover_image_url ? (
-                  <div className="flex justify-center">
-                    <div className="w-[400px] h-[300px] rounded-lg overflow-hidden">
-                      <img 
-                        src={selectedVideo.cover_image_url} 
-                        alt="Video thumbnail"
-                        className="w-full h-full object-cover"
-                      />
+
+                  {/* Shortened Caption */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-white/70 mb-3">Caption</h4>
+                    <p className="text-white/90 text-sm leading-relaxed line-clamp-4">
+                      {selectedVideo.caption.length > 200 
+                        ? `${selectedVideo.caption.substring(0, 200)}...` 
+                        : selectedVideo.caption
+                      }
+                    </p>
+                    {selectedVideo.caption.length > 200 && (
+                      <button className="text-blue-400 text-xs mt-2 hover:text-blue-300 transition-colors">
+                        Show full caption
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right Column - Metrics & AI Analysis */}
+                <div className="lg:col-span-2 space-y-6">
+                  {/* Key Performance Metrics */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                    <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                      📊 Performance Metrics
+                    </h4>
+                    
+                    {/* Primary Metrics */}
+                    <div className="grid grid-cols-2 gap-6 mb-6">
+                      <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                        <div className="text-3xl font-bold text-white mb-1">
+                          {formatNumber(selectedVideo.view_count)}
+                        </div>
+                        <div className="text-sm text-white/70 font-medium">Total Views</div>
+                      </div>
+                      <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                        <div className="text-3xl font-bold text-white mb-1">
+                          {(selectedVideo.engagement_rate * 100).toFixed(1)}%
+                        </div>
+                        <div className="text-sm text-white/70 font-medium">Engagement Rate</div>
+                      </div>
+                    </div>
+
+                    {/* Secondary Metrics */}
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white mb-1">
+                          {formatNumber(selectedVideo.like_count)}
+                        </div>
+                        <div className="text-xs text-white/60">Likes</div>
+                        <div className="text-xs text-white/50">
+                          {(selectedVideo.like_rate * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white mb-1">
+                          {formatNumber(selectedVideo.comment_count)}
+                        </div>
+                        <div className="text-xs text-white/60">Comments</div>
+                        <div className="text-xs text-white/50">
+                          {(selectedVideo.comment_rate * 100).toFixed(1)}%
+                        </div>
+                      </div>
+                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                        <div className="text-xl font-bold text-white mb-1">
+                          {formatNumber(selectedVideo.share_count)}
+                        </div>
+                        <div className="text-xs text-white/60">Shares</div>
+                        <div className="text-xs text-white/50">
+                          {(selectedVideo.share_rate * 100).toFixed(1)}%
+                        </div>
+                      </div>
                     </div>
                   </div>
-                ) : null}
 
-                <div>
-                  <h4 className="text-sm font-semibold text-white/70 mb-1">Caption</h4>
-                  <p className="text-white whitespace-pre-wrap leading-relaxed">
-                    {formatCaption(selectedVideo.caption)}
-                  </p>
-                </div>
+                  {/* AI Analysis Section */}
+                  {selectedVideo.ai_scores && (
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                      <div className="flex items-center justify-between mb-6">
+                        <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                          🧠 AI Creative Intelligence
+                        </h4>
+                        <div className="flex items-center gap-3">
+                          <span className={`px-4 py-2 rounded-lg text-2xl font-bold ${
+                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/30 text-green-400 border border-green-500/40' :
+                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/40' :
+                            'bg-red-500/30 text-red-400 border border-red-500/40'
+                          }`}>
+                            {selectedVideo.ai_scores.overall_100}/100
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Posted</h4>
-                    <p className="text-white font-semibold">{formatFullDate(selectedVideo.posted_at_iso)}</p>
-                  </div>
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Duration</h4>
-                    <p className="text-white font-semibold">{selectedVideo.duration}s</p>
-                  </div>
-                </div>
+                      {/* Quality Assessment */}
+                      <div className="mb-6 p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium text-white/70">Quality Assessment:</span>
+                          <span className={`font-bold text-sm px-3 py-1 rounded-lg ${
+                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/30 text-green-400' :
+                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/30 text-yellow-400' :
+                            'bg-red-500/30 text-red-400'
+                          }`}>
+                            {selectedVideo.ai_scores.overall_100 >= 80 ? '✅ PASS - Publish as-is' :
+                             selectedVideo.ai_scores.overall_100 >= 60 ? '⚠️ REVISE - Minor improvements needed' :
+                             '❌ RESHOOT - Major issues detected'}
+                          </span>
+                        </div>
+                      </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Views</h4>
-                    <p className="text-white text-lg font-bold">
-                      {selectedVideo.view_count.toLocaleString()}
-                    </p>
-                  </div>
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Engagement Rate</h4>
-                    <p className="text-white text-lg font-bold">
-                      {(selectedVideo.engagement_rate * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
+                      {/* Score Breakdown */}
+                      <div className="grid grid-cols-2 gap-4">
+                        {Object.entries(selectedVideo.ai_scores)
+                          .filter(([key]) => key !== 'overall_100')
+                          .map(([key, value]) => (
+                            <div key={key} className="p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-sm font-medium text-white/80 capitalize">
+                                  {key.replace(/_/g, ' ')}
+                                </span>
+                                <span className="text-sm font-bold text-white">
+                                  {value}/10
+                                </span>
+                              </div>
+                              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                                <div 
+                                  className={`h-full transition-all duration-500 ${
+                                    value >= 7 ? 'bg-green-400' :
+                                    value >= 5 ? 'bg-yellow-400' :
+                                    'bg-red-400'
+                                  }`}
+                                  style={{ width: `${(value / 10) * 100}%` }}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                      </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Likes</h4>
-                    <p className="text-white font-bold">{selectedVideo.like_count.toLocaleString()}</p>
-                    <p className="text-xs text-white/60">
-                      {(selectedVideo.like_rate * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Comments</h4>
-                    <p className="text-white font-bold">{selectedVideo.comment_count.toLocaleString()}</p>
-                    <p className="text-xs text-white/60">
-                      {(selectedVideo.comment_rate * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">Shares</h4>
-                    <p className="text-white font-bold">{selectedVideo.share_count.toLocaleString()}</p>
-                    <p className="text-xs text-white/60">
-                      {(selectedVideo.share_rate * 100).toFixed(2)}%
-                    </p>
-                  </div>
-                </div>
+                      {/* AI Findings & Suggestions */}
+                      <div className="mt-6 space-y-4">
+                        {/* Fix Suggestions */}
+                        {selectedVideo.ai_fix_suggestions && selectedVideo.ai_fix_suggestions.length > 0 && (
+                          <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                            <h5 className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
+                              🔧 Actionable Suggestions
+                            </h5>
+                            <div className="space-y-2">
+                              {selectedVideo.ai_fix_suggestions.slice(0, 3).map((suggestion, idx) => (
+                                <div key={idx} className="flex items-start gap-2 text-sm text-white/80">
+                                  <span className="text-green-400 font-bold text-xs mt-0.5">{idx + 1}.</span>
+                                  <span>{suggestion}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
 
-                {selectedVideo.velocity_24h && (
-                  <div className="glass-card p-3 rounded-lg">
-                    <h4 className="text-sm font-semibold text-white/70 mb-1">24h Velocity</h4>
-                    <p className="text-white font-bold">
-                      {selectedVideo.velocity_24h.toFixed(0)} views/hour
-                    </p>
-                  </div>
-                )}
-
-                {selectedVideo.hashtags.length > 0 && (
-                  <div>
-                    <h4 className="text-sm font-semibold text-white/70 mb-2">Hashtags</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedVideo.hashtags.map((tag, i) => (
-                        <span 
-                          key={i}
-                          className="text-sm text-white glass-card px-3 py-1 rounded-full border border-fleur-border"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
+                        {/* AI Findings */}
+                        {selectedVideo.ai_findings && (
+                          <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
+                            <h5 className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
+                              💡 AI Insights
+                            </h5>
+                            <div className="space-y-2">
+                              {Object.entries(selectedVideo.ai_findings).slice(0, 3).map(([key, finding]) => (
+                                <div key={key} className="text-sm text-white/80">
+                                  <span className="font-medium text-white/60 capitalize">
+                                    {key.replace(/_/g, ' ')}:
+                                  </span>
+                                  <span className="ml-2">{finding}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -534,4 +744,3 @@ function VideoTable({ videos }: VideoTableProps) {
 }
 
 export default VideoTable
-

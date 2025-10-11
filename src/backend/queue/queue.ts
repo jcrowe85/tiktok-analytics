@@ -5,7 +5,9 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 // Redis connection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379')
+const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  maxRetriesPerRequest: null,
+})
 
 // Queue configuration
 export interface JobData {
@@ -38,7 +40,7 @@ export enum JobType {
   LLM_ANALYSIS = 'llm-analysis',
 }
 
-// Job processor function (placeholder for now)
+// Job processor function - integrates with AI pipeline
 async function processAIAnalysis(job: Job<JobData>) {
   const { videoId, videoUrl, contentHash, rulesVersion } = job.data
   
@@ -48,23 +50,16 @@ async function processAIAnalysis(job: Job<JobData>) {
     // Update job progress
     await job.updateProgress(10)
     
-    // TODO: Implement actual AI processing pipeline
-    // 1. Media preparation
+    // Import the AI analysis pipeline
+    const { analyzeVideo } = await import('../ai/pipeline.ts')
+    
+    // Update job progress
     await job.updateProgress(20)
     
-    // 2. ASR processing
-    await job.updateProgress(40)
+    // Run the full AI analysis pipeline
+    const result = await analyzeVideo(videoId, videoUrl)
     
-    // 3. OCR processing
-    await job.updateProgress(60)
-    
-    // 4. Visual analysis
-    await job.updateProgress(80)
-    
-    // 5. LLM analysis
-    await job.updateProgress(90)
-    
-    // 6. Persist results
+    // Update job progress
     await job.updateProgress(100)
     
     console.log(`✅ Completed AI analysis for video ${videoId}`)
@@ -72,6 +67,8 @@ async function processAIAnalysis(job: Job<JobData>) {
     return {
       success: true,
       videoId,
+      overallScore: result.scores.overall_100,
+      status: result.status,
       processedAt: new Date().toISOString(),
     }
   } catch (error) {

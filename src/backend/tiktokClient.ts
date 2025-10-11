@@ -123,7 +123,7 @@ export class TikTokClient {
             cursor,
           },
           {
-            fields: 'id,create_time,duration,video_description,view_count,like_count,comment_count,share_count,cover_image_url',
+            fields: 'id,create_time,duration,video_description,view_count,like_count,comment_count,share_count,cover_image_url,embed_link,share_url',
           }
         );
 
@@ -180,7 +180,7 @@ export class TikTokClient {
             },
           },
           {
-            fields: 'id,create_time,duration,video_description,view_count,like_count,comment_count,share_count,cover_image_url',
+            fields: 'id,create_time,duration,video_description,view_count,like_count,comment_count,share_count,cover_image_url,embed_link,share_url',
           }
         );
 

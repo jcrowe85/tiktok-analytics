@@ -15,7 +15,9 @@ function App() {
     durationBucket: 'all',
     hashtag: '',
     showTopMovers: false,
+    aiQualityBand: 'all',
   })
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -87,21 +89,46 @@ function App() {
         .slice(0, 20)
     }
 
+    // AI Quality Band filter
+    if (filters.aiQualityBand !== 'all') {
+      filtered = filtered.filter(v => {
+        if (!v.ai_scores) return false
+        const score = v.ai_scores.overall_100
+        if (filters.aiQualityBand === 'pass') return score >= 80
+        if (filters.aiQualityBand === 'revise') return score >= 60 && score < 80
+        if (filters.aiQualityBand === 'reshoot') return score < 60
+        return true
+      })
+    }
+
     return filtered
+  }
+
+  const hasActiveFilters = () => {
+    return filters.searchText !== '' ||
+           filters.dateRange.start !== '' ||
+           filters.dateRange.end !== '' ||
+           filters.durationBucket !== 'all' ||
+           filters.hashtag !== '' ||
+           filters.showTopMovers ||
+           filters.aiQualityBand !== 'all'
   }
 
   const filteredVideos = applyFilters(videos)
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-fleur-dark relative flex items-center justify-center">
-        <div 
-          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-          style={{ backgroundImage: 'url(/dashboard.png)' }}
-        />
+      <div className="min-h-screen relative flex items-center justify-center">
+        <div className="fixed inset-0 opacity-30">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-indigo-900/20"></div>
+        </div>
         <div className="text-center relative z-10">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-white/30"></div>
-          <p className="mt-4 text-white/70">Loading analytics...</p>
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-white/10 rounded-full animate-spin border-t-blue-500"></div>
+            <div className="absolute inset-0 w-16 h-16 border-4 border-transparent rounded-full animate-pulse border-t-purple-500"></div>
+          </div>
+          <p className="mt-6 text-white/80 font-medium text-lg">Loading analytics...</p>
+          <p className="mt-2 text-white/50 text-sm">Preparing your dashboard</p>
         </div>
       </div>
     )
@@ -109,22 +136,26 @@ function App() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-fleur-dark relative flex items-center justify-center p-4">
-        <div 
-          className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-          style={{ backgroundImage: 'url(/dashboard.png)' }}
-        />
-        <div className="glass-card p-6 max-w-md relative z-10">
-          <h2 className="text-white font-semibold text-lg mb-2">Error Loading Data</h2>
-          <p className="text-white/70">{error}</p>
-          <p className="text-sm text-white/60 mt-4">
-            Make sure you've run <code className="bg-white/10 px-2 py-1 rounded">npm run fetch</code> first.
+      <div className="min-h-screen relative flex items-center justify-center p-4">
+        <div className="fixed inset-0 opacity-30">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-indigo-900/20"></div>
+        </div>
+        <div className="modern-card p-8 max-w-md relative z-10 text-center">
+          <div className="w-16 h-16 bg-red-500/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <svg className="w-8 h-8 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+          </div>
+          <h2 className="text-white font-bold text-xl mb-2">Error Loading Data</h2>
+          <p className="text-white/70 mb-4">{error}</p>
+          <p className="text-sm text-white/60 mb-6">
+            Make sure you've run <code className="bg-white/10 px-3 py-1 rounded-lg text-blue-300">npm run fetch</code> first.
           </p>
           <button
             onClick={fetchData}
-            className="mt-4 px-4 py-2 glass-card glass-card-hover rounded-full border border-fleur-border-strong transition-all"
+            className="modern-button px-6 py-3 text-sm font-semibold"
           >
-            <span className="font-semibold text-white">Retry</span>
+            Try Again
           </button>
         </div>
       </div>
@@ -152,40 +183,75 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen bg-fleur-dark relative">
-      {/* Background Image */}
-      <div 
-        className="fixed inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-        style={{ backgroundImage: 'url(/dashboard.png)' }}
-      />
+    <div className="min-h-screen relative">
+      {/* Modern Background Pattern */}
+      <div className="fixed inset-0 opacity-30">
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-indigo-900/20"></div>
+        <div className="absolute inset-0" style={{
+          backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                           radial-gradient(circle at 75% 75%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)`
+        }}></div>
+      </div>
       
       {/* Content */}
       <div className="relative z-10">
-      {/* Header */}
-      <header className="glass-card border-0 border-b border-fleur-border rounded-none">
-        <div className="px-4 sm:px-6 lg:px-8 py-3">
-          <div className="flex items-center gap-2">
-            <img 
-              src={fleurLogo} 
-              alt="Fleur Logo"
-              className="w-8 h-8 object-cover shadow-lg rounded-full flex-shrink-0"
-            />
-            <div>
-              <h1 className="text-lg font-bold text-white">TikTok Analytics</h1>
+      {/* Modern Header */}
+      <header className="glass-card border-0 border-b border-white/10 rounded-none">
+        <div className="px-6 sm:px-8 lg:px-12 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <img 
+                    src={fleurLogo} 
+                    alt="Logo"
+                    className="w-8 h-8 object-cover rounded-xl"
+                  />
+                </div>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white/20"></div>
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  TikTok Analytics
+                </h1>
+                <p className="text-sm text-white/60 font-medium">
+                  Advanced video performance insights
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-sm font-medium text-white/80">
+                  {filteredVideos.length} videos
+                </span>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
         {/* Overview */}
-        <Overview videos={filteredVideos} />
+        <div className="animate-fade-in-up">
+          <Overview videos={filteredVideos} />
+        </div>
 
         {/* Filters */}
-        <Filters filters={filters} setFilters={setFilters} />
+        {showFilters && (
+          <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+            <Filters filters={filters} setFilters={setFilters} setShowFilters={setShowFilters} />
+          </div>
+        )}
 
         {/* Video Table */}
-        <VideoTable videos={filteredVideos} />
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          <VideoTable 
+            videos={filteredVideos} 
+            showFilters={showFilters}
+            setShowFilters={setShowFilters}
+            hasActiveFilters={hasActiveFilters}
+          />
+        </div>
       </div>
       </div>
     </div>
