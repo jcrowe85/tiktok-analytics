@@ -3,7 +3,6 @@ import Overview from './components/Overview'
 import VideoTable from './components/VideoTable'
 import Filters from './components/Filters'
 import type { VideoMetrics, Filters as FilterType } from './types'
-import fleurLogo from '../assets/logo.jpg'
 
 function App() {
   const [videos, setVideos] = useState<VideoMetrics[]>([])
@@ -197,31 +196,19 @@ function App() {
       <div className="relative z-10">
       {/* Modern Header */}
       <header className="glass-card border-0 border-b border-white/10 rounded-none">
-        <div className="px-6 sm:px-8 lg:px-12 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="relative">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg">
-                  <img 
-                    src={fleurLogo} 
-                    alt="Logo"
-                    className="w-8 h-8 object-cover rounded-xl"
-                  />
-                </div>
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white/20"></div>
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                  TikTok Analytics
-                </h1>
-                <p className="text-sm text-white/60 font-medium">
-                  Advanced video performance insights
-                </p>
-              </div>
+        <div className="px-4 sm:px-8 lg:px-12 py-4 sm:py-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
+            <div>
+              <h1 className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                TikTok Analytics
+              </h1>
+              <p className="text-xs sm:text-sm text-white/60 font-medium hidden sm:block">
+                Advanced video performance insights
+              </p>
             </div>
             <div className="flex items-center gap-3">
-              <div className="px-4 py-2 bg-white/5 rounded-xl border border-white/10">
-                <span className="text-sm font-medium text-white/80">
+              <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-xs sm:text-sm font-medium text-white/80">
                   {filteredVideos.length} videos
                 </span>
               </div>
