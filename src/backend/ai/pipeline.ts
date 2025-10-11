@@ -192,35 +192,6 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
   }
 }
 
-// Simulate video processing for testing
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function simulateVideoProcessing(videoId: string): Promise<ProcessingResult> {
-  // Create a dummy audio buffer (1 second of silence)
-  const audioBuffer = Buffer.alloc(32000) // 16kHz * 1 second * 2 bytes
-  
-  // Create dummy keyframes
-  const keyframes = [
-    { timestamp: 0, frameBuffer: Buffer.alloc(1000), filename: 'frame_0.0s.jpg' },
-    { timestamp: 1, frameBuffer: Buffer.alloc(1000), filename: 'frame_1.0s.jpg' },
-    { timestamp: 2, frameBuffer: Buffer.alloc(1000), filename: 'frame_2.0s.jpg' }
-  ]
-  
-  return {
-    videoMetadata: {
-      duration: 30,
-      width: 1080,
-      height: 1920,
-      fps: 30,
-      bitrate: 2000000,
-      format: 'mp4'
-    },
-    audioPath: `/tmp/mock_audio_${videoId}.wav`,
-    audioBuffer,
-    keyframes,
-    tempFiles: []
-  }
-}
-
 // Analyze keyframes for visual content
 async function analyzeKeyframes(_keyframes: Array<{ timestamp: number; frameBuffer: Buffer; filename: string }>): Promise<{
   visual_scores: AIAnalysisResult['visual_scores']

@@ -53,7 +53,7 @@ export async function getVideoMetadata(videoPath: string): Promise<VideoMetadata
           }
           return parseFloat(fpsStr) || 0
         })(),
-        bitrate: parseInt(metadata.format.bit_rate || '0'),
+        bitrate: parseInt(String(metadata.format.bit_rate || '0')),
         format: metadata.format.format_name || 'unknown'
       })
     })

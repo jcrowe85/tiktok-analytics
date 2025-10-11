@@ -102,67 +102,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     return text.substring(0, maxLength) + '...'
   }
 
-
-  // Format caption with clickable hashtags and links
-  // Unused for now - keeping for future use
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const formatCaption = (caption: string) => {
-    const parts: (string | JSX.Element)[] = []
-    let lastIndex = 0
-
-    // Match hashtags and URLs
-    const regex = /(#\w+)|(https?:\/\/[^\s]+)/g
-    let match
-
-    while ((match = regex.exec(caption)) !== null) {
-      // Add text before match
-      if (match.index > lastIndex) {
-        parts.push(caption.substring(lastIndex, match.index))
-      }
-
-      if (match[1]) {
-        // Hashtag
-        const hashtag = match[1]
-        parts.push(
-          <a
-            key={match.index}
-            href={`https://www.tiktok.com/tag/${hashtag.substring(1)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white/90 hover:text-white underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {hashtag}
-          </a>
-        )
-      } else if (match[2]) {
-        // URL
-        const url = match[2]
-        parts.push(
-          <a
-            key={match.index}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-white/90 hover:text-white underline"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {url}
-          </a>
-        )
-      }
-
-      lastIndex = match.index + match[0].length
-    }
-
-    // Add remaining text
-    if (lastIndex < caption.length) {
-      parts.push(caption.substring(lastIndex))
-    }
-
-    return <>{parts}</>
-  }
-
   return (
     <>
       <div className="overflow-hidden">

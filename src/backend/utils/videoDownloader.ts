@@ -62,45 +62,6 @@ export async function downloadTikTokVideo(
 }
 
 /**
- * Extract video URL from TikTok embed link
- * This requires making a request to the embed page and parsing the HTML
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function extractVideoUrlFromEmbed(embedLink: string): Promise<string | null> {
-  try {
-    // The embed link loads a player page that contains the actual video URL
-    // We need to fetch the page and extract the video URL from the HTML/JS
-    const response = await axios.get(embedLink, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
-      }
-    })
-    
-    const html = response.data
-    
-    // Look for video URL patterns in the HTML
-    // TikTok typically embeds the video URL in a data attribute or script tag
-    const videoUrlMatch = html.match(/"playAddr":"([^"]+)"/i) || 
-                         html.match(/"download_addr":"([^"]+)"/i) ||
-                         html.match(/src="([^"]+\.mp4[^"]*)"/i)
-    
-    if (videoUrlMatch && videoUrlMatch[1]) {
-      // Decode escaped slashes
-      const videoUrl = videoUrlMatch[1].replace(/\\\//g, '/')
-      console.log(`✅ Extracted video URL from embed`)
-      return videoUrl
-    }
-    
-    console.warn(`⚠️  Could not extract video URL from embed HTML`)
-    return null
-    
-  } catch (error) {
-    console.warn(`⚠️  Failed to fetch embed page:`, error)
-    return null
-  }
-}
-
-/**
  * Download video file from a direct URL
  */
 async function downloadVideoFile(videoId: string, videoUrl: string): Promise<VideoDownloadResult> {
