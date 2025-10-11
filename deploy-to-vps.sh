@@ -134,8 +134,31 @@ fi
 
 # Step 2: Backup current database (optional safety measure)
 print_status "Step 2: Creating database backup"
-docker exec $(docker ps -q --filter "name=postgres") pg_dump -U tiktok_user -d tiktok_analytics > backup_$(date +%Y%m%d_%H%M%S).sql
-print_success "Database backup created"
+
+# Find PostgreSQL container more robustly
+POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgres" 2>/dev/null)
+if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+    # Try alternative naming patterns
+    POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgresql" 2>/dev/null)
+fi
+if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+    # Try finding by image
+    POSTGRES_CONTAINER_ID=$(docker ps -q --filter "ancestor=postgres" 2>/dev/null | head -1)
+fi
+
+if [ -n "$POSTGRES_CONTAINER_ID" ]; then
+    CONTAINER_NAME=$(docker ps --format "{{.Names}}" --filter "id=$POSTGRES_CONTAINER_ID")
+    print_status "Found PostgreSQL container: $CONTAINER_NAME"
+    if docker exec "$POSTGRES_CONTAINER_ID" pg_dump -U tiktok_user -d tiktok_analytics > backup_$(date +%Y%m%d_%H%M%S).sql 2>/dev/null; then
+        print_success "Database backup created"
+    else
+        print_warning "Database backup failed - continuing anyway"
+    fi
+else
+    print_warning "No PostgreSQL container found - skipping backup"
+    print_status "Available containers:"
+    docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}"
+fi
 
 # Step 3: Stop services
 print_status "Step 3: Stopping Docker services"
@@ -154,8 +177,25 @@ sleep 10
 # Step 6: Import AI analysis data (if ai_analysis_data.sql exists)
 if [ -f "ai_analysis_data.sql" ]; then
     print_status "Step 6: Importing AI analysis data"
-    docker exec -i $(docker ps -q --filter "name=postgres") psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql
-    print_success "AI analysis data imported"
+    
+    # Use the same container finding logic
+    POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgres" 2>/dev/null)
+    if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+        POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgresql" 2>/dev/null)
+    fi
+    if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+        POSTGRES_CONTAINER_ID=$(docker ps -q --filter "ancestor=postgres" 2>/dev/null | head -1)
+    fi
+    
+    if [ -n "$POSTGRES_CONTAINER_ID" ]; then
+        if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql 2>/dev/null; then
+            print_success "AI analysis data imported"
+        else
+            print_warning "AI analysis data import failed"
+        fi
+    else
+        print_warning "PostgreSQL container not found for data import"
+    fi
 else
     print_warning "Step 6: No AI analysis data file found (ai_analysis_data.sql)"
     echo "You'll need to transfer this file from your local machine"
