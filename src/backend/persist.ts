@@ -78,8 +78,12 @@ export function writeCSV(videos: VideoMetrics[]): void {
   const rows = videos.map(metricsToCsvRow);
   const csv = [headers, ...rows].join('\n');
 
-  fs.writeFileSync(CSV_PATH, csv, 'utf-8');
-  console.log(`   ✅ CSV written: ${CSV_PATH} (${videos.length} videos)`);
+  try {
+    fs.writeFileSync(CSV_PATH, csv, 'utf-8');
+    console.log(`   ✅ CSV written: ${CSV_PATH} (${videos.length} videos)`);
+  } catch (error) {
+    console.warn(`   ⚠️  CSV write skipped (permission denied) - database is primary source`);
+  }
 }
 
 /**
@@ -89,8 +93,12 @@ export function writeJSON(videos: VideoMetrics[]): void {
   ensureDataDirectory();
 
   const json = JSON.stringify(videos, null, 2);
-  fs.writeFileSync(JSON_PATH, json, 'utf-8');
-  console.log(`   ✅ JSON written: ${JSON_PATH} (${videos.length} videos)`);
+  try {
+    fs.writeFileSync(JSON_PATH, json, 'utf-8');
+    console.log(`   ✅ JSON written: ${JSON_PATH} (${videos.length} videos)`);
+  } catch (error) {
+    console.warn(`   ⚠️  JSON write skipped (permission denied) - database is primary source`);
+  }
 }
 
 /**
