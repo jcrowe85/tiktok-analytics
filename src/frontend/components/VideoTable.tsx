@@ -674,6 +674,91 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       </div>
                     </div>
                   )}
+
+                  {/* Visual Scores (Advanced) Section */}
+                  {selectedVideo.ai_scores && (
+                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-lg font-bold text-white flex items-center gap-2">
+                          <span className="w-5 h-5 flex items-center justify-center">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
+                            </svg>
+                          </span>
+                          Visual Scores (Advanced)
+                        </h4>
+                        <svg className="w-4 h-4 text-white/60" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      
+                      <div className="space-y-4">
+                        {/* Visual Score Items */}
+                        <div className="space-y-3">
+                          {/* Composition */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Composition</span>
+                            <span className="text-white/60 text-sm font-medium">7/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '70%' }} />
+                          </div>
+
+                          {/* Loopability */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Loopability</span>
+                            <span className="text-white/60 text-sm font-medium">6/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-yellow-400 transition-all duration-500" style={{ width: '60%' }} />
+                          </div>
+
+                          {/* Emotion Score */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Emotion Score</span>
+                            <span className="text-white/60 text-sm font-medium">8/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
+                          </div>
+
+                          {/* Thumbstop Prob */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Thumbstop Prob</span>
+                            <span className="text-white/60 text-sm font-medium">8/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
+                          </div>
+
+                          {/* Motion Dynamics */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Motion Dynamics</span>
+                            <span className="text-white/60 text-sm font-medium">6/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-yellow-400 transition-all duration-500" style={{ width: '60%' }} />
+                          </div>
+
+                          {/* Text Legibility */}
+                          <div className="flex items-center justify-between">
+                            <span className="text-white text-sm font-medium">Text Legibility</span>
+                            <span className="text-white/60 text-sm font-medium">8/10</span>
+                          </div>
+                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
+                          </div>
+                        </div>
+
+                        {/* View Full JSON Analysis Button */}
+                        <div className="pt-4 border-t border-white/10">
+                          <button className="w-full bg-blue-600/30 hover:bg-blue-600/50 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-blue-500/30">
+                            View Full JSON Analysis
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
