@@ -63,51 +63,82 @@ export async function executeTransaction<T>(
 // Insert or update video
 export async function upsertVideo(videoData: {
   id: string
+  username?: string
   caption: string
+  video_description?: string
   hashtags: string[]
   posted_at_iso: string
+  create_time?: number
   duration: number
   view_count: number
   like_count: number
   comment_count: number
   share_count: number
   engagement_rate: number
+  like_rate?: number
+  comment_rate?: number
+  share_rate?: number
+  views_24h?: number
   velocity_24h?: number
+  share_url?: string
+  embed_link?: string
+  cover_image_url?: string
 }) {
   const query = `
     INSERT INTO videos (
-      id, caption, hashtags, posted_at_iso, duration,
-      view_count, like_count, comment_count, share_count,
-      engagement_rate, velocity_24h
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      id, username, caption, video_description, hashtags, posted_at_iso, create_time,
+      duration, view_count, like_count, comment_count, share_count,
+      engagement_rate, like_rate, comment_rate, share_rate,
+      views_24h, velocity_24h, share_url, embed_link, cover_image_url
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
     ON CONFLICT (id) 
     DO UPDATE SET
+      username = EXCLUDED.username,
       caption = EXCLUDED.caption,
+      video_description = EXCLUDED.video_description,
       hashtags = EXCLUDED.hashtags,
       posted_at_iso = EXCLUDED.posted_at_iso,
+      create_time = EXCLUDED.create_time,
       duration = EXCLUDED.duration,
       view_count = EXCLUDED.view_count,
       like_count = EXCLUDED.like_count,
       comment_count = EXCLUDED.comment_count,
       share_count = EXCLUDED.share_count,
       engagement_rate = EXCLUDED.engagement_rate,
+      like_rate = EXCLUDED.like_rate,
+      comment_rate = EXCLUDED.comment_rate,
+      share_rate = EXCLUDED.share_rate,
+      views_24h = EXCLUDED.views_24h,
       velocity_24h = EXCLUDED.velocity_24h,
+      share_url = EXCLUDED.share_url,
+      embed_link = EXCLUDED.embed_link,
+      cover_image_url = EXCLUDED.cover_image_url,
       updated_at = CURRENT_TIMESTAMP
     RETURNING id
   `
   
   const values = [
     videoData.id,
+    videoData.username || null,
     videoData.caption,
+    videoData.video_description || videoData.caption, // Fallback to caption
     videoData.hashtags,
     videoData.posted_at_iso,
+    videoData.create_time || null,
     videoData.duration,
     videoData.view_count,
     videoData.like_count,
     videoData.comment_count,
     videoData.share_count,
     videoData.engagement_rate,
+    videoData.like_rate || null,
+    videoData.comment_rate || null,
+    videoData.share_rate || null,
+    videoData.views_24h || null,
     videoData.velocity_24h || null,
+    videoData.share_url || null,
+    videoData.embed_link || null,
+    videoData.cover_image_url || null,
   ]
   
   const result = await executeQuery(query, values)

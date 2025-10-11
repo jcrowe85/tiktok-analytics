@@ -4,16 +4,26 @@
 -- Videos table (extends existing video data)
 CREATE TABLE IF NOT EXISTS videos (
     id VARCHAR(255) PRIMARY KEY,
+    username VARCHAR(255),
     caption TEXT,
+    video_description TEXT,
     hashtags TEXT[],
     posted_at_iso TIMESTAMP,
+    create_time BIGINT,
     duration INTEGER,
     view_count INTEGER,
     like_count INTEGER,
     comment_count INTEGER,
     share_count INTEGER,
-    engagement_rate DECIMAL(5,4),
-    velocity_24h INTEGER,
+    engagement_rate DECIMAL(10,8),
+    like_rate DECIMAL(10,8),
+    comment_rate DECIMAL(10,8),
+    share_rate DECIMAL(10,8),
+    views_24h INTEGER,
+    velocity_24h DECIMAL(10,8),
+    share_url TEXT,
+    embed_link TEXT,
+    cover_image_url TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

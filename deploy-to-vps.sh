@@ -174,6 +174,34 @@ print_success "Services restarted"
 print_status "Step 5: Waiting for database to be ready"
 sleep 10
 
+# Step 5.5: Run database migrations
+print_status "Step 5.5: Running database migrations"
+
+# Find PostgreSQL container
+POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgres" 2>/dev/null)
+if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+    POSTGRES_CONTAINER_ID=$(docker ps -q --filter "name=postgresql" 2>/dev/null)
+fi
+if [ -z "$POSTGRES_CONTAINER_ID" ]; then
+    POSTGRES_CONTAINER_ID=$(docker ps -q --filter "ancestor=postgres" 2>/dev/null | head -1)
+fi
+
+if [ -n "$POSTGRES_CONTAINER_ID" ]; then
+    # Run all migration files in order
+    for migration in database/migrations/*.sql; do
+        if [ -f "$migration" ]; then
+            print_status "Running migration: $(basename $migration)"
+            if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < "$migration" 2>/dev/null; then
+                print_success "Migration completed: $(basename $migration)"
+            else
+                print_warning "Migration may have already been applied: $(basename $migration)"
+            fi
+        fi
+    done
+else
+    print_warning "PostgreSQL container not found - skipping migrations"
+fi
+
 # Step 6: Import AI analysis data (if ai_analysis_data.sql exists)
 if [ -f "ai_analysis_data.sql" ]; then
     print_status "Step 6: Importing AI analysis data"

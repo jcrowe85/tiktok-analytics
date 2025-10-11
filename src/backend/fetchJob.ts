@@ -3,7 +3,7 @@ import { TikTokClient } from './tiktokClient.js';
 import { enrichVideoWithKPIs, createSnapshot } from './kpis.js';
 import { writeCSV, writeJSON, loadSnapshots, appendSnapshots } from './persist.js';
 import { addVideoForAnalysis } from './queue/queue.js';
-import { executeQuery } from './database/connection.js';
+import { executeQuery, upsertVideo } from './database/connection.js';
 
 dotenv.config();
 
@@ -54,12 +54,43 @@ async function runFetchJob(): Promise<void> {
     const newSnapshots = videos.map(createSnapshot);
     
     // Persist data
+    console.log('🚩 Step 7: Persist data to database and files');
+    
+    // Save all videos to database
+    for (const video of enrichedVideos) {
+      await upsertVideo({
+        id: video.id,
+        username: video.username,
+        caption: video.caption,
+        video_description: video.video_description,
+        hashtags: video.hashtags,
+        posted_at_iso: video.posted_at_iso,
+        create_time: video.create_time,
+        duration: video.duration,
+        view_count: video.view_count,
+        like_count: video.like_count,
+        comment_count: video.comment_count,
+        share_count: video.share_count,
+        engagement_rate: video.engagement_rate,
+        like_rate: video.like_rate,
+        comment_rate: video.comment_rate,
+        share_rate: video.share_rate,
+        views_24h: video.views_24h,
+        velocity_24h: video.velocity_24h,
+        share_url: video.share_url,
+        embed_link: video.embed_link,
+        cover_image_url: video.cover_image_url,
+      });
+    }
+    console.log(`   ✅ Saved ${enrichedVideos.length} videos to database`);
+    
+    // Write backup files (optional)
     writeCSV(enrichedVideos);
     writeJSON(enrichedVideos);
     appendSnapshots(newSnapshots);
 
     // Queue new videos for AI analysis
-    console.log('🚩 Step 7: Queue videos for AI analysis');
+    console.log('🚩 Step 8: Queue videos for AI analysis');
     let queuedCount = 0;
     let skippedCount = 0;
     let alreadyAnalyzedCount = 0;
