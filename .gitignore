@@ -29,4 +29,8 @@ Thumbs.db
 *.swp
 *.swo
 
+# Production configs (server-specific)
+nginx.conf
+docker-compose.yml
+
 google-vision-credentials.json
