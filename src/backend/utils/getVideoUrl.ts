@@ -25,8 +25,13 @@ export async function getDirectVideoUrl(shareUrl: string): Promise<string | null
         console.log(`✅ Got direct video URL (can be streamed)`)
         return videoUrl
       }
-    } catch (error) {
-      console.warn(`⚠️  RapidAPI failed:`, error)
+    } catch (error: any) {
+      console.warn(`⚠️  RapidAPI failed:`, {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        message: error.message
+      })
     }
   }
   
