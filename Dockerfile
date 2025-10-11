@@ -41,8 +41,8 @@ COPY --from=builder /app/dist ./dist
 # Copy backend source
 COPY src/backend ./src/backend
 
-# Create data directory
-RUN mkdir -p data && chown -R nodejs:nodejs data
+# Create data and temp directories with proper permissions
+RUN mkdir -p data temp && chown -R nodejs:nodejs data temp
 
 # Switch to non-root user
 USER nodejs
