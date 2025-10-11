@@ -32,10 +32,61 @@ print_error() {
     echo -e "${RED}❌ $1${NC}"
 }
 
-# Step 1: Pull latest code from GitHub
-print_status "Step 1: Pulling latest code from GitHub"
+# Step 1: Handle local changes and pull latest code
+print_status "Step 1: Preparing for code update"
+
+# Backup any local changes to critical files
+if [ -f "docker-compose.yml" ]; then
+    cp docker-compose.yml docker-compose.yml.backup
+    print_status "Backed up docker-compose.yml"
+fi
+
+if [ -f ".env" ]; then
+    cp .env .env.backup
+    print_status "Backed up .env"
+fi
+
+# Move ai_analysis_data.sql if it exists (to avoid overwrite conflict)
+if [ -f "ai_analysis_data.sql" ]; then
+    mv ai_analysis_data.sql ai_analysis_data.sql.temp
+    print_status "Temporarily moved ai_analysis_data.sql"
+fi
+
+# Stash any local changes
+git add -A
+git stash push -m "VPS deployment backup $(date)"
+print_status "Stashed local changes"
+
+# Pull latest code
+print_status "Pulling latest code from GitHub"
 git pull origin main
 print_success "Code updated from GitHub"
+
+# Restore critical files if they were backed up
+if [ -f "docker-compose.yml.backup" ]; then
+    print_status "Checking if docker-compose.yml needs restoration"
+    if ! cmp -s "docker-compose.yml" "docker-compose.yml.backup"; then
+        print_warning "docker-compose.yml differs from backup - you may need to merge changes manually"
+        print_warning "Backup saved as docker-compose.yml.backup"
+    else
+        rm docker-compose.yml.backup
+    fi
+fi
+
+if [ -f ".env.backup" ]; then
+    print_status "Checking if .env needs restoration"
+    if [ ! -f ".env" ] || ! cmp -s ".env" ".env.backup"; then
+        cp .env.backup .env
+        print_status "Restored .env from backup"
+    fi
+    rm .env.backup
+fi
+
+# Restore ai_analysis_data.sql
+if [ -f "ai_analysis_data.sql.temp" ]; then
+    mv ai_analysis_data.sql.temp ai_analysis_data.sql
+    print_status "Restored ai_analysis_data.sql"
+fi
 
 # Step 2: Backup current database (optional safety measure)
 print_status "Step 2: Creating database backup"
