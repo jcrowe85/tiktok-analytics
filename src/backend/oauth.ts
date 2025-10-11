@@ -53,7 +53,14 @@ function updateEnvFile(accessToken: string, refreshToken: string): void {
   envContent = updateOrAdd(envContent, 'TIKTOK_ACCESS_TOKEN', accessToken);
   envContent = updateOrAdd(envContent, 'TIKTOK_REFRESH_TOKEN', refreshToken);
 
-  fs.writeFileSync(envPath, envContent.trim() + '\n');
+  try {
+    fs.writeFileSync(envPath, envContent.trim() + '\n');
+    console.log('✅ Updated .env file with new tokens');
+  } catch (error) {
+    console.warn('⚠️  Could not write to .env file (permission denied)');
+    console.warn('   Tokens are still valid in memory for this session');
+    console.warn('   To persist tokens, manually update .env on the host');
+  }
 }
 
 /**
