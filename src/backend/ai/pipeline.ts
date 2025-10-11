@@ -149,7 +149,7 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
       scores: contentAnalysis.scores as AIAnalysisResult['scores'],
       visual_scores: visualAnalysis.visual_scores,
       classifiers: visualAnalysis.classifiers,
-      findings: contentAnalysis.findings as AIAnalysisResult['findings'],
+      findings: contentAnalysis.findings as unknown as AIAnalysisResult['findings'],
       fix_suggestions: contentAnalysis.suggestions,
       artifacts: {
         transcript: transcriptResult.text,
@@ -193,6 +193,7 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
 }
 
 // Simulate video processing for testing
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function simulateVideoProcessing(videoId: string): Promise<ProcessingResult> {
   // Create a dummy audio buffer (1 second of silence)
   const audioBuffer = Buffer.alloc(32000) // 16kHz * 1 second * 2 bytes

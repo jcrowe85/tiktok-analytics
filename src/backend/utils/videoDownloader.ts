@@ -127,7 +127,7 @@ async function downloadVideoFile(videoId: string, videoUrl: string): Promise<Vid
     response.data.pipe(writer)
     
     await new Promise((resolve, reject) => {
-      writer.on('finish', resolve)
+      writer.on('finish', () => resolve(undefined))
       writer.on('error', reject)
     })
     

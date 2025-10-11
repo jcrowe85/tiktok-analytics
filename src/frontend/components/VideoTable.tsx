@@ -104,6 +104,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
 
   // Format caption with clickable hashtags and links
+  // Unused for now - keeping for future use
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatCaption = (caption: string) => {
     const parts: (string | JSX.Element)[] = []

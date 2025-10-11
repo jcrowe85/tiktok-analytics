@@ -173,7 +173,7 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<{
     }))
     
     // Process objects
-    const objects = (objectResult.localizedObjectAnnotations || []).map(obj => ({
+    const objects = (objectResult?.localizedObjectAnnotations || []).map(obj => ({
       name: obj.name || '',
       score: obj.score || 0,
       bounds: obj.boundingPoly?.normalizedVertices?.[0] ? {

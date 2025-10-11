@@ -45,7 +45,14 @@ export async function getVideoMetadata(videoPath: string): Promise<VideoMetadata
         duration: metadata.format.duration || 0,
         width: videoStream.width || 0,
         height: videoStream.height || 0,
-        fps: parseFloat(videoStream.r_frame_rate || '0') || 0,
+        fps: (() => {
+          const fpsStr = videoStream.r_frame_rate || '0'
+          if (fpsStr.includes('/')) {
+            const [num, den] = fpsStr.split('/').map(Number)
+            return den ? num / den : 0
+          }
+          return parseFloat(fpsStr) || 0
+        })(),
         bitrate: parseInt(metadata.format.bit_rate || '0'),
         format: metadata.format.format_name || 'unknown'
       })
@@ -115,7 +122,7 @@ export async function generateKeyframes(
           .frames(1)
           .size('640x360') // Standard thumbnail size
           .format('image2')
-          .on('end', resolve)
+          .on('end', () => resolve())
           .on('error', reject)
           .save(outputPath)
       })
@@ -230,7 +237,10 @@ export async function downloadVideo(videoUrl: string, outputPath: string): Promi
   }
   
   const fileStream = fsSync.createWriteStream(outputPath)
-  await pipeline(response.body as Readable, fileStream)
+  if (!response.body) {
+    throw new Error('Response body is null')
+  }
+  await pipeline(response.body as unknown as Readable, fileStream)
   
   console.log(`✅ Video downloaded to: ${outputPath}`)
 }
