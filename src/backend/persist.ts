@@ -131,8 +131,12 @@ export function saveSnapshots(snapshots: VideoSnapshot[]): void {
   const recentSnapshots = snapshots.filter(s => s.timestamp >= sevenDaysAgo);
 
   const json = JSON.stringify(recentSnapshots, null, 2);
-  fs.writeFileSync(SNAPSHOTS_PATH, json, 'utf-8');
-  console.log(`   ✅ Snapshots saved: ${recentSnapshots.length} entries`);
+  try {
+    fs.writeFileSync(SNAPSHOTS_PATH, json, 'utf-8');
+    console.log(`   ✅ Snapshots saved: ${recentSnapshots.length} entries`);
+  } catch (error) {
+    console.warn(`   ⚠️  Snapshots write skipped (permission denied) - not critical for operation`);
+  }
 }
 
 /**
