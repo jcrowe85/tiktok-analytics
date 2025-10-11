@@ -1,5 +1,6 @@
 import axios from 'axios'
 import fs from 'fs/promises'
+import * as fsSync from 'fs'
 import path from 'path'
 
 /**
@@ -64,6 +65,7 @@ export async function downloadTikTokVideo(
  * Extract video URL from TikTok embed link
  * This requires making a request to the embed page and parsing the HTML
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function extractVideoUrlFromEmbed(embedLink: string): Promise<string | null> {
   try {
     // The embed link loads a player page that contains the actual video URL
@@ -121,7 +123,7 @@ async function downloadVideoFile(videoId: string, videoUrl: string): Promise<Vid
     })
     
     // Save to file
-    const writer = fs.createWriteStream(localPath)
+    const writer = fsSync.createWriteStream(localPath)
     response.data.pipe(writer)
     
     await new Promise((resolve, reject) => {

@@ -36,7 +36,7 @@ export async function transcribeAudio(audioFilePath: string): Promise<{
     
     // Create a File-like object from the file
     const filename = audioFilePath.split('/').pop() || 'audio.wav'
-    const audioFile = new File([audioBuffer], filename, { type: 'audio/wav' })
+    const audioFile = new File([audioBuffer as BlobPart], filename, { type: 'audio/wav' })
     
     // Transcribe with Whisper
     const transcription = await openai.audio.transcriptions.create({

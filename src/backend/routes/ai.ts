@@ -87,7 +87,7 @@ router.post('/analyze/:videoId', async (req, res) => {
 })
 
 // Get queue statistics
-router.get('/queue/stats', async (req, res) => {
+router.get('/queue/stats', async (_req, res) => {
   try {
     const stats = await getQueueStats()
     res.json(stats)

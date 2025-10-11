@@ -146,10 +146,10 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
     const analysisResult: AIAnalysisResult = {
       videoId,
       status: 'completed',
-      scores: contentAnalysis.scores,
+      scores: contentAnalysis.scores as AIAnalysisResult['scores'],
       visual_scores: visualAnalysis.visual_scores,
       classifiers: visualAnalysis.classifiers,
-      findings: contentAnalysis.findings,
+      findings: contentAnalysis.findings as AIAnalysisResult['findings'],
       fix_suggestions: contentAnalysis.suggestions,
       artifacts: {
         transcript: transcriptResult.text,
@@ -213,6 +213,7 @@ async function simulateVideoProcessing(videoId: string): Promise<ProcessingResul
       bitrate: 2000000,
       format: 'mp4'
     },
+    audioPath: `/tmp/mock_audio_${videoId}.wav`,
     audioBuffer,
     keyframes,
     tempFiles: []
@@ -220,7 +221,7 @@ async function simulateVideoProcessing(videoId: string): Promise<ProcessingResul
 }
 
 // Analyze keyframes for visual content
-async function analyzeKeyframes(keyframes: Array<{ timestamp: number; frameBuffer: Buffer; filename: string }>): Promise<{
+async function analyzeKeyframes(_keyframes: Array<{ timestamp: number; frameBuffer: Buffer; filename: string }>): Promise<{
   visual_scores: AIAnalysisResult['visual_scores']
   classifiers: AIAnalysisResult['classifiers']
 }> {
@@ -334,7 +335,9 @@ export async function queueVideoForAnalysis(videoId: string, videoUrl: string): 
   
   await aiAnalysisQueue.add('analyze-video', {
     videoId,
-    videoUrl
+    videoUrl,
+    contentHash: `hash_${videoId}_${Date.now()}`,
+    rulesVersion: 1
   }, {
     jobId,
     removeOnComplete: 10,

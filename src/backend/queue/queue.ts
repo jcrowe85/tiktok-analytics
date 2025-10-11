@@ -42,7 +42,7 @@ export enum JobType {
 
 // Job processor function - integrates with AI pipeline
 async function processAIAnalysis(job: Job<JobData>) {
-  const { videoId, videoUrl, contentHash, rulesVersion } = job.data
+  const { videoId, videoUrl } = job.data
   
   console.log(`🚩 Processing AI analysis for video ${videoId}`)
   

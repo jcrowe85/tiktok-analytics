@@ -1,5 +1,6 @@
 import ffmpeg from 'fluent-ffmpeg'
 import fs from 'fs/promises'
+import * as fsSync from 'fs'
 import path from 'path'
 import { pipeline } from 'stream/promises'
 import { Readable } from 'stream'
@@ -44,7 +45,7 @@ export async function getVideoMetadata(videoPath: string): Promise<VideoMetadata
         duration: metadata.format.duration || 0,
         width: videoStream.width || 0,
         height: videoStream.height || 0,
-        fps: eval(videoStream.r_frame_rate || '0') || 0,
+        fps: parseFloat(videoStream.r_frame_rate || '0') || 0,
         bitrate: parseInt(metadata.format.bit_rate || '0'),
         format: metadata.format.format_name || 'unknown'
       })
@@ -228,7 +229,7 @@ export async function downloadVideo(videoUrl: string, outputPath: string): Promi
     throw new Error(`Failed to download video: ${response.statusText}`)
   }
   
-  const fileStream = fs.createWriteStream(outputPath)
+  const fileStream = fsSync.createWriteStream(outputPath)
   await pipeline(response.body as Readable, fileStream)
   
   console.log(`✅ Video downloaded to: ${outputPath}`)

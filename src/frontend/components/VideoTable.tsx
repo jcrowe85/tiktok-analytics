@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
-import fleurLogo from '../../assets/logo.jpg'
+// import fleurLogo from '../../assets/logo.jpg' // Unused for now
 
 interface VideoTableProps {
   videos: VideoMetrics[]
@@ -104,6 +104,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
 
   // Format caption with clickable hashtags and links
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const formatCaption = (caption: string) => {
     const parts: (string | JSX.Element)[] = []
     let lastIndex = 0

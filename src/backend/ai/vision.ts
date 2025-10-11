@@ -150,13 +150,17 @@ export async function analyzeImage(imageBuffer: Buffer): Promise<{
     console.log('🔍 Starting Google Vision image analysis...')
     
     // Perform multiple types of analysis
+    if (!visionClient) {
+      throw new Error('Vision client not initialized')
+    }
+    
     const [labelResult] = await visionClient.labelDetection({
       image: { content: imageBuffer }
     })
     
-    const [objectResult] = await visionClient.objectLocalization({
+    const [objectResult] = await visionClient.objectLocalization?.({
       image: { content: imageBuffer }
-    })
+    }) || [null]
     
     const [faceResult] = await visionClient.faceDetection({
       image: { content: imageBuffer }
