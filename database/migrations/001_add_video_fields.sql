@@ -78,3 +78,16 @@ CREATE INDEX IF NOT EXISTS idx_videos_share_url ON videos(share_url);
 -- Create index on username for filtering
 CREATE INDEX IF NOT EXISTS idx_videos_username ON videos(username);
 
+-- Add unique constraint on video_ai_analysis.video_id (if not exists)
+-- This is required for ON CONFLICT (video_id) in upserts
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'video_ai_analysis_video_id_key'
+    ) THEN
+        ALTER TABLE video_ai_analysis 
+        ADD CONSTRAINT video_ai_analysis_video_id_key UNIQUE (video_id);
+    END IF;
+END $$;
+
