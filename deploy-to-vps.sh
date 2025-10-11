@@ -35,21 +35,38 @@ print_error() {
 # Step 1: Handle local changes and pull latest code
 print_status "Step 1: Preparing for code update"
 
-# Backup any local changes to critical files
-if [ -f "docker-compose.yml" ]; then
-    cp docker-compose.yml docker-compose.yml.backup
-    print_status "Backed up docker-compose.yml"
+# Backup any local changes to critical production files
+print_status "Backing up production-specific files..."
+
+# Critical production files
+for file in ".env" "docker-compose.yml" "nginx.conf" "nginx-simple.conf" "cron-setup.sh"; do
+    if [ -f "$file" ]; then
+        cp "$file" "${file}.backup"
+        print_status "Backed up $file"
+    fi
+done
+
+# Backup directories with production data
+if [ -d "data" ]; then
+    cp -r data data.backup
+    print_status "Backed up data directory"
 fi
 
-if [ -f ".env" ]; then
-    cp .env .env.backup
-    print_status "Backed up .env"
+if [ -d "logs" ]; then
+    cp -r logs logs.backup  
+    print_status "Backed up logs directory"
 fi
 
 # Move ai_analysis_data.sql if it exists (to avoid overwrite conflict)
 if [ -f "ai_analysis_data.sql" ]; then
     mv ai_analysis_data.sql ai_analysis_data.sql.temp
     print_status "Temporarily moved ai_analysis_data.sql"
+fi
+
+# Handle existing deploy.sh vs new deploy-to-vps.sh
+if [ -f "deploy.sh" ]; then
+    cp deploy.sh deploy.sh.backup
+    print_status "Backed up existing deploy.sh"
 fi
 
 # Stash any local changes
@@ -62,30 +79,57 @@ print_status "Pulling latest code from GitHub"
 git pull origin main
 print_success "Code updated from GitHub"
 
-# Restore critical files if they were backed up
-if [ -f "docker-compose.yml.backup" ]; then
-    print_status "Checking if docker-compose.yml needs restoration"
-    if ! cmp -s "docker-compose.yml" "docker-compose.yml.backup"; then
-        print_warning "docker-compose.yml differs from backup - you may need to merge changes manually"
-        print_warning "Backup saved as docker-compose.yml.backup"
+# Restore production-specific files
+print_status "Restoring production configurations..."
+
+# Restore critical production files
+for file in ".env" "docker-compose.yml" "nginx.conf" "nginx-simple.conf" "cron-setup.sh"; do
+    if [ -f "${file}.backup" ]; then
+        if [ ! -f "$file" ] || ! cmp -s "$file" "${file}.backup"; then
+            cp "${file}.backup" "$file"
+            print_status "Restored $file from backup"
+        else
+            print_status "$file unchanged, removing backup"
+        fi
+        rm "${file}.backup"
+    fi
+done
+
+# Restore production directories
+if [ -d "data.backup" ]; then
+    if [ ! -d "data" ] || [ "$(find data -type f | wc -l)" -lt "$(find data.backup -type f | wc -l)" ]; then
+        rm -rf data
+        mv data.backup data
+        print_status "Restored data directory from backup"
     else
-        rm docker-compose.yml.backup
+        rm -rf data.backup
+        print_status "Data directory preserved, removed backup"
     fi
 fi
 
-if [ -f ".env.backup" ]; then
-    print_status "Checking if .env needs restoration"
-    if [ ! -f ".env" ] || ! cmp -s ".env" ".env.backup"; then
-        cp .env.backup .env
-        print_status "Restored .env from backup"
+if [ -d "logs.backup" ]; then
+    if [ ! -d "logs" ] || [ "$(find logs -type f | wc -l)" -lt "$(find logs.backup -type f | wc -l)" ]; then
+        rm -rf logs
+        mv logs.backup logs
+        print_status "Restored logs directory from backup"
+    else
+        rm -rf logs.backup
+        print_status "Logs directory preserved, removed backup"
     fi
-    rm .env.backup
 fi
 
 # Restore ai_analysis_data.sql
 if [ -f "ai_analysis_data.sql.temp" ]; then
     mv ai_analysis_data.sql.temp ai_analysis_data.sql
     print_status "Restored ai_analysis_data.sql"
+fi
+
+# Handle deploy.sh conflict
+if [ -f "deploy.sh.backup" ]; then
+    print_status "Found existing deploy.sh - keeping backup as deploy.sh.old"
+    mv deploy.sh.backup deploy.sh.old
+    print_warning "Your original deploy.sh saved as deploy.sh.old"
+    print_warning "Review differences and merge if needed"
 fi
 
 # Step 2: Backup current database (optional safety measure)
