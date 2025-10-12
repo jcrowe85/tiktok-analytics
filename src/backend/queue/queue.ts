@@ -12,7 +12,7 @@ const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
 // Queue configuration
 export interface JobData {
   videoId: string
-  videoUrl: string
+  videoUrl?: string // Optional for static content
   contentHash: string
   rulesVersion: number
   // For static content analysis
@@ -94,6 +94,10 @@ export const aiAnalysisWorker = new Worker<JobData>(
 async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
   const { videoId, caption, coverImageUrl } = job.data
   
+  if (!caption) {
+    throw new Error('Caption is required for static content analysis')
+  }
+  
   try {
     console.log(`🚩 Processing static content analysis for video ${videoId}`)
     
@@ -161,6 +165,7 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
   
   await aiAnalysisQueue.add('analyze-static', {
     videoId,
+    videoUrl: '', // Empty for static content
     caption,
     coverImageUrl,
     contentHash,
