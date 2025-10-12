@@ -607,30 +607,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     </div>
                   ) : null}
 
-                  {/* Basic Info */}
-                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-white/70 mb-3">Video Details</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-white/60 text-sm">Posted</span>
-                        <span className="text-white font-medium">{formatFullDate(selectedVideo.posted_at_iso)}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-white/60 text-sm">Duration</span>
-                        <span className="text-white font-medium">{selectedVideo.duration}s</span>
-                      </div>
-                      {selectedVideo.velocity_24h && (
-                        <div className="flex justify-between">
-                          <span className="text-white/60 text-sm">24h Velocity</span>
-                          <span className="text-white font-medium">{selectedVideo.velocity_24h.toFixed(0)}/hr</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
                   {/* Performance Metrics */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance Metrics</h4>
+                    <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance</h4>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-white/60 text-sm">Views</span>
@@ -683,12 +662,33 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       </div>
                       <div className="pt-3 border-t border-white/10">
                         <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm font-medium">Engagement Rate</span>
+                          <span className="text-white/60 text-sm font-medium">Engagement</span>
                           <span className="text-white font-bold text-lg">
                             {(selectedVideo.engagement_rate * 100).toFixed(2)}%
                           </span>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  {/* Video Details */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-white/70 mb-3">📅 Details</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Posted</span>
+                        <span className="text-white font-medium text-sm">{formatFullDate(selectedVideo.posted_at_iso)}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Duration</span>
+                        <span className="text-white font-medium">{selectedVideo.duration}s</span>
+                      </div>
+                      {selectedVideo.velocity_24h && (
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm">24h Velocity</span>
+                          <span className="text-white font-medium">{selectedVideo.velocity_24h.toFixed(0)}/hr</span>
+                        </div>
+                      )}
                     </div>
                   </div>
 
