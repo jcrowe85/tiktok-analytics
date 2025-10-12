@@ -779,48 +779,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         </div>
                       </div>
 
-                      {/* Visual Scores with Progress Bars */}
-                      {selectedVideo.ai_visual_scores && (
-                        <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                          <h3 className="text-lg font-bold text-white mb-4">Visual Analysis</h3>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                            {Object.entries({
-                              'Thumbstop': selectedVideo.ai_visual_scores.thumbstop_prob,
-                              'First Frame': selectedVideo.ai_visual_scores.first_frame_strength,
-                              'Silent Comp.': selectedVideo.ai_visual_scores.silent_comprehension,
-                              'Aesthetics': selectedVideo.ai_visual_scores.visual_aesthetics,
-                              'Composition': selectedVideo.ai_visual_scores.composition,
-                              'Motion': selectedVideo.ai_visual_scores.motion_dynamics,
-                              'Pattern Int.': selectedVideo.ai_visual_scores.pattern_interrupt,
-                              'Text Legibility': selectedVideo.ai_visual_scores.text_legibility,
-                              'Emotion': selectedVideo.ai_visual_scores.emotion_score,
-                              'Save Trigger': selectedVideo.ai_visual_scores.save_share_trigger,
-                              'Loopability': selectedVideo.ai_visual_scores.loopability,
-                              'Trend Align': selectedVideo.ai_visual_scores.trend_alignment,
-                            }).map(([label, score]) => (
-                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
-                                <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
-                                <div className="flex items-center gap-2">
-                                  <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
-                                    <div 
-                                      className={`h-full transition-all ${
-                                        score >= 8 ? 'bg-green-500' :
-                                        score >= 6 ? 'bg-yellow-500' :
-                                        'bg-red-500'
-                                      }`}
-                                      style={{ width: `${score * 10}%` }}
-                                    />
-                                  </div>
-                                  <span className="text-xs font-bold text-white tabular-nums min-w-[24px]">
-                                    {score.toFixed(1)}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-
                       {/* Key Findings */}
                       {selectedVideo.ai_findings && (Object.values(selectedVideo.ai_findings).some((v: any) => v && v.trim())) && (
                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
@@ -860,6 +818,48 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                               </li>
                             ))}
                           </ul>
+                        </div>
+                      )}
+
+                      {/* Visual Scores with Progress Bars - Moved to Bottom */}
+                      {selectedVideo.ai_visual_scores && (
+                        <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                          <h3 className="text-lg font-bold text-white mb-4">Visual Analysis</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {Object.entries({
+                              'Thumbstop': selectedVideo.ai_visual_scores.thumbstop_prob,
+                              'First Frame': selectedVideo.ai_visual_scores.first_frame_strength,
+                              'Silent Comp.': selectedVideo.ai_visual_scores.silent_comprehension,
+                              'Aesthetics': selectedVideo.ai_visual_scores.visual_aesthetics,
+                              'Composition': selectedVideo.ai_visual_scores.composition,
+                              'Motion': selectedVideo.ai_visual_scores.motion_dynamics,
+                              'Pattern Int.': selectedVideo.ai_visual_scores.pattern_interrupt,
+                              'Text Legibility': selectedVideo.ai_visual_scores.text_legibility,
+                              'Emotion': selectedVideo.ai_visual_scores.emotion_score,
+                              'Save Trigger': selectedVideo.ai_visual_scores.save_share_trigger,
+                              'Loopability': selectedVideo.ai_visual_scores.loopability,
+                              'Trend Align': selectedVideo.ai_visual_scores.trend_alignment,
+                            }).map(([label, score]) => (
+                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
+                                <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all ${
+                                        score >= 8 ? 'bg-green-500' :
+                                        score >= 6 ? 'bg-yellow-500' :
+                                        'bg-red-500'
+                                      }`}
+                                      style={{ width: `${score * 10}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-bold text-white tabular-nums min-w-[24px]">
+                                    {score.toFixed(1)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>
