@@ -10,7 +10,7 @@ export async function getDirectVideoUrl(shareUrl: string): Promise<string | null
   // Option 1: RapidAPI (reliable, paid)
   if (process.env.RAPIDAPI_KEY) {
     try {
-      const response = await axios.get('https://tiktok-download-without-watermark.p.rapidapi.com/analysis', {
+      const response = await axios.get('https://tiktok-download-without-watermark.p.rapidapi.com/video', {
         params: { url: shareUrl, hd: '1' },
         headers: {
           'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
