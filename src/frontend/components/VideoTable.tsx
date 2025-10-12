@@ -522,7 +522,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Bottom Left: Likes, Comments, Shares */}
                       <div className="flex items-center gap-2.5">
                         <div className="flex items-center gap-0.5">
-                          <FiHeart className="w-3 h-3 text-red-400/80" />
+                          <FiHeart className="w-3.5 h-3.5 text-red-400/80" />
                           <span className="text-[11px] text-white/70 font-medium tabular-nums">
                             {video.like_count > 1000 
                               ? `${(video.like_count / 1000).toFixed(0)}K`
@@ -531,7 +531,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           </span>
                         </div>
                         <div className="flex items-center gap-0.5">
-                          <FiMessageCircle className="w-3 h-3 text-blue-400/80" />
+                          <FiMessageCircle className="w-3.5 h-3.5 text-blue-400/80" />
                           <span className="text-[11px] text-white/70 font-medium tabular-nums">
                             {video.comment_count > 1000 
                               ? `${(video.comment_count / 1000).toFixed(0)}K`
@@ -540,7 +540,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           </span>
                         </div>
                         <div className="flex items-center gap-0.5">
-                          <FiShare2 className="w-3 h-3 text-green-400/80" />
+                          <FiShare2 className="w-3.5 h-3.5 text-green-400/80" />
                           <span className="text-[11px] text-white/70 font-medium tabular-nums">
                             {video.share_count > 1000 
                               ? `${(video.share_count / 1000).toFixed(0)}K`
@@ -552,7 +552,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
                       {/* Bottom Right: Velocity - Ensure perfect alignment */}
                       <div className="flex items-center gap-0.5 h-[18px]">
-                        <FiTrendingUp className="w-3 h-3 text-purple-400/80" />
+                        <FiTrendingUp className="w-3.5 h-3.5 text-purple-400/80" />
                         <span className="text-[11px] text-white/70 font-medium tabular-nums leading-none">
                           {video.velocity_24h ? video.velocity_24h.toFixed(0) : '0'}/hr
                         </span>
