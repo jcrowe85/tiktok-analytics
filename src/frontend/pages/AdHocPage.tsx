@@ -3,68 +3,53 @@ import VideoTable from '../components/VideoTable'
 import { AdHocAnalysis } from '../components/AdHocAnalysis'
 import type { VideoMetrics } from '../types'
 
-// Helper to convert ad-hoc analysis to VideoMetrics format
-function convertAdHocToVideo(analysis: any): VideoMetrics {
-  // Convert findings from the API format to VideoMetrics format
-  const convertedFindings = analysis.findings ? {
-    hook_strength: analysis.findings.hook_verdict || '',
-    depth: analysis.findings.depth_verdict || '',
-    clarity: '',
-    pacing: '',
-    cta: analysis.findings.cta_notes || '',
-    brand_fit: '',
-  } : undefined;
-
-  // Calculate engagement rate
-  const viewCount = analysis.viewCount || 0
-  const likeCount = analysis.likeCount || 0
-  const commentCount = analysis.commentCount || 0
-  const shareCount = analysis.shareCount || 0
-  const totalEngagement = likeCount + commentCount + shareCount
-  const engagementRate = viewCount > 0 ? (totalEngagement / viewCount) * 100 : 0
-
-  return {
-    id: analysis.videoId,
-    caption: analysis.staticData?.videoTitle || 'Ad-Hoc Analysis',
-    hashtags: [],
-    posted_at_iso: analysis.processed_at,
-    duration: analysis.duration || 0,
-    create_time: Date.now(),
-    video_description: '',
-    view_count: viewCount,
-    like_count: likeCount,
-    comment_count: commentCount,
-    share_count: shareCount,
-    engagement_rate: engagementRate,
-    like_rate: viewCount > 0 ? (likeCount / viewCount) * 100 : 0,
-    comment_rate: viewCount > 0 ? (commentCount / viewCount) * 100 : 0,
-    share_rate: viewCount > 0 ? (shareCount / viewCount) * 100 : 0,
-    velocity_24h: 0, // Not available for ad-hoc
-    share_url: analysis.url,
-    cover_image_url: analysis.coverImageUrl || '',
-    ai_scores: analysis.scores,
-    ai_visual_scores: analysis.visual_scores,
-    ai_findings: convertedFindings,
-    ai_fix_suggestions: analysis.fix_suggestions,
-    ai_processed_at: analysis.processed_at,
-  }
-}
-
 function AdHocPage() {
   const [adHocVideos, setAdHocVideos] = useState<VideoMetrics[]>([])
   const [showAdHocAnalysis, setShowAdHocAnalysis] = useState(false)
 
-  // Load ad-hoc analyses from localStorage on mount
+  // Load ad-hoc analyses from database on mount
   useEffect(() => {
     loadAdHocAnalyses()
   }, [])
 
-  const loadAdHocAnalyses = () => {
+  const loadAdHocAnalyses = async () => {
     try {
-      const stored = localStorage.getItem('adHocAnalyses')
-      if (stored) {
-        const analyses = JSON.parse(stored)
-        const videos = analyses.map(convertAdHocToVideo)
+      // Fetch from database instead of localStorage
+      const response = await fetch('/api/adhoc-analyses')
+      if (!response.ok) {
+        throw new Error('Failed to fetch ad-hoc analyses')
+      }
+      
+      const result = await response.json()
+      
+      if (result.success && result.data) {
+        // Convert database format to VideoMetrics format
+        const videos = result.data.map((video: any) => ({
+          id: video.id,
+          caption: video.video_title || video.caption || 'Ad-Hoc Analysis',
+          hashtags: video.hashtags || [],
+          posted_at_iso: video.posted_at_iso,
+          duration: video.duration || 0,
+          create_time: new Date(video.created_at).getTime(),
+          video_description: '',
+          view_count: video.view_count || 0,
+          like_count: video.like_count || 0,
+          comment_count: video.comment_count || 0,
+          share_count: video.share_count || 0,
+          engagement_rate: video.engagement_rate || 0,
+          like_rate: video.like_rate || 0,
+          comment_rate: video.comment_rate || 0,
+          share_rate: video.share_rate || 0,
+          velocity_24h: video.velocity_24h || 0,
+          share_url: video.share_url || '',
+          cover_image_url: video.cover_image_url || '',
+          ai_scores: video.scores,
+          ai_visual_scores: video.visual_scores,
+          ai_findings: video.findings,
+          ai_fix_suggestions: video.fix_suggestions,
+          ai_processed_at: video.ai_processed_at,
+        }))
+        
         setAdHocVideos(videos)
       }
     } catch (error) {
@@ -174,7 +159,7 @@ function AdHocPage() {
                     <div>
                       <h4 className="text-blue-400 font-medium mb-1">About Ad-Hoc Analyses</h4>
                       <p className="text-white/60 text-sm">
-                        These analyses are stored locally in your browser. They won't affect your main dashboard stats and will persist until you clear them or your browser cache.
+                        These competitor analyses are permanently saved to your account. They won't affect your main dashboard stats but will always be available for reference.
                       </p>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import express from 'express'
 import { analyzeVideo } from '../ai/pipeline.ts'
 import { getVideoData } from '../utils/getVideoUrl.ts'
+import { executeQuery } from '../database/connection.ts'
 import axios from 'axios'
 
 const router = express.Router()
@@ -62,6 +63,56 @@ async function getVideoMetadata(url: string) {
 }
 
 /**
+ * Get all ad-hoc analyses from database
+ * GET /api/adhoc-analyses
+ */
+router.get('/adhoc-analyses', async (req, res) => {
+  try {
+    // Fetch ad-hoc videos with their AI analysis
+    const result = await executeQuery(`
+      SELECT 
+        v.id,
+        v.caption,
+        v.video_title,
+        v.hashtags,
+        v.posted_at_iso,
+        v.duration,
+        v.view_count,
+        v.like_count,
+        v.comment_count,
+        v.share_count,
+        v.engagement_rate,
+        v.like_rate,
+        v.comment_rate,
+        v.share_rate,
+        v.velocity_24h,
+        v.share_url,
+        v.cover_image_url,
+        v.author_username,
+        v.author_nickname,
+        a.scores,
+        a.visual_scores,
+        a.findings,
+        a.fix_suggestions,
+        a.processed_at as ai_processed_at
+      FROM videos v
+      LEFT JOIN video_ai_analysis a ON v.id = a.video_id
+      WHERE v.is_adhoc = true
+      ORDER BY v.created_at DESC
+    `)
+    
+    res.json({
+      success: true,
+      count: result.length,
+      data: result
+    })
+  } catch (error) {
+    console.error('❌ Failed to fetch ad-hoc analyses:', error)
+    res.status(500).json({ error: 'Failed to fetch ad-hoc analyses' })
+  }
+})
+
+/**
  * Analyze any TikTok video by URL
  * POST /api/analyze-url
  * Body: { url: string }
@@ -107,6 +158,14 @@ router.post('/analyze-url', async (req, res) => {
     }
     
     console.log(`✅ Analysis complete!`)
+    
+    // Mark this video as ad-hoc in the database
+    await executeQuery(`
+      UPDATE videos 
+      SET is_adhoc = true 
+      WHERE id = $1
+    `, [videoId])
+    console.log(`✅ Marked video as ad-hoc in database`)
     
     // Use duration from RapidAPI first, fallback to artifacts
     const duration = videoData.staticData?.duration || 

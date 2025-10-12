@@ -33,6 +33,9 @@ CREATE TABLE IF NOT EXISTS videos (
     music_title VARCHAR(255),
     music_artist VARCHAR(255),
     
+    -- Ad-hoc analysis flag (for competitor/external videos)
+    is_adhoc BOOLEAN DEFAULT FALSE,
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
