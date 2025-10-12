@@ -6,7 +6,7 @@ import { getRapidApiStatus } from '../utils/getVideoUrl.ts'
 const router = express.Router()
 
 // Get system status including RapidAPI circuit breaker
-router.get('/status', async (req, res) => {
+router.get('/status', async (_, res) => {
   try {
     const queueStats = await getQueueStats()
     const rapidApiStatus = getRapidApiStatus()
