@@ -5,13 +5,11 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 // Redis connection with error handling
-let redis: Redis;
+let redis: Redis | null = null;
 let redisAvailable = false;
 
 try {
   redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-    maxRetriesPerRequest: null,
-    retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
     lazyConnect: true,
   });
@@ -27,7 +25,7 @@ try {
   });
 } catch (error) {
   redisAvailable = false;
-  console.log('⚠️  Redis connection failed:', error.message);
+  console.log('⚠️  Redis connection failed:', (error as Error).message);
 }
 
 // Queue configuration
@@ -42,7 +40,7 @@ export interface JobData {
 }
 
 // AI Analysis Queue (only created if Redis is available)
-export const aiAnalysisQueue = redisAvailable ? new Queue<JobData>('ai-analysis', {
+export const aiAnalysisQueue = (redisAvailable && redis) ? new Queue<JobData>('ai-analysis', {
   connection: redis,
   defaultJobOptions: {
     removeOnComplete: 10,
@@ -102,7 +100,7 @@ async function processAIAnalysis(job: Job<JobData>) {
 }
 
 // Worker for AI analysis queue (only created if Redis is available)
-export const aiAnalysisWorker = redisAvailable ? new Worker<JobData>(
+export const aiAnalysisWorker = (redisAvailable && redis) ? new Worker<JobData>(
   'ai-analysis',
   processAIAnalysis,
   {
@@ -153,7 +151,7 @@ async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
 }
 
 // Worker for static content analysis queue
-export const staticAnalysisWorker = redisAvailable ? new Worker<JobData>(
+export const staticAnalysisWorker = (redisAvailable && redis) ? new Worker<JobData>(
   'ai-analysis',
   processStaticAnalysis,
   {

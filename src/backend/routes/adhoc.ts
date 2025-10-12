@@ -66,7 +66,7 @@ async function getVideoMetadata(url: string) {
  * Get all ad-hoc analyses from database
  * GET /api/adhoc-analyses
  */
-router.get('/adhoc-analyses', async (req, res) => {
+router.get('/adhoc-analyses', async (_req, res) => {
   try {
     // Fetch ad-hoc videos with their AI analysis
     const result = await executeQuery(`
@@ -154,14 +154,13 @@ router.post('/analyze-url', async (req, res) => {
     
     console.log(`✅ Analysis complete!`)
     
-    // Use duration from RapidAPI first, fallback to artifacts
-    const duration = videoData.staticData?.duration || 
-      (analysis.artifacts?.keyframes?.[0]?.timestamp 
-        ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
-        : 0)
+    // Use duration from artifacts since RapidAPI doesn't provide duration
+    const duration = analysis.artifacts?.keyframes?.[0]?.timestamp 
+      ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
+      : 0
     
-    // Use thumbnail from RapidAPI first, fallback to oEmbed
-    const coverImageUrl = videoData.staticData?.coverImageUrl || oembedData.thumbnailUrl || ''
+    // Use thumbnail from oEmbed since RapidAPI doesn't provide coverImageUrl
+    const coverImageUrl = oembedData.thumbnailUrl || ''
     
     // Update video with ad-hoc flag and missing metadata
     await executeQuery(`
@@ -171,27 +170,25 @@ router.post('/analyze-url', async (req, res) => {
         share_url = $2,
         cover_image_url = $3,
         duration = $4,
-        caption = $5,
-        view_count = $6,
-        like_count = $7,
-        comment_count = $8,
-        share_count = $9,
-        engagement_rate = $10
-      WHERE id = $1
-    `, [
-      videoId,
-      url,
-      coverImageUrl,
-      duration,
-      videoData.staticData?.videoTitle || oembedData.videoTitle || '',
-      videoData.staticData?.viewCount || 0,
-      videoData.staticData?.likeCount || 0,
-      videoData.staticData?.commentCount || 0,
-      videoData.staticData?.shareCount || 0,
-      videoData.staticData?.viewCount > 0 
-        ? ((videoData.staticData.likeCount + videoData.staticData.commentCount + videoData.staticData.shareCount) / videoData.staticData.viewCount)
-        : 0
-    ])
+      caption = $5,
+      view_count = $6,
+      like_count = $7,
+      comment_count = $8,
+      share_count = $9,
+      engagement_rate = $10
+    WHERE id = $1
+  `, [
+    videoId,
+    url,
+    coverImageUrl,
+    duration,
+    videoData.staticData?.videoTitle || oembedData.videoTitle || '',
+    0, // viewCount not available from RapidAPI
+    0, // likeCount not available from RapidAPI
+    0, // commentCount not available from RapidAPI
+    0, // shareCount not available from RapidAPI
+    0  // engagementRate - set to 0 since metrics not available
+  ])
     console.log(`✅ Updated video with ad-hoc metadata and metrics`)
     
     // Merge staticData from RapidAPI and oEmbed (RapidAPI takes priority)
@@ -214,11 +211,11 @@ router.post('/analyze-url', async (req, res) => {
       staticData: mergedStaticData,
       coverImageUrl,
       duration,
-      // Performance metrics from RapidAPI
-      viewCount: videoData.staticData?.viewCount || 0,
-      likeCount: videoData.staticData?.likeCount || 0,
-      commentCount: videoData.staticData?.commentCount || 0,
-      shareCount: videoData.staticData?.shareCount || 0,
+      // Performance metrics (not available from RapidAPI)
+      viewCount: 0,
+      likeCount: 0,
+      commentCount: 0,
+      shareCount: 0,
       // AI analysis results
       scores: analysis.scores,
       visual_scores: analysis.visual_scores,

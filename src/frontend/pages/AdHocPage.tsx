@@ -76,12 +76,6 @@ function AdHocPage() {
 
   // Removed clearAllAnalyses - users paid for these analyses
 
-  const handleAnalysisComplete = () => {
-    // Reload analyses after new one is added
-    console.log('🔄 Reloading analyses after completion...')
-    loadAdHocAnalyses()
-  }
-
   const handleAnalyze = async () => {
     if (!url.trim()) {
       alert('Please enter a TikTok URL')

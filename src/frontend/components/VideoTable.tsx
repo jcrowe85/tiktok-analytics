@@ -379,7 +379,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                 className="modern-card overflow-hidden cursor-pointer group"
                 onClick={() => {
                   setSelectedVideo(video)
-                  setCaptionExpanded(false) // Reset caption expansion when selecting new video
                 }}
               >
                 {/* Header Section */}

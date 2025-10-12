@@ -269,12 +269,8 @@ router.delete('/video/:videoId', async (req, res) => {
     console.log(`✅ Deleted AI analysis data for video ${videoId}`)
     
     // Delete from videos table
-    const result = await executeQuery('DELETE FROM videos WHERE id = $1', [videoId])
+    await executeQuery('DELETE FROM videos WHERE id = $1', [videoId])
     console.log(`✅ Deleted video ${videoId} from database`)
-    
-    if (result.rowCount === 0) {
-      return res.status(404).json({ error: 'Video not found' })
-    }
     
     res.json({ 
       success: true,
