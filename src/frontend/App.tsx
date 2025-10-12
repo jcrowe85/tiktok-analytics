@@ -20,7 +20,17 @@ function App() {
 
   useEffect(() => {
     fetchData()
-  }, [])
+    
+    // Auto-refresh every 30 seconds if there are videos being analyzed
+    const interval = setInterval(() => {
+      // Only auto-refresh if there are videos without AI scores (being analyzed)
+      if (videos.some(v => !v.ai_scores)) {
+        fetchData()
+      }
+    }, 30000) // 30 seconds
+    
+    return () => clearInterval(interval)
+  }, [videos])
 
   const fetchData = async () => {
     try {
