@@ -32,6 +32,9 @@ export function Navigation() {
               <Link
                 key={item.path}
                 to={item.path}
+                onClick={(e) => {
+                  console.log('Navigation clicked:', item.path)
+                }}
                 className={`
                   px-3 py-2 sm:px-4 sm:py-2 rounded-lg transition-all flex items-center gap-2
                   ${isActive(item.path)
