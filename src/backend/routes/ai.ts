@@ -182,14 +182,40 @@ router.post('/reprocess/:videoId', async (req, res) => {
     
     // Add to queue for processing
     console.log(`🔄 Re-processing video ${videoId} with URL: ${videoUrl}`)
-    await addVideoForAnalysis(videoId, videoUrl)
-    console.log(`✅ Video ${videoId} queued for re-analysis`)
     
-    res.json({ 
-      message: 'Video queued for reprocessing',
-      videoId,
-      status: 'queued'
-    })
+    try {
+      await addVideoForAnalysis(videoId, videoUrl)
+      console.log(`✅ Video ${videoId} queued for re-analysis`)
+      
+      res.json({ 
+        message: 'Video queued for reprocessing',
+        videoId,
+        status: 'queued'
+      })
+    } catch (error) {
+      console.log(`⚠️ Queue unavailable, running analysis directly: ${error}`)
+      
+      // If queue is unavailable, run analysis directly
+      try {
+        const { analyzeVideo } = await import('../ai/pipeline.ts')
+        const analysisResult = await analyzeVideo(videoId, videoUrl)
+        
+        if (analysisResult && analysisResult.status === 'completed') {
+          console.log(`✅ Direct re-analysis completed for video ${videoId}`)
+          res.json({ 
+            message: 'Video re-analyzed successfully',
+            videoId,
+            status: 'completed',
+            scores: analysisResult.scores
+          })
+        } else {
+          throw new Error('Analysis failed to complete')
+        }
+      } catch (analysisError) {
+        console.error(`❌ Direct re-analysis failed for video ${videoId}:`, analysisError)
+        res.status(500).json({ error: 'Failed to reprocess video - both queue and direct analysis failed' })
+      }
+    }
   } catch (error) {
     console.error('❌ Error reprocessing video:', error)
     res.status(500).json({ error: 'Failed to reprocess video' })

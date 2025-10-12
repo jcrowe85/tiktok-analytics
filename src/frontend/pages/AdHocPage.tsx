@@ -296,6 +296,7 @@ function AdHocPage() {
                   hasActiveFilters={() => false}
                   selectedVideo={selectedVideo}
                   setSelectedVideo={setSelectedVideo}
+                  onVideoUpdate={loadAdHocAnalyses}
                 />
               </>
             )}

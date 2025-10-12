@@ -12,6 +12,7 @@ interface VideoTableProps {
   hasActiveFilters: () => boolean
   selectedVideo?: VideoMetrics | null
   setSelectedVideo?: (video: VideoMetrics | null) => void
+  onVideoUpdate?: () => void // Callback to refresh video list when a video is updated
 }
 
 type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h' | 'ai_overall_score' | 'ai_pass' | 'ai_revise' | 'ai_reshoot'
@@ -27,7 +28,7 @@ const scoreTooltips: Record<string, string> = {
   'Brand Fit': 'How well does it align with brand values?',
 }
 
-function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, selectedVideo: externalSelectedVideo, setSelectedVideo: externalSetSelectedVideo }: VideoTableProps) {
+function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, selectedVideo: externalSelectedVideo, setSelectedVideo: externalSetSelectedVideo, onVideoUpdate }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [internalSelectedVideo, setInternalSelectedVideo] = useState<VideoMetrics | null>(null)
@@ -38,10 +39,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
   // const [captionExpanded, setCaptionExpanded] = useState(false) // Unused
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showReanalyzeConfirm, setShowReanalyzeConfirm] = useState(false)
+  const [videoToReanalyze, setVideoToReanalyze] = useState<VideoMetrics | null>(null)
 
   // Prevent body scroll when modal is open
   useEffect(() => {
-    if (selectedVideo || showDeleteConfirm) {
+    if (selectedVideo || showDeleteConfirm || showReanalyzeConfirm) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = 'unset'
@@ -142,17 +145,22 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
     const diffMonths = Math.floor(diffDays / 30)
     const diffYears = Math.floor(diffDays / 365)
     
-    // Debug logging for timezone issues
+    // Debug logging for timezone issues - only log once per video to reduce spam
     const actualDiff = now.getTime() - date.getTime()
     if (actualDiff < 0) {
-      console.warn('Future timestamp detected (showing absolute time):', {
-        iso,
-        parsedDate: date.toISOString(),
-        now: now.toISOString(),
-        actualDiffMs: actualDiff,
-        actualDiffHours: Math.floor(actualDiff / (1000 * 60 * 60)),
-        showingAbsoluteTime: true
-      })
+      // Only log this warning once per video to avoid spam
+      const warningKey = `future_timestamp_${iso}`
+      if (!sessionStorage.getItem(warningKey)) {
+        console.warn('Future timestamp detected (showing absolute time):', {
+          iso,
+          parsedDate: date.toISOString(),
+          now: now.toISOString(),
+          actualDiffMs: actualDiff,
+          actualDiffHours: Math.floor(actualDiff / (1000 * 60 * 60)),
+          showingAbsoluteTime: true
+        })
+        sessionStorage.setItem(warningKey, 'true')
+      }
     }
     
     if (diffYears > 0) {
@@ -210,32 +218,31 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
   }
 
   const handleReanalyze = async (video: VideoMetrics) => {
-    // Show confirmation dialog with cost warning
-    const confirmed = window.confirm(
-      `⚠️ RE-ANALYZE WARNING\n\n` +
-      `This video was already analyzed ${video.ai_processed_at ? formatAnalysisTime(video.ai_processed_at) : 'previously'}.\n\n` +
-      `Re-analyzing will:\n` +
-      `• Use OpenAI API credits (~$0.06)\n` +
-      `• Take 30-60 seconds to complete\n` +
-      `• Overwrite existing analysis\n\n` +
-      `⚠️ Only re-analyze if you have a specific reason (e.g., video content changed, testing improvements).\n\n` +
-      `Do you want to continue?`
-    )
+    // Show custom confirmation modal
+    setVideoToReanalyze(video)
+    setShowReanalyzeConfirm(true)
+  }
 
-    if (!confirmed) {
-      return
-    }
+  const cancelReanalyze = () => {
+    setShowReanalyzeConfirm(false)
+    setVideoToReanalyze(null)
+  }
+
+  const confirmReanalyze = async () => {
+    if (!videoToReanalyze) return
+    
+    setShowReanalyzeConfirm(false)
 
     setReanalyzing(true)
 
     try {
-      const response = await fetch(`/api/ai/reprocess/${video.id}`, {
+      const response = await fetch(`/api/ai/reprocess/${videoToReanalyze.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          videoUrl: video.share_url 
+          videoUrl: videoToReanalyze.share_url 
         }),
       })
 
@@ -255,20 +262,24 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
           const statusData = await statusResponse.json()
           
           if (statusData.success) {
-            const updatedVideo = statusData.data.find((v: any) => v.id === video.id)
-            console.log(`🔍 Checking video ${video.id}:`, {
-              found: !!updatedVideo,
-              oldProcessedAt: video.ai_processed_at,
-              newProcessedAt: updatedVideo?.ai_processed_at,
-              hasAIScores: !!updatedVideo?.ai_scores,
-              hasVisualScores: !!updatedVideo?.ai_visual_scores,
-              hasFindings: !!updatedVideo?.ai_findings
-            })
+            const updatedVideo = statusData.data.find((v: any) => v.id === videoToReanalyze.id)
+            
+            // Only log detailed info every 5th attempt to reduce spam
+            if (attempts % 5 === 0) {
+              console.log(`🔍 Checking video ${videoToReanalyze.id} (attempt ${attempts}/${maxAttempts}):`, {
+                found: !!updatedVideo,
+                oldProcessedAt: videoToReanalyze.ai_processed_at,
+                newProcessedAt: updatedVideo?.ai_processed_at,
+                hasAIScores: !!updatedVideo?.ai_scores,
+                hasVisualScores: !!updatedVideo?.ai_visual_scores,
+                hasFindings: !!updatedVideo?.ai_findings
+              })
+            }
             
             // Check if analysis completed (must have AI scores AND timestamp changed)
             const hasNewAnalysis = updatedVideo && 
               updatedVideo.ai_processed_at && 
-              updatedVideo.ai_processed_at !== video.ai_processed_at &&
+              updatedVideo.ai_processed_at !== videoToReanalyze.ai_processed_at &&
               updatedVideo.ai_scores && 
               updatedVideo.ai_visual_scores
             
@@ -277,13 +288,20 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
               console.log('🔄 Re-analysis complete! Updating modal with new data:', updatedVideo)
               setReanalyzing(false)
               setSelectedVideo(updatedVideo)
+              
+              // Notify parent component to refresh video list
+              if (onVideoUpdate) {
+                onVideoUpdate()
+              }
               return
             }
           }
           
           attempts++
           if (attempts < maxAttempts) {
-            setTimeout(checkStatus, 5000)
+            // Increase polling interval gradually to reduce load
+            const delay = Math.min(5000 + (attempts * 1000), 15000)
+            setTimeout(checkStatus, delay)
           } else {
             // Timeout - stop loading and show error
             console.error('⏰ Re-analysis timeout - no completion detected after 2 minutes')
@@ -292,7 +310,13 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
           }
         } catch (error) {
           console.error('Status check error:', error)
-          setTimeout(checkStatus, 5000)
+          attempts++
+          if (attempts < maxAttempts) {
+            setTimeout(checkStatus, 5000)
+          } else {
+            setReanalyzing(false)
+            alert('⚠️ Re-analysis failed due to network errors. Please try again.')
+          }
         }
       }
       
@@ -1064,6 +1088,97 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
             </div>
           </div>
         </div>
+      )}
+
+      {/* Re-analyze Confirmation Modal */}
+      {showReanalyzeConfirm && videoToReanalyze && createPortal(
+        <div 
+          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ zIndex: 1000000 }}
+        >
+          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-white/10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-yellow-500/20 rounded-lg flex items-center justify-center">
+                  <svg className="w-5 h-5 text-yellow-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Re-analyze Video</h3>
+                  <p className="text-white/60 text-sm">This will overwrite existing analysis with new results</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Content */}
+            <div className="px-6 py-4">
+              <div className="mb-6">
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
+                  <p className="text-yellow-400 text-sm font-medium mb-2">
+                    📊 This video was analyzed {videoToReanalyze.ai_processed_at ? formatAnalysisTime(videoToReanalyze.ai_processed_at) : 'previously'}
+                  </p>
+                  <p className="text-white/80 text-sm">
+                    Re-analyzing will overwrite all existing AI scores and findings with new analysis.
+                  </p>
+                </div>
+
+                <div className="space-y-3">
+                  <h4 className="text-white font-medium text-sm">Re-analyzing will:</h4>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-5 h-5 bg-purple-500/20 rounded flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <span className="text-white/80">Take 30-60 seconds to complete</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-5 h-5 bg-orange-500/20 rounded flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                        </svg>
+                      </div>
+                      <span className="text-white/80">Overwrite existing analysis</span>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                      <div className="w-5 h-5 bg-blue-500/20 rounded flex items-center justify-center flex-shrink-0">
+                        <svg className="w-3 h-3 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </div>
+                      <span className="text-white/80">Use improved AI scoring model</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                  <p className="text-blue-400 text-xs">
+                    💡 <strong>Tip:</strong> Re-analyze when you want updated scores with the latest AI models or if the video content has changed.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={cancelReanalyze}
+                  className="flex-1 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmReanalyze}
+                  className="flex-1 px-4 py-2.5 bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-700 hover:to-orange-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-yellow-500/25"
+                >
+                  Re-analyze Video
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
       )}
     </>
   )

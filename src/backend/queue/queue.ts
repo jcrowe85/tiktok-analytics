@@ -166,7 +166,7 @@ export const staticAnalysisWorker = redisAvailable ? new Worker<JobData>(
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
   if (!redisAvailable || !aiAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping queue addition for video', videoId)
-    return
+    throw new Error('Redis queue unavailable')
   }
   
   const contentHash = `hash_${videoId}_${Date.now()}` // TODO: Implement proper content hashing
@@ -188,7 +188,7 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
 export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
   if (!redisAvailable || !aiAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping static content queue addition for video', videoId)
-    return
+    throw new Error('Redis queue unavailable')
   }
   
   const contentHash = `hash_${videoId}_${Date.now()}`
