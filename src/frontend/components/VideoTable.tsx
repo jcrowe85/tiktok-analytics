@@ -119,26 +119,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     }
   }
 
-  const getContentTypeLabel = (video: VideoMetrics) => {
-    // Check if this is static content or carousel
-    if (video.duration === 0 || !video.duration) {
-      // For now, we'll detect carousels by checking if there are multiple images
-      // This is a simple heuristic - we could improve this with more sophisticated detection
-      const caption = video.caption?.toLowerCase() || ''
-      
-      // Check for carousel indicators in caption
-      if (caption.includes('swipe') || caption.includes('carousel') || caption.includes('multiple') || 
-          caption.includes('part 1') || caption.includes('part 2') || caption.includes('1/') || caption.includes('2/')) {
-        return 'Carousel'
-      }
-      
-      return 'Static'
-    }
-    
-    // For videos with duration > 0, show "Video" as pending label
-    return 'Video'
-  }
-
   const truncate = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
@@ -228,7 +208,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         </div>
                       ) : (
                         <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                          ⏳ {getContentTypeLabel(video)}
+                          ⏳ Pending
                         </div>
                       )}
                       
