@@ -11,7 +11,13 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    // Initialize with proper mobile detection
+    if (typeof window !== 'undefined') {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
   
   // Detect mobile vs desktop
   useEffect(() => {
@@ -21,6 +27,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
       setIsMobile(mobile);
     };
     
+    // Run immediately and on resize
     checkIsMobile();
     window.addEventListener('resize', checkIsMobile);
     
@@ -263,7 +270,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
           fixed top-0 left-0 h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 z-40 transform transition-all duration-300 ease-in-out
           ${sidebarCollapsed ? 'w-16' : 'w-64 lg:w-72'}
         `}>
-          {/* Debug: Desktop sidebar rendered */}
+          {/* Debug: Desktop sidebar rendered - isMobile: {isMobile.toString()}, width: {typeof window !== 'undefined' ? window.innerWidth : 'unknown'} */}
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className={`flex items-center justify-between p-6 border-b border-white/10 ${sidebarCollapsed ? 'px-3' : ''}`}>
