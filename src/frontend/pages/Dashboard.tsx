@@ -61,16 +61,19 @@ function Dashboard() {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
       const data = await response.json()
-      setVideos(data)
+      // Ensure data is an array
+      setVideos(Array.isArray(data) ? data : [])
     } catch (err) {
+      console.error('Failed to fetch data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
+      setVideos([]) // Set empty array on error
     } finally {
       setLoading(false)
     }
   }
 
   // Apply all filters
-  const filteredVideos = videos.filter((video) => {
+  const filteredVideos = (videos || []).filter((video) => {
     // Search text filter
     if (filters.searchText) {
       const searchLower = filters.searchText.toLowerCase()
