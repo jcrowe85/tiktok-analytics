@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo } from 'react-icons/fi'
+import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiCheck, FiAlertTriangle } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 import { VideoThumbnail } from './VideoThumbnail'
 // import fleurLogo from '../../assets/logo.jpg' // Unused for now
@@ -126,6 +126,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   }
 
   const [reanalyzing, setReanalyzing] = useState(false)
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null)
+
+  const showToast = (type: 'success' | 'error' | 'warning', message: string) => {
+    setToast({ type, message })
+    setTimeout(() => setToast(null), 5000)
+  }
 
   const handleReanalyze = async (video: VideoMetrics) => {
     // Show confirmation dialog with cost warning
@@ -899,12 +905,15 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                   throw new Error(data.error || 'Failed to delete video')
                                 }
 
+                                // Show success message
+                                showToast('success', 'Video deleted successfully!')
+                                
                                 // Close modal and refresh the page to show updated video list
                                 setSelectedVideo(null)
-                                window.location.reload()
+                                setTimeout(() => window.location.reload(), 1000)
                               } catch (error) {
                                 console.error('Delete error:', error)
-                                alert(`❌ Failed to delete video:\n\n${error instanceof Error ? error.message : 'Unknown error'}`)
+                                showToast('error', `Failed to delete video: ${error instanceof Error ? error.message : 'Unknown error'}`)
                               }
                             }
                           }}
@@ -918,6 +927,28 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Toast Notification */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
+          <div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm border ${
+            toast.type === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+            toast.type === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
+            'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
+          }`}>
+            {toast.type === 'success' && <FiCheck className="w-5 h-5" />}
+            {toast.type === 'error' && <FiAlertTriangle className="w-5 h-5" />}
+            {toast.type === 'warning' && <FiAlertTriangle className="w-5 h-5" />}
+            <span className="font-medium">{toast.message}</span>
+            <button
+              onClick={() => setToast(null)}
+              className="ml-2 text-white/60 hover:text-white/80 transition-colors"
+            >
+              <FiX className="w-4 h-4" />
+            </button>
           </div>
         </div>
       )}
