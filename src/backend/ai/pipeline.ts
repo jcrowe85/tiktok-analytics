@@ -403,6 +403,9 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
       }
     }
     
+    // Save the analysis result to database
+    await saveAnalysisResult(result)
+    
     console.log(`✅ Static content analysis completed for video: ${videoId}`)
     return result
     
