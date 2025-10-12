@@ -208,7 +208,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         </div>
                       ) : (
                         <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1.5">
-                          <span className="inline-block animate-spin">🔄</span>
+                          <div className="relative w-3 h-3">
+                            <div className="absolute inset-0 w-3 h-3 border-2 border-blue-400/20 rounded-full animate-spin border-t-blue-400"></div>
+                          </div>
                           <span>Analyzing</span>
                         </div>
                       )}
