@@ -43,7 +43,7 @@ app.get('/api/data', async (_req, res) => {
     // Get all videos from database (fresh data)
     const videos = await executeQuery(`
       SELECT 
-        id, username, caption, video_description, hashtags, posted_at_iso, create_time,
+        id, caption, video_description, hashtags, posted_at_iso, create_time,
         duration, view_count, like_count, comment_count, share_count, 
         engagement_rate, like_rate, comment_rate, share_rate, views_24h, velocity_24h,
         share_url, embed_link, cover_image_url, video_title, author_username, 
@@ -97,6 +97,8 @@ app.get('/api/data', async (_req, res) => {
       }
       return {
         ...video,
+        // Add username fallback for compatibility
+        username: video.author_username || 'unknown',
         ...(aiData || {})
       }
     });
