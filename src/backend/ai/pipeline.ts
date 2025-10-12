@@ -361,7 +361,7 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
         visual_aesthetics: analysis.visual_aesthetics,
         composition: analysis.composition,
         motion_dynamics: 0, // No motion in static content
-        pattern_interrupt: analysis.pattern_interrupt,
+        pattern_interrupt: analysis.pattern_interrupt_score,
         text_legibility: analysis.text_legibility,
         text_timing_fit: analysis.text_timing_fit,
         emotion_score: analysis.emotion_score,
@@ -377,7 +377,7 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
         visual_subjects: analysis.visual_subjects,
         composition_tags: analysis.composition_tags,
         emotion_tags: analysis.emotion_tags,
-        pattern_interrupt: analysis.pattern_interrupt,
+        pattern_interrupt: analysis.pattern_interrupt_tags,
         shot_types: ['static']
       },
       findings: {
@@ -449,7 +449,7 @@ async function analyzeStaticContentWithLLM(content: string): Promise<{
   silent_comprehension: number
   visual_aesthetics: number
   composition: number
-  pattern_interrupt: number
+  pattern_interrupt_score: number
   text_legibility: number
   text_timing_fit: number
   emotion_score: number
@@ -462,7 +462,7 @@ async function analyzeStaticContentWithLLM(content: string): Promise<{
   visual_subjects: string[]
   composition_tags: string[]
   emotion_tags: string[]
-  pattern_interrupt: string[]
+  pattern_interrupt_tags: string[]
   hook_verdict: string
   depth_verdict: string
   retention_ops: string[]
@@ -480,7 +480,7 @@ ${content}
 
 Please analyze this static content and provide:
 1. Scores (0-10 integers) for: hook_strength, depth, clarity, pacing, cta, brand_fit, overall_100
-2. Visual scores (0-10 integers) for: thumbstop_prob, first_frame_strength, silent_comprehension, visual_aesthetics, composition, pattern_interrupt, text_legibility, text_timing_fit, emotion_score, save_share_trigger, trend_alignment, cultural_resonance
+2. Visual scores (0-10 integers) for: thumbstop_prob, first_frame_strength, silent_comprehension, visual_aesthetics, composition, pattern_interrupt_score, text_legibility, text_timing_fit, emotion_score, save_share_trigger, trend_alignment, cultural_resonance
 3. Classifiers and tags
 4. Key findings and verdicts
 5. Actionable suggestions for improvement
@@ -499,7 +499,7 @@ Respond in this exact JSON format:
   "silent_comprehension": 8,
   "visual_aesthetics": 7,
   "composition": 6,
-  "pattern_interrupt": 5,
+  "pattern_interrupt_score": 5,
   "text_legibility": 8,
   "text_timing_fit": 6,
   "emotion_score": 7,
@@ -512,7 +512,7 @@ Respond in this exact JSON format:
   "visual_subjects": ["product", "text", "brand"],
   "composition_tags": ["close-up", "text-overlay"],
   "emotion_tags": ["trust", "confidence"],
-  "pattern_interrupt": ["product-focus"],
+  "pattern_interrupt_tags": ["product-focus"],
   "hook_verdict": "Strong product focus with clear benefits",
   "depth_verdict": "Good product information but could use more storytelling",
   "retention_ops": ["Add before/after", "Include testimonials"],
@@ -554,7 +554,7 @@ Respond in this exact JSON format:
       silent_comprehension: 5,
       visual_aesthetics: 5,
       composition: 5,
-      pattern_interrupt: 5,
+      pattern_interrupt_score: 5,
       text_legibility: 5,
       text_timing_fit: 5,
       emotion_score: 5,
@@ -567,7 +567,7 @@ Respond in this exact JSON format:
       visual_subjects: [],
       composition_tags: [],
       emotion_tags: [],
-      pattern_interrupt: [],
+      pattern_interrupt_tags: [],
       hook_verdict: 'Analysis failed - fallback scores',
       depth_verdict: 'Analysis failed - fallback scores',
       retention_ops: [],
