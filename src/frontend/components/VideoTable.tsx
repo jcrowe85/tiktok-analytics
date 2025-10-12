@@ -477,9 +477,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         }).map(([label, score]) => {
                           const tooltipId = `${video.id}-${label}`
                           return (
-                            <div key={label} className="flex items-center justify-between gap-3">
+                            <div key={label} className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1 relative group/tooltip">
-                                <span className="text-[11px] md:text-xs text-white/60 font-medium">{label}</span>
+                                <span className="text-[11px] md:text-xs text-white/70 font-medium">{label}</span>
                                 <div 
                                   className="cursor-help"
                                   onMouseEnter={() => setHoveredTooltip(tooltipId)}
@@ -496,8 +496,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                   </div>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-20 md:w-24 h-2.5 md:h-2 bg-white/20 rounded-full overflow-hidden">
+                              <div className="flex items-center gap-1.5">
+                                <div className="w-16 md:w-18 h-1.5 bg-white/15 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full transition-all duration-500 ease-out ${
                                       score >= 7 ? 'bg-green-400' :
@@ -507,7 +507,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                     style={{ width: `${(score / 10) * 100}%` }}
                                   />
                                 </div>
-                                <span className="text-xs md:text-sm font-bold text-white/90 w-6 text-right tabular-nums">
+                                <span className="text-[11px] md:text-xs font-bold text-white/90 w-4 text-right tabular-nums">
                                   {score}
                                 </span>
                               </div>
