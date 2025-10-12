@@ -73,6 +73,7 @@ function AdHocPage() {
 
   const handleAnalysisComplete = () => {
     // Reload analyses after new one is added
+    console.log('🔄 Reloading analyses after completion...')
     loadAdHocAnalyses()
   }
 
@@ -196,8 +197,12 @@ function AdHocPage() {
       {showAdHocAnalysis && (
         <AdHocAnalysis 
           onClose={() => {
+            console.log('🚪 Closing modal...')
             setShowAdHocAnalysis(false)
-            handleAnalysisComplete()
+            // Small delay to ensure localStorage is saved
+            setTimeout(() => {
+              handleAnalysisComplete()
+            }, 100)
           }} 
         />
       )}
