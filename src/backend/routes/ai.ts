@@ -1,8 +1,25 @@
 import express from 'express'
 import { addVideoForAnalysis, getQueueStats } from '../queue/queue.ts'
 import { executeQuery } from '../database/connection.ts'
+import { getRapidApiStatus } from '../utils/getVideoUrl.ts'
 
 const router = express.Router()
+
+// Get system status including RapidAPI circuit breaker
+router.get('/status', async (req, res) => {
+  try {
+    const queueStats = await getQueueStats()
+    const rapidApiStatus = getRapidApiStatus()
+    
+    res.json({
+      queue: queueStats,
+      rapidApi: rapidApiStatus
+    })
+  } catch (error) {
+    console.error('❌ Error getting system status:', error)
+    res.status(500).json({ error: 'Failed to get system status' })
+  }
+})
 
 // Get AI analysis status for a video
 router.get('/analysis/:videoId', async (req, res) => {
