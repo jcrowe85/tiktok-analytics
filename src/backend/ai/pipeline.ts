@@ -80,7 +80,7 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
   
   try {
     // Ensure video exists in database (insert if not exists)
-    await ensureVideoExists(videoId, videoUrl)
+    await ensureVideoExists(videoId, shareUrl)
     
     // Update status to processing
     await updateAnalysisStatus(videoId, 'processing')
@@ -236,7 +236,7 @@ function generateContentHash(transcript: string, ocrText: string): string {
 }
 
 // Ensure video exists in videos table
-async function ensureVideoExists(videoId: string, videoUrl?: string): Promise<void> {
+async function ensureVideoExists(videoId: string, videoUrl?: string | null): Promise<void> {
   await executeQuery(`
     INSERT INTO videos (id, posted_at_iso, caption, duration, view_count, like_count, comment_count, share_count, engagement_rate, hashtags, share_url)
     VALUES ($1, CURRENT_TIMESTAMP, '', 0, 0, 0, 0, 0, 0, '{}', $2)
