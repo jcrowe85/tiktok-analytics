@@ -177,6 +177,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
             
             if (updatedVideo && updatedVideo.ai_processed_at !== video.ai_processed_at) {
               // Analysis complete! Update modal with new data
+              console.log('🔄 Re-analysis complete! Updating modal with new data:', updatedVideo)
               setReanalyzing(false)
               setSelectedVideo(updatedVideo)
               return
