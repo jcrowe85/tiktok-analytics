@@ -622,7 +622,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           <div className="flex justify-between items-center">
                             <span className="text-white/60 text-sm">Likes</span>
                             <span className="text-white font-bold">
-                              {selectedVideo.like_count >= 1000 
+                              {selectedVideo.like_count >= 1000000 
+                                ? `${(selectedVideo.like_count / 1000000).toFixed(1)}M`
+                                : selectedVideo.like_count >= 1000 
                                 ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
                                 : selectedVideo.like_count.toLocaleString()}
                             </span>
@@ -630,7 +632,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           <div className="flex justify-between items-center">
                             <span className="text-white/60 text-sm">Comments</span>
                             <span className="text-white font-bold">
-                              {selectedVideo.comment_count >= 1000 
+                              {selectedVideo.comment_count >= 1000000 
+                                ? `${(selectedVideo.comment_count / 1000000).toFixed(1)}M`
+                                : selectedVideo.comment_count >= 1000 
                                 ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
                                 : selectedVideo.comment_count.toLocaleString()}
                             </span>
@@ -638,7 +642,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           <div className="flex justify-between items-center">
                             <span className="text-white/60 text-sm">Shares</span>
                             <span className="text-white font-bold">
-                              {selectedVideo.share_count >= 1000 
+                              {selectedVideo.share_count >= 1000000 
+                                ? `${(selectedVideo.share_count / 1000000).toFixed(1)}M`
+                                : selectedVideo.share_count >= 1000 
                                 ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
                                 : selectedVideo.share_count.toLocaleString()}
                             </span>
