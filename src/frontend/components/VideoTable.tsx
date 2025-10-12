@@ -274,7 +274,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
       
       const checkStatus = async () => {
         try {
-          const statusResponse = await fetch('/api/data')
+          // Determine if this is an ad-hoc video by checking if onVideoUpdate callback exists
+          // (AdHocPage passes loadAdHocAnalyses as onVideoUpdate, regular pages don't)
+          const isAdHocVideo = !!onVideoUpdate
+          const endpoint = isAdHocVideo ? '/api/adhoc-analyses' : '/api/data'
+          
+          const statusResponse = await fetch(endpoint)
           const statusData = await statusResponse.json()
           
           if (statusData.success) {
@@ -282,13 +287,14 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
             
             // Only log detailed info every 5th attempt to reduce spam
             if (attempts % 5 === 0) {
-              console.log(`🔍 Checking video ${videoToReanalyze.id} (attempt ${attempts}/${maxAttempts}):`, {
+              console.log(`🔍 Checking video ${videoToReanalyze.id} (attempt ${attempts}/${maxAttempts}) via ${endpoint}:`, {
                 found: !!updatedVideo,
                 oldProcessedAt: videoToReanalyze.ai_processed_at,
                 newProcessedAt: updatedVideo?.ai_processed_at,
                 hasAIScores: !!updatedVideo?.ai_scores,
                 hasVisualScores: !!updatedVideo?.ai_visual_scores,
-                hasFindings: !!updatedVideo?.ai_findings
+                hasFindings: !!updatedVideo?.ai_findings,
+                isAdHoc: isAdHocVideo
               })
             }
             
