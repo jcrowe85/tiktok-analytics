@@ -59,6 +59,7 @@ export interface VideoMetrics {
   };
   ai_fix_suggestions?: string[];
   ai_processed_at?: string;
+  is_adhoc?: boolean; // Flag to distinguish ad-hoc videos from regular videos
 }
 
 export interface Filters {

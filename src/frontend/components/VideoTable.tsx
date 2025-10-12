@@ -274,9 +274,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
       
       const checkStatus = async () => {
         try {
-          // Determine if this is an ad-hoc video by checking if onVideoUpdate callback exists
-          // (AdHocPage passes loadAdHocAnalyses as onVideoUpdate, regular pages don't)
-          const isAdHocVideo = !!onVideoUpdate
+          // Determine if this is an ad-hoc video by checking if the video has is_adhoc flag
+          // Ad-hoc videos are stored in database with is_adhoc=true, regular videos are from JSON
+          const isAdHocVideo = !!videoToReanalyze.is_adhoc
           const endpoint = isAdHocVideo ? '/api/adhoc-analyses' : '/api/data'
           
           const statusResponse = await fetch(endpoint)
@@ -294,7 +294,19 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                 hasAIScores: !!updatedVideo?.ai_scores,
                 hasVisualScores: !!updatedVideo?.ai_visual_scores,
                 hasFindings: !!updatedVideo?.ai_findings,
-                isAdHoc: isAdHocVideo
+                isAdHoc: isAdHocVideo,
+                totalVideosInResponse: statusData.data?.length || 0,
+                videoIdsInResponse: statusData.data?.map((v: any) => v.id).slice(0, 5) || []
+              })
+            }
+            
+            // Log on first attempt to see what we're working with
+            if (attempts === 0) {
+              console.log(`📊 First check - API response structure:`, {
+                success: statusData.success,
+                dataLength: statusData.data?.length || 0,
+                lookingFor: videoToReanalyze.id,
+                sampleVideoIds: statusData.data?.slice(0, 3).map((v: any) => ({ id: v.id, hasAI: !!v.scores })) || []
               })
             }
             
