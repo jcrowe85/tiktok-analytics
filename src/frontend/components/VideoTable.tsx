@@ -628,6 +628,70 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     </div>
                   </div>
 
+                  {/* Performance Metrics */}
+                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                    <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance Metrics</h4>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Views</span>
+                        <span className="text-white font-bold">
+                          {selectedVideo.view_count >= 1000000 
+                            ? `${(selectedVideo.view_count / 1000000).toFixed(1)}M`
+                            : selectedVideo.view_count >= 1000 
+                            ? `${(selectedVideo.view_count / 1000).toFixed(1)}K`
+                            : selectedVideo.view_count.toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Likes</span>
+                        <div className="text-right">
+                          <div className="text-white font-bold">
+                            {selectedVideo.like_count >= 1000 
+                              ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
+                              : selectedVideo.like_count.toLocaleString()}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            {(selectedVideo.like_rate * 100).toFixed(1)}% rate
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Comments</span>
+                        <div className="text-right">
+                          <div className="text-white font-bold">
+                            {selectedVideo.comment_count >= 1000 
+                              ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
+                              : selectedVideo.comment_count.toLocaleString()}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            {(selectedVideo.comment_rate * 100).toFixed(1)}% rate
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/60 text-sm">Shares</span>
+                        <div className="text-right">
+                          <div className="text-white font-bold">
+                            {selectedVideo.share_count >= 1000 
+                              ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
+                              : selectedVideo.share_count.toLocaleString()}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            {(selectedVideo.share_rate * 100).toFixed(1)}% rate
+                          </div>
+                        </div>
+                      </div>
+                      <div className="pt-3 border-t border-white/10">
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/60 text-sm font-medium">Engagement Rate</span>
+                          <span className="text-white font-bold text-lg">
+                            {(selectedVideo.engagement_rate * 100).toFixed(2)}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Caption */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
                     <h4 className="text-sm font-semibold text-white/70 mb-3">Caption</h4>
@@ -704,64 +768,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                 </div>
                               </div>
                             ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Performance Metrics */}
-                      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">📈 Performance Metrics</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-white mb-1">
-                              {selectedVideo.view_count >= 1000000 
-                                ? `${(selectedVideo.view_count / 1000000).toFixed(1)}M`
-                                : selectedVideo.view_count >= 1000 
-                                ? `${(selectedVideo.view_count / 1000).toFixed(1)}K`
-                                : selectedVideo.view_count.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-white/60">Views</div>
-                          </div>
-                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-white mb-1">
-                              {selectedVideo.like_count >= 1000 
-                                ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
-                                : selectedVideo.like_count.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-white/60">Likes</div>
-                            <div className="text-[10px] text-white/50 mt-1">
-                              {(selectedVideo.like_rate * 100).toFixed(1)}% rate
-                            </div>
-                          </div>
-                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-white mb-1">
-                              {selectedVideo.comment_count >= 1000 
-                                ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
-                                : selectedVideo.comment_count.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-white/60">Comments</div>
-                            <div className="text-[10px] text-white/50 mt-1">
-                              {(selectedVideo.comment_rate * 100).toFixed(1)}% rate
-                            </div>
-                          </div>
-                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
-                            <div className="text-2xl font-bold text-white mb-1">
-                              {selectedVideo.share_count >= 1000 
-                                ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
-                                : selectedVideo.share_count.toLocaleString()}
-                            </div>
-                            <div className="text-xs text-white/60">Shares</div>
-                            <div className="text-[10px] text-white/50 mt-1">
-                              {(selectedVideo.share_rate * 100).toFixed(1)}% rate
-                            </div>
-                          </div>
-                        </div>
-                        <div className="mt-4 pt-4 border-t border-white/10">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-white/60">Engagement Rate</span>
-                            <span className="text-lg font-bold text-white">
-                              {(selectedVideo.engagement_rate * 100).toFixed(2)}%
-                            </span>
                           </div>
                         </div>
                       </div>
