@@ -22,7 +22,7 @@ export function Navigation() {
   };
 
   return (
-    <nav className="glass-card border-0 border-b border-white/10 rounded-none">
+    <nav className="glass-card border-0 border-b border-white/10 rounded-none relative z-50">
       <div className="px-4 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16">
           {/* Logo/Brand */}

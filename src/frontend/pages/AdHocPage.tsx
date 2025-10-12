@@ -80,7 +80,7 @@ function AdHocPage() {
     <>
       <div className="min-h-screen relative">
         {/* Modern Background Pattern */}
-        <div className="fixed inset-0 opacity-30">
+        <div className="fixed inset-0 opacity-30 pointer-events-none">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-indigo-900/20"></div>
           <div className="absolute inset-0" style={{
             backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
