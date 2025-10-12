@@ -595,7 +595,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 {/* Left Column - Video & Basic Info */}
                 <div className="lg:col-span-1 space-y-4">
                   {/* Video Player/Thumbnail */}
-                  {selectedVideo.cover_image_url ? (
+                  {selectedVideo.cover_image_url && (
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
                       <div className="w-full h-[300px] rounded-lg overflow-hidden relative">
                         <VideoThumbnail 
@@ -605,7 +605,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         />
                       </div>
                     </div>
-                  ) : null}
+                  )}
 
                   {/* Performance Metrics */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
@@ -683,7 +683,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         <span className="text-white/60 text-sm">Duration</span>
                         <span className="text-white font-medium">{selectedVideo.duration}s</span>
                       </div>
-                      {selectedVideo.velocity_24h && (
+                      {selectedVideo.velocity_24h !== undefined && selectedVideo.velocity_24h !== null && (
                         <div className="flex justify-between items-center">
                           <span className="text-white/60 text-sm">24h Velocity</span>
                           <span className="text-white font-medium">{selectedVideo.velocity_24h.toFixed(0)}/hr</span>
