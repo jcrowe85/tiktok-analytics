@@ -303,6 +303,11 @@ async function saveAnalysisResult(result: AIAnalysisResult): Promise<void> {
 
 // Queue video for AI analysis
 export async function queueVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
+  if (!aiAnalysisQueue) {
+    console.log('⚠️ Redis queue unavailable, skipping queue addition for video', videoId)
+    return
+  }
+  
   const jobId = `ai_analysis_${videoId}_${Date.now()}`
   
   await aiAnalysisQueue.add('analyze-video', {
@@ -418,6 +423,11 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
 
 // Queue static content for analysis
 export async function queueStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
+  if (!aiAnalysisQueue) {
+    console.log('⚠️ Redis queue unavailable, skipping static content queue addition for video', videoId)
+    return
+  }
+  
   const jobId = `static_analysis_${videoId}_${Date.now()}`
   
   await aiAnalysisQueue.add('analyze-static', {

@@ -10,8 +10,6 @@ let redisAvailable = false;
 
 try {
   redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-    maxRetriesPerRequest: null,
-    retryDelayOnFailover: 100,
     maxRetriesPerRequest: 3,
     lazyConnect: true,
   });
@@ -27,7 +25,9 @@ try {
   });
 } catch (error) {
   redisAvailable = false;
-  console.log('⚠️  Redis connection failed:', error.message);
+  console.log('⚠️  Redis connection failed:', error instanceof Error ? error.message : String(error));
+  // Create a dummy Redis instance to prevent compilation errors
+  redis = new Redis({ lazyConnect: true, maxRetriesPerRequest: 0 });
 }
 
 // Queue configuration

@@ -68,7 +68,7 @@ app.get('/api/data', async (_req, res) => {
       `);
       console.log(`📊 Loaded ${aiAnalyses.length} AI analyses from database`)
     } catch (error) {
-      console.log(`⚠️  Database not available, using fallback data: ${error.message}`)
+      console.log(`⚠️  Database not available, using fallback data: ${error instanceof Error ? error.message : String(error)}`)
       // Use empty array as fallback
       aiAnalyses = [];
     }

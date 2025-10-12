@@ -66,7 +66,7 @@ async function getVideoMetadata(url: string) {
  * Get all ad-hoc analyses from database
  * GET /api/adhoc-analyses
  */
-router.get('/adhoc-analyses', async (req, res) => {
+router.get('/adhoc-analyses', async (_req, res) => {
   try {
     // Fetch ad-hoc videos with their AI analysis
     const result = await executeQuery(`
@@ -188,8 +188,8 @@ router.post('/analyze-url', async (req, res) => {
       videoData.staticData?.likeCount || 0,
       videoData.staticData?.commentCount || 0,
       videoData.staticData?.shareCount || 0,
-      videoData.staticData?.viewCount > 0 
-        ? ((videoData.staticData.likeCount + videoData.staticData.commentCount + videoData.staticData.shareCount) / videoData.staticData.viewCount)
+      (videoData.staticData?.viewCount && videoData.staticData.viewCount > 0) 
+        ? ((videoData.staticData.likeCount || 0) + (videoData.staticData.commentCount || 0) + (videoData.staticData.shareCount || 0)) / videoData.staticData.viewCount
         : 0
     ])
     console.log(`✅ Updated video with ad-hoc metadata and metrics`)

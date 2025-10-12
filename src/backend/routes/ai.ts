@@ -1,6 +1,6 @@
 import express from 'express'
 import { addVideoForAnalysis, getQueueStats } from '../queue/queue.ts'
-import { executeQuery } from '../database/connection.ts'
+import { executeQuery, executeQueryWithResult } from '../database/connection.ts'
 import { getRapidApiStatus, getVideoData } from '../utils/getVideoUrl.ts'
 import { analyzeVideo } from '../ai/pipeline.ts'
 import crypto from 'crypto'
@@ -269,7 +269,7 @@ router.delete('/video/:videoId', async (req, res) => {
     console.log(`✅ Deleted AI analysis data for video ${videoId}`)
     
     // Delete from videos table
-    const result = await executeQuery('DELETE FROM videos WHERE id = $1', [videoId])
+    const result = await executeQueryWithResult('DELETE FROM videos WHERE id = $1', [videoId])
     console.log(`✅ Deleted video ${videoId} from database`)
     
     if (result.rowCount === 0) {

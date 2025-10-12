@@ -42,6 +42,23 @@ export async function executeQuery<T = any>(
   }
 }
 
+// Execute a query and return full result (for operations that need rowCount)
+export async function executeQueryWithResult<T = any>(
+  text: string,
+  params?: any[]
+): Promise<{ rows: T[]; rowCount: number }> {
+  const client = await pool.connect()
+  try {
+    const result = await client.query(text, params)
+    return { rows: result.rows, rowCount: result.rowCount || 0 }
+  } catch (error) {
+    console.error('❌ Database query error:', error)
+    throw error
+  } finally {
+    client.release()
+  }
+}
+
 // Execute a transaction
 export async function executeTransaction<T>(
   callback: (client: PoolClient) => Promise<T>
