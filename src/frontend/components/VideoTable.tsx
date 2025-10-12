@@ -607,7 +607,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       
                       {/* Performance Metrics */}
                       <div className="pt-4 border-t border-white/10">
-                        <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance</h4>
+                        <h4 className="text-sm font-semibold text-white/70 mb-4">Performance</h4>
                         <div className="space-y-3">
                           <div className="flex justify-between items-center">
                             <span className="text-white/60 text-sm">Views</span>
@@ -664,7 +664,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
                   {/* Video Details */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-white/70 mb-3">📅 Details</h4>
+                    <h4 className="text-sm font-semibold text-white/70 mb-3">Details</h4>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <span className="text-white/60 text-sm">Posted</span>
@@ -742,7 +742,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
                         {/* Content Scores - Inline in same card */}
                         <div className="pt-4 border-t border-white/10">
-                          <h4 className="text-sm font-bold text-white/80 mb-3">📊 Content Breakdown</h4>
+                          <h4 className="text-sm font-bold text-white/80 mb-3">Content Breakdown</h4>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {Object.entries({
                               'Hook': selectedVideo.ai_scores.hook_strength,
@@ -766,7 +766,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Visual Scores with Progress Bars */}
                       {selectedVideo.ai_visual_scores && (
                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                          <h3 className="text-lg font-bold text-white mb-4">👁️ Visual Analysis</h3>
+                          <h3 className="text-lg font-bold text-white mb-4">Visual Analysis</h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {Object.entries({
                               'Thumbstop': selectedVideo.ai_visual_scores.thumbstop_prob,
@@ -808,7 +808,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Key Findings */}
                       {selectedVideo.ai_findings && (Object.values(selectedVideo.ai_findings).some((v: any) => v && v.trim())) && (
                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                          <h3 className="text-lg font-bold text-white mb-4">💡 Key Findings</h3>
+                          <h3 className="text-lg font-bold text-white mb-4">Key Findings</h3>
                           <div className="space-y-3">
                             {selectedVideo.ai_findings.hook_strength && (
                               <div>
@@ -835,7 +835,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Suggestions */}
                       {selectedVideo.ai_fix_suggestions && selectedVideo.ai_fix_suggestions.length > 0 && (
                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                          <h3 className="text-lg font-bold text-white mb-4">🔧 Suggestions</h3>
+                          <h3 className="text-lg font-bold text-white mb-4">Suggestions</h3>
                           <ul className="space-y-2">
                             {selectedVideo.ai_fix_suggestions.map((suggestion: string, idx: number) => (
                               <li key={idx} className="text-white/80 flex items-start gap-2">
