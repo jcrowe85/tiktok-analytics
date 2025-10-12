@@ -5,24 +5,38 @@ import type { VideoMetrics } from '../types'
 
 // Helper to convert ad-hoc analysis to VideoMetrics format
 function convertAdHocToVideo(analysis: any): VideoMetrics {
+  // Convert findings from the API format to VideoMetrics format
+  const convertedFindings = analysis.findings ? {
+    hook_strength: analysis.findings.hook_verdict || '',
+    depth: analysis.findings.depth_verdict || '',
+    clarity: '',
+    pacing: '',
+    cta: analysis.findings.cta_notes || '',
+    brand_fit: '',
+  } : undefined;
+
   return {
     id: analysis.videoId,
     caption: analysis.staticData?.videoTitle || 'Ad-Hoc Analysis',
     hashtags: [],
     posted_at_iso: analysis.processed_at,
     duration: 0,
+    create_time: Date.now(),
+    video_description: '',
     view_count: 0,
     like_count: 0,
     comment_count: 0,
     share_count: 0,
     engagement_rate: 0,
+    like_rate: 0,
+    comment_rate: 0,
+    share_rate: 0,
     velocity_24h: 0,
     share_url: analysis.url,
     cover_image_url: '',
     ai_scores: analysis.scores,
     ai_visual_scores: analysis.visual_scores,
-    ai_classifiers: analysis.classifiers,
-    ai_findings: analysis.findings,
+    ai_findings: convertedFindings,
     ai_fix_suggestions: analysis.fix_suggestions,
     ai_processed_at: analysis.processed_at,
   }
