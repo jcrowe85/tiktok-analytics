@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { TikTokClient } from './tiktokClient.js';
 import { enrichVideoWithKPIs, createSnapshot } from './kpis.js';
 import { writeCSV, writeJSON, loadSnapshots, appendSnapshots } from './persist.js';
-import { addVideoForAnalysis } from './queue/queue.js';
+import { addVideoForAnalysis, addStaticContentForAnalysis } from './queue/queue.js';
 import { executeQuery, upsertVideo } from './database/connection.js';
 
 dotenv.config();
@@ -103,22 +103,30 @@ async function runFetchJob(): Promise<void> {
     const analyzedVideoIds = new Set(existingAnalyses.map(row => row.video_id));
     
     for (const video of enrichedVideos) {
-      if (video.share_url) {
-        // Skip if already analyzed
-        if (analyzedVideoIds.has(video.id)) {
-          alreadyAnalyzedCount++;
-          continue;
-        }
-        
-        try {
-          await addVideoForAnalysis(video.id, video.share_url);
+      // Skip if already analyzed
+      if (analyzedVideoIds.has(video.id)) {
+        alreadyAnalyzedCount++;
+        continue;
+      }
+      
+      try {
+        // Check if this is static content or carousel (duration = 0)
+        if (video.duration === 0 || !video.duration) {
+          // Queue for static content analysis
+          await addStaticContentForAnalysis(video.id, video.caption, video.cover_image_url);
+          console.log(`   📸 Queued static content ${video.id} for analysis`);
           queuedCount++;
-        } catch (error) {
-          console.log(`   ⚠️  Failed to queue video ${video.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        } else if (video.share_url) {
+          // Queue for regular video analysis
+          await addVideoForAnalysis(video.id, video.share_url);
+          console.log(`   🎥 Queued video ${video.id} for analysis`);
+          queuedCount++;
+        } else {
+          console.log(`   ⚠️  Skipping video ${video.id}: No share_url available`);
           skippedCount++;
         }
-      } else {
-        console.log(`   ⚠️  Skipping video ${video.id}: No share_url available`);
+      } catch (error) {
+        console.log(`   ⚠️  Failed to queue video ${video.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
         skippedCount++;
       }
     }

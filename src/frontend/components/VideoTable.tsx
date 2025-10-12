@@ -119,6 +119,26 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     }
   }
 
+  const getContentTypeLabel = (video: VideoMetrics) => {
+    // Check if this is static content or carousel
+    if (video.duration === 0 || !video.duration) {
+      // For now, we'll detect carousels by checking if there are multiple images
+      // This is a simple heuristic - we could improve this with more sophisticated detection
+      const caption = video.caption?.toLowerCase() || ''
+      
+      // Check for carousel indicators in caption
+      if (caption.includes('swipe') || caption.includes('carousel') || caption.includes('multiple') || 
+          caption.includes('part 1') || caption.includes('part 2') || caption.includes('1/') || caption.includes('2/')) {
+        return '📸 Carousel'
+      }
+      
+      return '🖼️ Static'
+    }
+    
+    // For videos with duration > 0, show the date
+    return formatFullDate(video.posted_at_iso)
+  }
+
   const truncate = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
@@ -208,7 +228,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         </div>
                       ) : (
                         <div className="text-xs text-white/50 font-medium">
-                          {formatFullDate(video.posted_at_iso)}
+                          {getContentTypeLabel(video)}
                         </div>
                       )}
                       

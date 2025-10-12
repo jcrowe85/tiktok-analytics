@@ -87,6 +87,53 @@ export const aiAnalysisWorker = new Worker<JobData>(
   }
 )
 
+// Process static content analysis
+async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
+  const { videoId, caption, coverImageUrl } = job.data
+  
+  try {
+    console.log(`🚩 Processing static content analysis for video ${videoId}`)
+    
+    // Update job progress
+    await job.updateProgress(10)
+    
+    // Import the static content analysis pipeline
+    const { analyzeStaticContent } = await import('../ai/pipeline.ts')
+    
+    // Update job progress
+    await job.updateProgress(20)
+    
+    // Run the static content analysis pipeline
+    const result = await analyzeStaticContent(videoId, caption, coverImageUrl)
+    
+    // Update job progress
+    await job.updateProgress(100)
+    
+    console.log(`✅ Completed static content analysis for video ${videoId}`)
+    
+    return {
+      success: true,
+      videoId,
+      overallScore: result.scores.overall_100,
+      status: result.status,
+      processedAt: new Date().toISOString(),
+    }
+  } catch (error) {
+    console.error(`❌ Failed static content analysis for video ${videoId}:`, error)
+    throw error
+  }
+}
+
+// Worker for static content analysis queue
+export const staticAnalysisWorker = new Worker<JobData>(
+  'ai-analysis',
+  processStaticAnalysis,
+  {
+    connection: redis,
+    concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
+  }
+)
+
 // Queue management functions
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
   const contentHash = `hash_${videoId}_${Date.now()}` // TODO: Implement proper content hashing
@@ -103,6 +150,24 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
   })
   
   console.log(`📝 Added video ${videoId} to AI analysis queue`)
+}
+
+export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
+  const contentHash = `hash_${videoId}_${Date.now()}`
+  const rulesVersion = 1
+  
+  await aiAnalysisQueue.add('analyze-static', {
+    videoId,
+    caption,
+    coverImageUrl,
+    contentHash,
+    rulesVersion,
+  }, {
+    jobId: `static_${videoId}_${contentHash}_${rulesVersion}`, // Ensure idempotency
+    priority: 1,
+  })
+  
+  console.log(`📝 Added static content ${videoId} to AI analysis queue`)
 }
 
 export async function getQueueStats() {

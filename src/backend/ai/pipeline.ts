@@ -318,3 +318,122 @@ export async function queueVideoForAnalysis(videoId: string, videoUrl: string): 
   
   console.log(`📋 Queued video ${videoId} for AI analysis (job: ${jobId})`)
 }
+
+// Analyze static content or carousel using LLM
+export async function analyzeStaticContent(videoId: string, caption: string, coverImageUrl?: string): Promise<AIAnalysisResult> {
+  console.log(`🖼️ Starting static content analysis for video: ${videoId}`)
+  
+  try {
+    // Extract text from cover image if available
+    let imageText = ''
+    if (coverImageUrl) {
+      try {
+        imageText = await extractTextFromImage(coverImageUrl)
+        console.log(`   📝 Extracted text from image: ${imageText.length} characters`)
+      } catch (error) {
+        console.warn(`   ⚠️ Could not extract text from image:`, error)
+      }
+    }
+    
+    // Combine caption and image text for analysis
+    const combinedContent = `${caption}\n\nImage Text: ${imageText}`.trim()
+    
+    // Use LLM to analyze static content
+    const analysis = await analyzeContent(combinedContent, {
+      contentType: 'static',
+      includeVisualScores: !!coverImageUrl
+    })
+    
+    const result: AIAnalysisResult = {
+      videoId,
+      status: 'completed',
+      scores: {
+        hook_strength: analysis.hook_strength || 5,
+        depth: analysis.depth || 5,
+        clarity: analysis.clarity || 5,
+        pacing: analysis.pacing || 5,
+        cta: analysis.cta || 5,
+        brand_fit: analysis.brand_fit || 5,
+        overall_100: analysis.overall_100 || 50
+      },
+      visual_scores: {
+        thumbstop_prob: analysis.thumbstop_prob || 5,
+        first_frame_strength: analysis.first_frame_strength || 5,
+        silent_comprehension: analysis.silent_comprehension || 5,
+        visual_aesthetics: analysis.visual_aesthetics || 5,
+        composition: analysis.composition || 5,
+        motion_dynamics: 0, // No motion in static content
+        pattern_interrupt: analysis.pattern_interrupt || 5,
+        text_legibility: analysis.text_legibility || 5,
+        text_timing_fit: analysis.text_timing_fit || 5,
+        emotion_score: analysis.emotion_score || 5,
+        save_share_trigger: analysis.save_share_trigger || 5,
+        loopability: 0, // Static content doesn't loop
+        trend_alignment: analysis.trend_alignment || 5,
+        cultural_resonance: analysis.cultural_resonance || 5
+      },
+      classifiers: {
+        angle: analysis.angle || 'static',
+        hook_type: analysis.hook_type || ['text-based'],
+        content_types: analysis.content_types || ['static'],
+        visual_subjects: analysis.visual_subjects || [],
+        composition_tags: analysis.composition_tags || [],
+        emotion_tags: analysis.emotion_tags || [],
+        pattern_interrupt: analysis.pattern_interrupt || [],
+        shot_types: ['static']
+      },
+      findings: {
+        hook_verdict: analysis.hook_verdict || 'Text-based hook analyzed',
+        depth_verdict: analysis.depth_verdict || 'Static content depth assessed',
+        retention_ops: analysis.retention_ops || [],
+        engagement_ops: analysis.engagement_ops || [],
+        brand_alignment: analysis.brand_alignment || 'Content analyzed for brand fit',
+        trend_relevance: analysis.trend_relevance || 'Static content trend analysis'
+      },
+      fix_suggestions: analysis.fix_suggestions || [],
+      artifacts: {
+        transcription: '',
+        ocr_text: imageText,
+        keyframes: [],
+        audio_segments: []
+      },
+      processing_metadata: {
+        processed_at: new Date().toISOString(),
+        processing_time_ms: 0,
+        rules_version: 1,
+        asr_engine: 'none',
+        ocr_engine: 'google-vision',
+        vision_model: 'gpt-4-vision-preview',
+        llm_model: 'gpt-4',
+        content_hash: crypto.createHash('md5').update(combinedContent).digest('hex'),
+        detected_language: 'en'
+      }
+    }
+    
+    console.log(`✅ Static content analysis completed for video: ${videoId}`)
+    return result
+    
+  } catch (error) {
+    console.error(`❌ Static content analysis failed for video ${videoId}:`, error)
+    throw error
+  }
+}
+
+// Queue static content for analysis
+export async function queueStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
+  const jobId = `static_analysis_${videoId}_${Date.now()}`
+  
+  await aiAnalysisQueue.add('analyze-static', {
+    videoId,
+    caption,
+    coverImageUrl,
+    contentHash: `hash_${videoId}_${Date.now()}`,
+    rulesVersion: 1
+  }, {
+    jobId,
+    removeOnComplete: 10,
+    removeOnFail: 5
+  })
+  
+  console.log(`📋 Queued static content ${videoId} for AI analysis (job: ${jobId})`)
+}
