@@ -23,7 +23,14 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   useEffect(() => {
     const checkIsMobile = () => {
       const mobile = window.innerWidth < 768;
-      console.log('📱 Screen width:', window.innerWidth, 'isMobile:', mobile);
+      console.log('📱 Screen width:', window.innerWidth, 'isMobile:', mobile, 'sidebarOpen:', sidebarOpen);
+      
+      // If transitioning to mobile, ensure mobile sidebar is closed
+      if (mobile && sidebarOpen) {
+        console.log('🔧 Auto-closing mobile sidebar on resize to mobile');
+        setSidebarOpen(false);
+      }
+      
       setIsMobile(mobile);
     };
     
@@ -32,7 +39,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
     window.addEventListener('resize', checkIsMobile);
     
     return () => window.removeEventListener('resize', checkIsMobile);
-  }, []);
+  }, [sidebarOpen]); // Add sidebarOpen as dependency
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
@@ -146,6 +153,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
         ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         md:hidden
       `}>
+        {/* DEBUG: Mobile sidebar - sidebarOpen: {sidebarOpen.toString()}, isMobile: {isMobile.toString()} */}
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
