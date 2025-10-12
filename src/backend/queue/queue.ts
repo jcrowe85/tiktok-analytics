@@ -9,19 +9,34 @@ let redis: Redis | null = null;
 let redisAvailable = false;
 
 try {
+  console.log('🔧 Attempting Redis connection...');
   redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: 3,
-    lazyConnect: true,
+    lazyConnect: false, // Connect immediately
   });
   
   redis.on('connect', () => {
     redisAvailable = true;
-    console.log('✅ Redis connected');
+    console.log('✅ Redis connected successfully');
   });
   
   redis.on('error', (error) => {
     redisAvailable = false;
-    console.log('⚠️  Redis unavailable:', error.message);
+    console.log('⚠️  Redis error event:', error.message);
+  });
+  
+  redis.on('ready', () => {
+    redisAvailable = true;
+    console.log('✅ Redis ready');
+  });
+  
+  // Test connection immediately
+  redis.ping().then(() => {
+    redisAvailable = true;
+    console.log('✅ Redis ping successful');
+  }).catch((error) => {
+    redisAvailable = false;
+    console.log('⚠️  Redis ping failed:', error.message);
   });
 } catch (error) {
   redisAvailable = false;
@@ -39,19 +54,32 @@ export interface JobData {
   coverImageUrl?: string
 }
 
-// AI Analysis Queue (only created if Redis is available)
-export const aiAnalysisQueue = (redisAvailable && redis) ? new Queue<JobData>('ai-analysis', {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 10,
-    removeOnFail: 5,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-}) : null
+// AI Analysis Queue (created lazily when needed)
+let aiAnalysisQueue: Queue<JobData> | null = null;
+
+function getQueue(): Queue<JobData> | null {
+  if (!redisAvailable || !redis) {
+    return null;
+  }
+  
+  if (!aiAnalysisQueue) {
+    aiAnalysisQueue = new Queue<JobData>('ai-analysis', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 5,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    });
+    console.log('✅ AI Analysis Queue created');
+  }
+  
+  return aiAnalysisQueue;
+}
 
 // Job types
 export enum JobType {
@@ -162,7 +190,8 @@ export const staticAnalysisWorker = (redisAvailable && redis) ? new Worker<JobDa
 
 // Queue management functions
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
-  if (!redisAvailable || !aiAnalysisQueue) {
+  const queue = getQueue();
+  if (!queue) {
     console.log('⚠️  Redis unavailable, skipping queue addition for video', videoId)
     return
   }
@@ -170,7 +199,7 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
   const contentHash = `hash_${videoId}_${Date.now()}` // TODO: Implement proper content hashing
   const rulesVersion = 1
   
-  await aiAnalysisQueue.add('analyze-video', {
+  await queue.add('analyze-video', {
     videoId,
     videoUrl,
     contentHash,
@@ -184,7 +213,8 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
 }
 
 export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
-  if (!redisAvailable || !aiAnalysisQueue) {
+  const queue = getQueue();
+  if (!queue) {
     console.log('⚠️  Redis unavailable, skipping static content queue addition for video', videoId)
     return
   }
@@ -192,7 +222,7 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
   const contentHash = `hash_${videoId}_${Date.now()}`
   const rulesVersion = 1
   
-  await aiAnalysisQueue.add('analyze-static', {
+  await queue.add('analyze-static', {
     videoId,
     videoUrl: '', // Empty for static content
     caption,
@@ -208,7 +238,19 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
 }
 
 export async function getQueueStats() {
-  if (!redisAvailable || !aiAnalysisQueue) {
+  // Check if Redis is actually connected by trying a ping
+  if (redis) {
+    try {
+      await redis.ping();
+      redisAvailable = true;
+    } catch (error) {
+      redisAvailable = false;
+      console.log('⚠️  Redis ping failed in getQueueStats:', (error as Error).message);
+    }
+  }
+  
+  const queue = getQueue();
+  if (!queue) {
     return {
       waiting: 0,
       active: 0,
@@ -218,10 +260,10 @@ export async function getQueueStats() {
     }
   }
   
-  const waiting = await aiAnalysisQueue.getWaiting()
-  const active = await aiAnalysisQueue.getActive()
-  const completed = await aiAnalysisQueue.getCompleted()
-  const failed = await aiAnalysisQueue.getFailed()
+  const waiting = await queue.getWaiting()
+  const active = await queue.getActive()
+  const completed = await queue.getCompleted()
+  const failed = await queue.getFailed()
   
   return {
     waiting: waiting.length,
