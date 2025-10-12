@@ -220,8 +220,10 @@ export async function cleanupTempFiles(tempFiles: string[]): Promise<void> {
   
   // Try to remove temp directory
   try {
-    const tempDir = path.dirname(tempFiles[0])
-    await fs.rmdir(tempDir)
+    if (tempFiles.length > 0 && tempFiles[0]) {
+      const tempDir = path.dirname(tempFiles[0])
+      await fs.rmdir(tempDir)
+    }
   } catch (error) {
     console.warn(`⚠️ Failed to remove temp directory:`, error)
   }
