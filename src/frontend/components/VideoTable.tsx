@@ -30,6 +30,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
   const [captionExpanded, setCaptionExpanded] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -140,7 +141,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   }
 
   const [reanalyzing, setReanalyzing] = useState(false)
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
   const handleDeleteVideo = async () => {
