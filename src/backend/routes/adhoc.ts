@@ -218,7 +218,7 @@ router.post('/analyze-url', async (req, res) => {
       videoData.staticData?.commentCount || 0,
       videoData.staticData?.shareCount || 0,
       0, // engagement_rate (will be calculated)
-      JSON.stringify([]),
+      '{}',
       url,
       coverImageUrl,
       videoData.staticData?.videoTitle || oembedData.videoTitle || 'Ad-Hoc Video',
