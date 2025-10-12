@@ -15,8 +15,21 @@ function App() {
     hashtag: '',
     showTopMovers: false,
     aiQualityBand: 'all',
+    contentType: 'all',
   })
   const [showFilters, setShowFilters] = useState(false)
+
+  // Helper function to detect carousel content
+  const isCarousel = (caption: string): boolean => {
+    const lowerCaption = caption.toLowerCase()
+    return lowerCaption.includes('swipe') || 
+           lowerCaption.includes('carousel') || 
+           lowerCaption.includes('multiple') || 
+           lowerCaption.includes('part 1') || 
+           lowerCaption.includes('part 2') || 
+           lowerCaption.includes('1/') || 
+           lowerCaption.includes('2/')
+  }
 
   useEffect(() => {
     fetchData()
@@ -117,6 +130,20 @@ function App() {
       })
     }
 
+    // Content Type filter
+    if (filters.contentType !== 'all') {
+      filtered = filtered.filter(v => {
+        if (filters.contentType === 'video') {
+          return v.duration > 0 // Has actual video duration
+        } else if (filters.contentType === 'static') {
+          return v.duration === 0 && !isCarousel(v.caption)
+        } else if (filters.contentType === 'carousel') {
+          return v.duration === 0 && isCarousel(v.caption)
+        }
+        return true
+      })
+    }
+
     return filtered
   }
 
@@ -127,7 +154,8 @@ function App() {
            filters.durationBucket !== 'all' ||
            filters.hashtag !== '' ||
            filters.showTopMovers ||
-           filters.aiQualityBand !== 'all'
+           filters.aiQualityBand !== 'all' ||
+           filters.contentType !== 'all'
   }
 
   const filteredVideos = applyFilters(videos)

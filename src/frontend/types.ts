@@ -71,5 +71,6 @@ export interface Filters {
   hashtag: string;
   showTopMovers: boolean;
   aiQualityBand: 'all' | 'pass' | 'revise' | 'reshoot'; // Pass (80+), Revise (60-79), Reshoot (<60)
+  contentType: 'all' | 'video' | 'static' | 'carousel'; // Content type filter
 }
 

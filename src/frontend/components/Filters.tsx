@@ -20,6 +20,7 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
       hashtag: '',
       showTopMovers: false,
       aiQualityBand: 'all',
+      contentType: 'all',
     })
   }
 
@@ -30,7 +31,8 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
     filters.durationBucket !== 'all' ||
     filters.hashtag ||
     filters.showTopMovers ||
-    filters.aiQualityBand !== 'all'
+    filters.aiQualityBand !== 'all' ||
+    filters.contentType !== 'all'
 
   const modernInputClass = "px-4 py-3 modern-input text-white placeholder-white/50 transition-all text-sm font-medium"
   
@@ -109,6 +111,19 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
           <option value="pass">✅ Pass (80+)</option>
           <option value="revise">⚠️ Revise (60-79)</option>
           <option value="reshoot">❌ Reshoot (&lt;60)</option>
+        </select>
+
+        {/* Content Type */}
+        <select
+          value={filters.contentType}
+          onChange={(e) => updateFilter('contentType', e.target.value)}
+          className={`${modernInputClass} w-36`}
+          title="Filter by Content Type"
+        >
+          <option value="all">All Content</option>
+          <option value="video">🎥 Videos</option>
+          <option value="static">🖼️ Static</option>
+          <option value="carousel">📸 Carousels</option>
         </select>
 
         {/* Top Movers Toggle */}
