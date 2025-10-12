@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
+import { VideoThumbnail } from './VideoThumbnail'
 // import fleurLogo from '../../assets/logo.jpg' // Unused for now
 
 interface VideoTableProps {
@@ -306,31 +307,11 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         className="block w-full h-full"
                         title="Open video on TikTok"
                       >
-                        {video.cover_image_url ? (
-                          <img 
-                            src={video.cover_image_url} 
-                            alt="Video thumbnail"
-                            className="w-full h-full object-cover transition-opacity duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5">
-                            <FiVideo className="w-12 h-12 text-white/40" />
-                          </div>
-                        )}
+                        <VideoThumbnail coverImageUrl={video.cover_image_url} />
                       </a>
                     ) : (
                       <>
-                        {video.cover_image_url ? (
-                          <img 
-                            src={video.cover_image_url} 
-                            alt="Video thumbnail"
-                            className="w-full h-full object-cover transition-opacity duration-300"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-white/10 to-white/5">
-                            <FiVideo className="w-12 h-12 text-white/40" />
-                          </div>
-                        )}
+                        <VideoThumbnail coverImageUrl={video.cover_image_url} />
                       </>
                     )}
                     
@@ -561,10 +542,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                   {/* Video Player/Thumbnail */}
                   {selectedVideo.cover_image_url ? (
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                      <div className="w-full h-[300px] rounded-lg overflow-hidden">
-                        <img 
-                          src={selectedVideo.cover_image_url} 
-                          alt="Video thumbnail"
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden relative">
+                        <VideoThumbnail 
+                          coverImageUrl={selectedVideo.cover_image_url} 
                           className="w-full h-full object-cover"
                         />
                       </div>
