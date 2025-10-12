@@ -497,7 +497,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                 )}
                               </div>
                               <div className="flex items-center gap-2">
-                                <div className="w-18 md:w-20 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                                <div className="w-20 md:w-24 h-2.5 md:h-2 bg-white/20 rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full transition-all duration-500 ease-out ${
                                       score >= 7 ? 'bg-green-400' :
