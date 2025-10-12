@@ -72,12 +72,7 @@ function AdHocPage() {
     }
   }
 
-  const clearAllAnalyses = () => {
-    if (window.confirm('Are you sure you want to clear all ad-hoc analyses?')) {
-      localStorage.removeItem('adHocAnalyses')
-      setAdHocVideos([])
-    }
-  }
+  // Removed clearAllAnalyses - users paid for these analyses
 
   const handleAnalysisComplete = () => {
     // Reload analyses after new one is added
@@ -117,20 +112,9 @@ function AdHocPage() {
                     New Analysis
                   </span>
                 </button>
-                {adHocVideos.length > 0 && (
-                  <button
-                    onClick={clearAllAnalyses}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl transition-colors flex items-center gap-2"
-                  >
-                    <span className="text-lg">🗑️</span>
-                    <span className="text-xs sm:text-sm font-medium text-red-400 hidden sm:inline">
-                      Clear All
-                    </span>
-                  </button>
-                )}
                 <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
                   <span className="text-xs sm:text-sm font-medium text-white/80">
-                    {adHocVideos.length} analyses
+                    {adHocVideos.length} {adHocVideos.length === 1 ? 'analysis' : 'analyses'}
                   </span>
                 </div>
               </div>
@@ -139,9 +123,17 @@ function AdHocPage() {
             {/* Empty State */}
             {adHocVideos.length === 0 ? (
               <div className="glass-card rounded-2xl p-12 text-center">
-                <div className="text-6xl mb-6">🔍</div>
+                {/* Beautiful gradient icon container */}
+                <div className="relative w-24 h-24 mx-auto mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-20 blur-2xl"></div>
+                  <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl p-6 border border-white/10">
+                    <svg className="w-12 h-12 text-blue-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                  </div>
+                </div>
                 <h3 className="text-2xl font-bold text-white mb-4">
-                  No Ad-Hoc Analyses Yet
+                  Start Analyzing Competitors
                 </h3>
                 <p className="text-white/60 mb-8 max-w-md mx-auto">
                   Analyze any TikTok video to see insights. Perfect for competitive research and learning from top performers.

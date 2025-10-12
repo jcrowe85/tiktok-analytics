@@ -98,42 +98,44 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* URL Input */}
-          <div>
-            <label className="block text-white/80 text-sm font-medium mb-2">
-              TikTok Video URL
-            </label>
-            <div className="flex gap-3">
-              <input
-                type="text"
-                value={url}
-                onChange={(e) => setUrl(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
-                placeholder="https://www.tiktok.com/@username/video/1234567890..."
-                className="flex-1 bg-slate-800/50 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                disabled={loading}
-              />
-              <button
-                onClick={handleAnalyze}
-                disabled={loading || !url.trim()}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-white/30 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
-              >
-                {loading ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                    Analyzing...
-                  </>
-                ) : (
-                  <>
-                    🎯 Analyze
-                  </>
-                )}
-              </button>
+          {/* URL Input - only show if no results yet */}
+          {!result && (
+            <div>
+              <label className="block text-white/80 text-sm font-medium mb-2">
+                TikTok Video URL
+              </label>
+              <div className="flex gap-3">
+                <input
+                  type="text"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleAnalyze()}
+                  placeholder="https://www.tiktok.com/@username/video/1234567890..."
+                  className="flex-1 bg-slate-800/50 border border-white/10 rounded-lg px-4 py-3 text-white placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  disabled={loading}
+                />
+                <button
+                  onClick={handleAnalyze}
+                  disabled={loading || !url.trim()}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 disabled:text-white/30 text-white font-medium rounded-lg transition-colors flex items-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                      Analyzing...
+                    </>
+                  ) : (
+                    <>
+                      🎯 Analyze
+                    </>
+                  )}
+                </button>
+              </div>
+              <p className="text-white/40 text-xs mt-2">
+                💡 Works with any public TikTok video URL (mobile or desktop)
+              </p>
             </div>
-            <p className="text-white/40 text-xs mt-2">
-              💡 Works with any public TikTok video URL (mobile or desktop)
-            </p>
-          </div>
+          )}
 
           {/* Error */}
           {error && (
@@ -201,6 +203,48 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
                   ))}
                 </div>
               </div>
+
+              {/* Visual Scores */}
+              {result.visual_scores && (
+                <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">👁️ Visual Analysis</h3>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                    {Object.entries({
+                      'Thumbstop': result.visual_scores.thumbstop_prob,
+                      'First Frame': result.visual_scores.first_frame_strength,
+                      'Silent Comprehension': result.visual_scores.silent_comprehension,
+                      'Visual Aesthetics': result.visual_scores.visual_aesthetics,
+                      'Composition': result.visual_scores.composition,
+                      'Motion Dynamics': result.visual_scores.motion_dynamics,
+                      'Pattern Interrupt': result.visual_scores.pattern_interrupt,
+                      'Text Legibility': result.visual_scores.text_legibility,
+                      'Emotion Score': result.visual_scores.emotion_score,
+                      'Save/Share Trigger': result.visual_scores.save_share_trigger,
+                      'Loopability': result.visual_scores.loopability,
+                      'Trend Alignment': result.visual_scores.trend_alignment,
+                    }).map(([label, score]) => (
+                      <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
+                        <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                            <div 
+                              className={`h-full transition-all ${
+                                score >= 8 ? 'bg-green-500' :
+                                score >= 6 ? 'bg-yellow-500' :
+                                'bg-red-500'
+                              }`}
+                              style={{ width: `${score * 10}%` }}
+                            />
+                          </div>
+                          <span className="text-xs font-bold text-white tabular-nums min-w-[24px]">
+                            {score.toFixed(1)}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               {/* Key Findings */}
               {result.findings && (result.findings.hook_verdict || result.findings.depth_verdict || result.findings.cta_notes) && (
