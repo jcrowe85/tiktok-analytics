@@ -552,23 +552,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     </p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {selectedVideo.ai_scores && (
-                    <button
-                      onClick={() => handleReanalyze(selectedVideo)}
-                      className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg transition-all backdrop-blur-sm text-yellow-400 text-sm font-medium flex items-center gap-2"
-                      title="Re-analyze this video"
-                    >
-                      🔄 Re-analyze
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setSelectedVideo(null)}
-                    className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
-                  >
-                    <FiX className="w-4 h-4 text-white/80" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setSelectedVideo(null)}
+                  className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
+                >
+                  <FiX className="w-4 h-4 text-white/80" />
+                </button>
               </div>
             </div>
 
@@ -717,6 +706,18 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           </div>
                         )}
                       </div>
+
+                      {/* Re-analyze Button */}
+                      {selectedVideo.ai_scores && (
+                        <div className="pt-3 border-t border-white/10">
+                          <button
+                            onClick={() => handleReanalyze(selectedVideo)}
+                            className="w-full px-4 py-2.5 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg transition-all backdrop-blur-sm text-yellow-400 text-sm font-medium"
+                          >
+                            Re-analyze
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
