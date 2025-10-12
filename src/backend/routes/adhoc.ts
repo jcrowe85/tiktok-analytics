@@ -104,12 +104,19 @@ router.post('/analyze-url', async (req, res) => {
     
     console.log(`✅ Analysis complete!`)
     
+    // Extract duration from artifacts if available
+    const duration = analysis.artifacts?.keyframes?.[0]?.timestamp 
+      ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
+      : 0
+    
     // Return analysis results
     res.json({
       success: true,
       videoId,
       url,
       staticData: metadata,
+      coverImageUrl: metadata.thumbnailUrl,
+      duration,
       scores: analysis.scores,
       visual_scores: analysis.visual_scores,
       findings: analysis.findings,
