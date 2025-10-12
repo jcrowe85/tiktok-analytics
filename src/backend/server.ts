@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiRoutes from './routes/ai.ts';
+import imageRoutes from './routes/images.ts';
 import { testDatabaseConnection } from './database/connection.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -23,6 +24,9 @@ app.use(express.static(path.join(__dirname, '../../dist')));
 
 // AI Analysis routes
 app.use('/api/ai', aiRoutes);
+
+// Image proxy routes
+app.use('/api/images', imageRoutes);
 
 /**
  * Get analytics data with AI scores
