@@ -883,10 +883,29 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Delete Button */}
                       <div className="bg-slate-800/50 border border-red-500/30 rounded-xl p-4">
                         <button
-                          onClick={() => {
+                          onClick={async () => {
                             if (window.confirm('⚠️ Are you sure you want to delete this video and all its analysis data? This cannot be undone.')) {
-                              // TODO: Implement delete functionality
-                              alert('Delete functionality coming soon!')
+                              try {
+                                const response = await fetch(`/api/ai/video/${selectedVideo.id}`, {
+                                  method: 'DELETE',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                  },
+                                })
+
+                                const data = await response.json()
+
+                                if (!response.ok) {
+                                  throw new Error(data.error || 'Failed to delete video')
+                                }
+
+                                // Close modal and refresh the page to show updated video list
+                                setSelectedVideo(null)
+                                window.location.reload()
+                              } catch (error) {
+                                console.error('Delete error:', error)
+                                alert(`❌ Failed to delete video:\n\n${error instanceof Error ? error.message : 'Unknown error'}`)
+                              }
                             }
                           }}
                           className="w-full px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-all backdrop-blur-sm text-red-400 text-sm font-medium"

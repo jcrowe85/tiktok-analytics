@@ -257,4 +257,35 @@ router.post('/analyze-url', async (req, res) => {
   }
 })
 
+// Delete a video and all its analysis data
+router.delete('/video/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params
+    
+    console.log(`🗑️ Deleting video ${videoId} and all associated data`)
+    
+    // Delete from video_ai_analysis table first (foreign key constraint)
+    await executeQuery('DELETE FROM video_ai_analysis WHERE video_id = $1', [videoId])
+    console.log(`✅ Deleted AI analysis data for video ${videoId}`)
+    
+    // Delete from videos table
+    const result = await executeQuery('DELETE FROM videos WHERE id = $1', [videoId])
+    console.log(`✅ Deleted video ${videoId} from database`)
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
+    
+    res.json({ 
+      success: true,
+      message: `Video ${videoId} and all analysis data deleted successfully`,
+      deletedVideoId: videoId
+    })
+    
+  } catch (error) {
+    console.error('❌ Error deleting video:', error)
+    res.status(500).json({ error: 'Failed to delete video' })
+  }
+})
+
 export default router
