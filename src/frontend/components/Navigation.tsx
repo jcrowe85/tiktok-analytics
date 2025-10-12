@@ -1,7 +1,10 @@
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 export function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  console.log('Navigation rendered, current path:', location.pathname);
   
   const navItems = [
     { path: '/', label: 'My Videos', icon: '🎥' },
@@ -10,6 +13,11 @@ export function Navigation() {
 
   const isActive = (path: string) => {
     return location.pathname === path;
+  };
+  
+  const handleNavClick = (path: string) => {
+    console.log('Navigating to:', path);
+    navigate(path);
   };
 
   return (
@@ -29,14 +37,11 @@ export function Navigation() {
           {/* Navigation Links */}
           <div className="flex items-center gap-2">
             {navItems.map((item) => (
-              <Link
+              <button
                 key={item.path}
-                to={item.path}
-                onClick={(e) => {
-                  console.log('Navigation clicked:', item.path)
-                }}
+                onClick={() => handleNavClick(item.path)}
                 className={`
-                  px-3 py-2 sm:px-4 sm:py-2 rounded-lg transition-all flex items-center gap-2
+                  px-3 py-2 sm:px-4 sm:py-2 rounded-lg transition-all flex items-center gap-2 cursor-pointer
                   ${isActive(item.path)
                     ? 'bg-blue-600/30 text-blue-400 border border-blue-500/30'
                     : 'bg-white/5 text-white/60 hover:bg-white/10 hover:text-white/80 border border-white/10'
@@ -47,7 +52,7 @@ export function Navigation() {
                 <span className="text-sm font-medium hidden sm:inline">
                   {item.label}
                 </span>
-              </Link>
+              </button>
             ))}
           </div>
         </div>
