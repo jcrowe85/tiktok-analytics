@@ -111,7 +111,7 @@ async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
     await job.updateProgress(20)
     
     // Run the static content analysis pipeline
-    const result = await analyzeStaticContent(videoId, caption, coverImageUrl)
+    const result = await analyzeStaticContent(videoId, caption, coverImageUrl || '')
     
     // Update job progress
     await job.updateProgress(100)

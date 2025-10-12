@@ -328,8 +328,9 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
     let imageText = ''
     if (coverImageUrl) {
       try {
-        imageText = await extractTextFromImage(coverImageUrl)
-        console.log(`   📝 Extracted text from image: ${imageText.length} characters`)
+        // For now, skip image OCR for static content analysis
+        // TODO: Implement proper image URL to Buffer conversion
+        console.log(`   📝 Skipping image OCR for now (URL: ${coverImageUrl})`)
       } catch (error) {
         console.warn(`   ⚠️ Could not extract text from image:`, error)
       }
@@ -386,7 +387,7 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
       },
       fix_suggestions: [],
       artifacts: {
-        transcription: '',
+        transcript: '',
         ocr_text: imageText ? [imageText] : [],
         keyframes: [],
         audio_segments: []
