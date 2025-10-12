@@ -1,4 +1,4 @@
-import { transcribeAudio, analyzeContent } from './openai.ts'
+import { transcribeAudio, analyzeContent, openai } from './openai.ts'
 import { extractTextFromImage } from './vision.ts'
 import { processVideoForAI, cleanupTempFiles, type ProcessingResult } from '../media/processor.ts'
 import { aiAnalysisQueue } from '../queue/queue.ts'
@@ -339,53 +339,54 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
     // Combine caption and image text for analysis
     const combinedContent = `${caption}\n\nImage Text: ${imageText}`.trim()
     
-    // For now, create a simple analysis result for static content
-    // TODO: Implement proper LLM analysis for static content
+    // Use LLM to analyze static content
+    const analysis = await analyzeStaticContentWithLLM(combinedContent)
+    
     const result: AIAnalysisResult = {
       videoId,
       status: 'completed',
       scores: {
-        hook_strength: 5,
-        depth: 5,
-        clarity: 5,
-        pacing: 5,
-        cta: 5,
-        brand_fit: 5,
-        overall_100: 50
+        hook_strength: analysis.hook_strength,
+        depth: analysis.depth,
+        clarity: analysis.clarity,
+        pacing: analysis.pacing,
+        cta: analysis.cta,
+        brand_fit: analysis.brand_fit,
+        overall_100: analysis.overall_100
       },
       visual_scores: {
-        thumbstop_prob: 5,
-        first_frame_strength: 5,
-        silent_comprehension: 5,
-        visual_aesthetics: 5,
-        composition: 5,
+        thumbstop_prob: analysis.thumbstop_prob,
+        first_frame_strength: analysis.first_frame_strength,
+        silent_comprehension: analysis.silent_comprehension,
+        visual_aesthetics: analysis.visual_aesthetics,
+        composition: analysis.composition,
         motion_dynamics: 0, // No motion in static content
-        pattern_interrupt: 5,
-        text_legibility: 5,
-        text_timing_fit: 5,
-        emotion_score: 5,
-        save_share_trigger: 5,
+        pattern_interrupt: analysis.pattern_interrupt,
+        text_legibility: analysis.text_legibility,
+        text_timing_fit: analysis.text_timing_fit,
+        emotion_score: analysis.emotion_score,
+        save_share_trigger: analysis.save_share_trigger,
         loopability: 0, // Static content doesn't loop
-        trend_alignment: 5,
-        cultural_resonance: 5
+        trend_alignment: analysis.trend_alignment,
+        cultural_resonance: analysis.cultural_resonance
       },
       classifiers: {
-        angle: 'static',
-        hook_type: ['text-based'],
-        content_types: ['static'],
-        visual_subjects: [],
-        composition_tags: [],
-        emotion_tags: [],
-        pattern_interrupt: [],
+        angle: analysis.angle,
+        hook_type: analysis.hook_type,
+        content_types: analysis.content_types,
+        visual_subjects: analysis.visual_subjects,
+        composition_tags: analysis.composition_tags,
+        emotion_tags: analysis.emotion_tags,
+        pattern_interrupt: analysis.pattern_interrupt,
         shot_types: ['static']
       },
       findings: {
-        hook_verdict: 'Text-based hook analyzed',
-        depth_verdict: 'Static content depth assessed',
-        retention_ops: [],
-        cta_notes: 'Static content CTA analysis'
+        hook_verdict: analysis.hook_verdict,
+        depth_verdict: analysis.depth_verdict,
+        retention_ops: analysis.retention_ops,
+        cta_notes: analysis.cta_notes
       },
-      fix_suggestions: [],
+      fix_suggestions: analysis.fix_suggestions,
       artifacts: {
         transcript: '',
         ocr_text: imageText ? [imageText] : [],
@@ -432,4 +433,146 @@ export async function queueStaticContentForAnalysis(videoId: string, caption: st
   })
   
   console.log(`📋 Queued static content ${videoId} for AI analysis (job: ${jobId})`)
+}
+
+// Analyze static content using LLM
+async function analyzeStaticContentWithLLM(content: string): Promise<{
+  hook_strength: number
+  depth: number
+  clarity: number
+  pacing: number
+  cta: number
+  brand_fit: number
+  overall_100: number
+  thumbstop_prob: number
+  first_frame_strength: number
+  silent_comprehension: number
+  visual_aesthetics: number
+  composition: number
+  pattern_interrupt: number
+  text_legibility: number
+  text_timing_fit: number
+  emotion_score: number
+  save_share_trigger: number
+  trend_alignment: number
+  cultural_resonance: number
+  angle: string
+  hook_type: string[]
+  content_types: string[]
+  visual_subjects: string[]
+  composition_tags: string[]
+  emotion_tags: string[]
+  pattern_interrupt: string[]
+  hook_verdict: string
+  depth_verdict: string
+  retention_ops: string[]
+  cta_notes: string
+  fix_suggestions: string[]
+}> {
+  try {
+    console.log('🧠 Starting GPT-4 static content analysis...')
+    
+    const prompt = `
+Analyze this static TikTok content (image/carousel) and provide structured scores and insights.
+
+CONTENT:
+${content}
+
+Please analyze this static content and provide:
+1. Scores (0-10 integers) for: hook_strength, depth, clarity, pacing, cta, brand_fit, overall_100
+2. Visual scores (0-10 integers) for: thumbstop_prob, first_frame_strength, silent_comprehension, visual_aesthetics, composition, pattern_interrupt, text_legibility, text_timing_fit, emotion_score, save_share_trigger, trend_alignment, cultural_resonance
+3. Classifiers and tags
+4. Key findings and verdicts
+5. Actionable suggestions for improvement
+
+Respond in this exact JSON format:
+{
+  "hook_strength": 7,
+  "depth": 6,
+  "clarity": 8,
+  "pacing": 5,
+  "cta": 7,
+  "brand_fit": 8,
+  "overall_100": 68,
+  "thumbstop_prob": 6,
+  "first_frame_strength": 7,
+  "silent_comprehension": 8,
+  "visual_aesthetics": 7,
+  "composition": 6,
+  "pattern_interrupt": 5,
+  "text_legibility": 8,
+  "text_timing_fit": 6,
+  "emotion_score": 7,
+  "save_share_trigger": 6,
+  "trend_alignment": 7,
+  "cultural_resonance": 6,
+  "angle": "product-focused",
+  "hook_type": ["product-showcase", "benefit-driven"],
+  "content_types": ["static", "product-promotion"],
+  "visual_subjects": ["product", "text", "brand"],
+  "composition_tags": ["close-up", "text-overlay"],
+  "emotion_tags": ["trust", "confidence"],
+  "pattern_interrupt": ["product-focus"],
+  "hook_verdict": "Strong product focus with clear benefits",
+  "depth_verdict": "Good product information but could use more storytelling",
+  "retention_ops": ["Add before/after", "Include testimonials"],
+  "cta_notes": "Clear product messaging but could be more compelling",
+  "fix_suggestions": ["Add social proof", "Include urgency", "Show results"]
+}
+`
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4',
+      messages: [{ role: 'user', content: prompt }],
+      temperature: 0.3,
+      max_tokens: 1000
+    })
+
+    const analysisText = response.choices[0]?.message?.content
+    if (!analysisText) {
+      throw new Error('No analysis returned from GPT-4')
+    }
+
+    const analysis = JSON.parse(analysisText)
+    console.log('✅ GPT-4 static content analysis completed')
+    return analysis
+
+  } catch (error) {
+    console.error('❌ GPT-4 static content analysis failed:', error)
+    
+    // Return fallback scores if analysis fails
+    return {
+      hook_strength: 5,
+      depth: 5,
+      clarity: 5,
+      pacing: 5,
+      cta: 5,
+      brand_fit: 5,
+      overall_100: 50,
+      thumbstop_prob: 5,
+      first_frame_strength: 5,
+      silent_comprehension: 5,
+      visual_aesthetics: 5,
+      composition: 5,
+      pattern_interrupt: 5,
+      text_legibility: 5,
+      text_timing_fit: 5,
+      emotion_score: 5,
+      save_share_trigger: 5,
+      trend_alignment: 5,
+      cultural_resonance: 5,
+      angle: 'static',
+      hook_type: ['text-based'],
+      content_types: ['static'],
+      visual_subjects: [],
+      composition_tags: [],
+      emotion_tags: [],
+      pattern_interrupt: [],
+      hook_verdict: 'Analysis failed - fallback scores',
+      depth_verdict: 'Analysis failed - fallback scores',
+      retention_ops: [],
+      cta_notes: 'Analysis failed - fallback scores',
+      fix_suggestions: []
+    }
+  }
 }
