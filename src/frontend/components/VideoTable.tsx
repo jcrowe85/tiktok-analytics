@@ -183,12 +183,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
               hasFindings: !!updatedVideo?.ai_findings
             })
             
-            // Check if analysis completed (either timestamp changed OR we now have AI scores)
-            const hasNewAnalysis = updatedVideo && (
-              updatedVideo.ai_processed_at !== video.ai_processed_at ||
-              (!video.ai_scores && updatedVideo.ai_scores) ||
-              (!video.ai_visual_scores && updatedVideo.ai_visual_scores)
-            )
+            // Check if analysis completed (must have AI scores AND timestamp changed)
+            const hasNewAnalysis = updatedVideo && 
+              updatedVideo.ai_processed_at && 
+              updatedVideo.ai_processed_at !== video.ai_processed_at &&
+              updatedVideo.ai_scores && 
+              updatedVideo.ai_visual_scores
             
             if (hasNewAnalysis) {
               // Analysis complete! Update modal with new data
