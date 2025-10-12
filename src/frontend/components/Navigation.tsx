@@ -149,12 +149,12 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
       )}
 
       {/* Mobile Sidebar */}
-      {sidebarOpen && (
-        <div className={`
-          fixed top-0 left-0 h-screen w-80 bg-black/20 backdrop-blur-xl border-r border-white/10 z-50 transform transition-all duration-300 ease-in-out
-          md:hidden
-        `}>
-          {/* DEBUG: Mobile sidebar - sidebarOpen: {sidebarOpen.toString()}, isMobile: {isMobile.toString()} */}
+      <div className={`
+        fixed top-0 left-0 h-screen w-80 bg-black/20 backdrop-blur-xl border-r border-white/10 z-50 transform transition-all duration-300 ease-in-out
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        md:hidden
+      `}>
+        {/* DEBUG: Mobile sidebar - sidebarOpen: {sidebarOpen.toString()}, isMobile: {isMobile.toString()} */}
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className="flex items-center justify-between p-6 border-b border-white/10">
@@ -273,7 +273,6 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
           </div>
         </div>
       </div>
-      )}
 
       {/* Desktop Sidebar */}
       {!isMobile && (
