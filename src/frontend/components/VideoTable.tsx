@@ -129,14 +129,14 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
       // Check for carousel indicators in caption
       if (caption.includes('swipe') || caption.includes('carousel') || caption.includes('multiple') || 
           caption.includes('part 1') || caption.includes('part 2') || caption.includes('1/') || caption.includes('2/')) {
-        return '📸 Carousel'
+        return 'Carousel'
       }
       
-      return '🖼️ Static'
+      return 'Static'
     }
     
-    // For videos with duration > 0, show the date
-    return formatFullDate(video.posted_at_iso)
+    // For videos with duration > 0, show "Video" as pending label
+    return 'Video'
   }
 
   const truncate = (text: string, maxLength: number) => {
@@ -227,8 +227,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                            '❌ Reshoot'}
                         </div>
                       ) : (
-                        <div className="text-xs text-white/50 font-medium">
-                          {getContentTypeLabel(video)}
+                        <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          ⏳ {getContentTypeLabel(video)}
                         </div>
                       )}
                       
