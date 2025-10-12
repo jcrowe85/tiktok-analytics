@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import aiRoutes from './routes/ai.ts';
 import imageRoutes from './routes/images.ts';
+import adhocRoutes from './routes/adhoc.ts';
 import { testDatabaseConnection } from './database/connection.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -27,6 +28,9 @@ app.use('/api/ai', aiRoutes);
 
 // Image proxy routes
 app.use('/api/images', imageRoutes);
+
+// Ad-hoc analysis routes
+app.use('/api', adhocRoutes);
 
 /**
  * Get analytics data with AI scores
