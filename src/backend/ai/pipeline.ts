@@ -1,7 +1,7 @@
 import { transcribeAudio, analyzeContent, openai } from './openai.ts'
 import { extractTextFromImage } from './vision.ts'
 import { processVideoForAI, cleanupTempFiles, type ProcessingResult } from '../media/processor.ts'
-import { addVideoForAnalysis, addStaticContentForAnalysis } from '../queue/queue.ts'
+import { aiAnalysisQueue } from '../queue/queue.ts'
 import { executeQuery } from '../database/connection.ts'
 import { getDirectVideoUrl } from '../utils/getVideoUrl.ts'
 import crypto from 'crypto'
@@ -303,8 +303,25 @@ async function saveAnalysisResult(result: AIAnalysisResult): Promise<void> {
 
 // Queue video for AI analysis
 export async function queueVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
-  await addVideoForAnalysis(videoId, videoUrl)
-  console.log(`📋 Queued video ${videoId} for AI analysis`)
+  if (!aiAnalysisQueue) {
+    console.log('⚠️ Redis queue unavailable, skipping queue addition for video', videoId)
+    return
+  }
+  
+  const jobId = `ai_analysis_${videoId}_${Date.now()}`
+  
+  await aiAnalysisQueue.add('analyze-video', {
+    videoId,
+    videoUrl,
+    contentHash: `hash_${videoId}_${Date.now()}`,
+    rulesVersion: 1
+  }, {
+    jobId,
+    removeOnComplete: 10,
+    removeOnFail: 5
+  })
+  
+  console.log(`📋 Queued video ${videoId} for AI analysis (job: ${jobId})`)
 }
 
 // Analyze static content or carousel using LLM
@@ -406,8 +423,26 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
 
 // Queue static content for analysis
 export async function queueStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
-  await addStaticContentForAnalysis(videoId, caption, coverImageUrl)
-  console.log(`📋 Queued static content ${videoId} for AI analysis`)
+  if (!aiAnalysisQueue) {
+    console.log('⚠️ Redis queue unavailable, skipping static content queue addition for video', videoId)
+    return
+  }
+  
+  const jobId = `static_analysis_${videoId}_${Date.now()}`
+  
+  await aiAnalysisQueue.add('analyze-static', {
+    videoId,
+    caption,
+    coverImageUrl,
+    contentHash: `hash_${videoId}_${Date.now()}`,
+    rulesVersion: 1
+  }, {
+    jobId,
+    removeOnComplete: 10,
+    removeOnFail: 5
+  })
+  
+  console.log(`📋 Queued static content ${videoId} for AI analysis (job: ${jobId})`)
 }
 
 // Analyze static content using LLM

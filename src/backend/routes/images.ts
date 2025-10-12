@@ -50,7 +50,7 @@ router.get('/thumbnail/:videoId', async (req, res) => {
         }
       }
     } catch (oembedError) {
-      console.log(`❌ oEmbed API failed: ${(oembedError as Error).message}`)
+      console.log(`❌ oEmbed API failed: ${oembedError instanceof Error ? oembedError.message : String(oembedError)}`)
     }
 
     // Fallback to direct CDN URLs
@@ -95,8 +95,8 @@ router.get('/thumbnail/:videoId', async (req, res) => {
           response.data.pipe(res)
           return
         }
-      } catch (error) {
-        console.log(`❌ CDN failed: ${(error as any).response?.status || (error as Error).message}`)
+      } catch (error: any) {
+        console.log(`❌ CDN failed: ${error.response?.status || (error instanceof Error ? error.message : String(error))}`)
         continue
       }
     }

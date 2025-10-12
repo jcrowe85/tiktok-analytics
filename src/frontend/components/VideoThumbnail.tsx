@@ -13,7 +13,7 @@ export function VideoThumbnail({
   coverImageUrl, 
   alt = "Video thumbnail",
   className = "w-full h-full object-cover transition-opacity duration-300",
-  fallbackIcon: _fallbackIcon, // Prefix with underscore to indicate intentionally unused
+  // fallbackIcon, // Currently unused
   shareUrl
 }: VideoThumbnailProps) {
   const [imageError, setImageError] = useState(false)

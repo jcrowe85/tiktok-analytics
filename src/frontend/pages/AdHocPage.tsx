@@ -206,21 +206,21 @@ function AdHocPage() {
                 </div>
 
                 <div className="glass-card rounded-2xl p-12 text-center">
-                  {/* Beautiful gradient icon container */}
-                  <div className="relative w-24 h-24 mx-auto mb-8">
-                    <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-20 blur-2xl"></div>
-                    <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl p-6 border border-white/10">
-                      <svg className="w-12 h-12 text-blue-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                      </svg>
-                    </div>
+                {/* Beautiful gradient icon container */}
+                <div className="relative w-24 h-24 mx-auto mb-8">
+                  <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-20 blur-2xl"></div>
+                  <div className="relative bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-3xl p-6 border border-white/10">
+                    <svg className="w-12 h-12 text-blue-400 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-white mb-4">
-                    Start Analyzing Competitors
-                  </h3>
-                  <p className="text-white/60 mb-8 max-w-md mx-auto">
-                    Paste any TikTok URL above to analyze video performance and get AI-powered insights. Perfect for competitive research and learning from top performers.
-                  </p>
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4">
+                  Start Analyzing Competitors
+                </h3>
+                <p className="text-white/60 mb-8 max-w-md mx-auto">
+                  Paste any TikTok URL above to analyze video performance and get AI-powered insights. Perfect for competitive research and learning from top performers.
+                </p>
 
                 {/* Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12 text-left">
@@ -296,6 +296,7 @@ function AdHocPage() {
                   hasActiveFilters={() => false}
                   selectedVideo={selectedVideo}
                   setSelectedVideo={setSelectedVideo}
+                  onVideoUpdate={loadAdHocAnalyses}
                 />
               </>
             )}

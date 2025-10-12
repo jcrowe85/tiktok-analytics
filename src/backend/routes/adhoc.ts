@@ -7,6 +7,39 @@ import axios from 'axios'
 const router = express.Router()
 
 /**
+ * Get all saved ad-hoc analyses
+ */
+router.get('/adhoc-analyses', async (req, res) => {
+  try {
+    const result = await executeQuery(`
+      SELECT 
+        v.*,
+        vai.scores,
+        vai.visual_scores,
+        vai.findings,
+        vai.fix_suggestions,
+        vai.processed_at as ai_processed_at,
+        vai.status as ai_status
+      FROM videos v
+      LEFT JOIN video_ai_analysis vai ON v.id = vai.video_id
+      WHERE v.is_adhoc = true
+      ORDER BY v.created_at DESC
+    `)
+    
+    res.json({
+      success: true,
+      data: result.rows
+    })
+  } catch (error) {
+    console.error('❌ Error fetching ad-hoc analyses:', error)
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch ad-hoc analyses'
+    })
+  }
+})
+
+/**
  * Extract video ID from TikTok URL
  */
 function extractVideoId(url: string): string | null {
@@ -142,8 +175,63 @@ router.post('/analyze-url', async (req, res) => {
     // Get oEmbed metadata as fallback for thumbnail
     const oembedData = await getVideoMetadata(url)
     
+    // Calculate duration and cover image URL
+    const duration = videoData.staticData?.duration || 0
+    const coverImageUrl = videoData.staticData?.coverImageUrl || oembedData.thumbnailUrl || ''
+    
+    // Save video data to database first (mark as ad-hoc)
+    console.log(`🚩 Step 1: Saving video data to database...`)
+    await executeQuery(`
+      INSERT INTO videos (
+        id, posted_at_iso, caption, duration, view_count, like_count, 
+        comment_count, share_count, engagement_rate, hashtags, share_url, 
+        cover_image_url, video_title, author_username, author_nickname, 
+        author_avatar_url, music_title, music_artist, is_adhoc
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+      ON CONFLICT (id) DO UPDATE SET
+        posted_at_iso = EXCLUDED.posted_at_iso,
+        caption = EXCLUDED.caption,
+        duration = EXCLUDED.duration,
+        view_count = EXCLUDED.view_count,
+        like_count = EXCLUDED.like_count,
+        comment_count = EXCLUDED.comment_count,
+        share_count = EXCLUDED.share_count,
+        engagement_rate = EXCLUDED.engagement_rate,
+        hashtags = EXCLUDED.hashtags,
+        share_url = EXCLUDED.share_url,
+        cover_image_url = EXCLUDED.cover_image_url,
+        video_title = EXCLUDED.video_title,
+        author_username = EXCLUDED.author_username,
+        author_nickname = EXCLUDED.author_nickname,
+        author_avatar_url = EXCLUDED.author_avatar_url,
+        music_title = EXCLUDED.music_title,
+        music_artist = EXCLUDED.music_artist,
+        is_adhoc = EXCLUDED.is_adhoc,
+        updated_at = CURRENT_TIMESTAMP
+    `, [
+      videoId,
+      new Date().toISOString(),
+      videoData.staticData?.videoDescription || mergedStaticData.videoDescription || '',
+      duration,
+      videoData.staticData?.viewCount || 0,
+      videoData.staticData?.likeCount || 0,
+      videoData.staticData?.commentCount || 0,
+      videoData.staticData?.shareCount || 0,
+      0, // engagement_rate (will be calculated)
+      JSON.stringify(videoData.staticData?.hashtags || []),
+      url,
+      coverImageUrl,
+      mergedStaticData.videoTitle,
+      mergedStaticData.authorUsername,
+      mergedStaticData.authorNickname,
+      mergedStaticData.authorAvatarUrl,
+      mergedStaticData.musicTitle,
+      mergedStaticData.musicArtist,
+      true // is_adhoc
+    ])
+    
     // Analyze the video
-    console.log(`🚩 Step 1: Starting AI analysis...`)
+    console.log(`🚩 Step 2: Starting AI analysis...`)
     const analysis = await analyzeVideo(videoId, url)
     
     if (!analysis || analysis.status !== 'completed') {
@@ -154,14 +242,6 @@ router.post('/analyze-url', async (req, res) => {
     
     console.log(`✅ Analysis complete!`)
     
-    // Use duration from artifacts since RapidAPI doesn't provide duration
-    const duration = analysis.artifacts?.keyframes?.[0]?.timestamp 
-      ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
-      : 0
-    
-    // Use thumbnail from oEmbed since RapidAPI doesn't provide coverImageUrl
-    const coverImageUrl = oembedData.thumbnailUrl || ''
-    
     // Update video with ad-hoc flag and missing metadata
     await executeQuery(`
       UPDATE videos 
@@ -170,25 +250,27 @@ router.post('/analyze-url', async (req, res) => {
         share_url = $2,
         cover_image_url = $3,
         duration = $4,
-      caption = $5,
-      view_count = $6,
-      like_count = $7,
-      comment_count = $8,
-      share_count = $9,
-      engagement_rate = $10
-    WHERE id = $1
-  `, [
-    videoId,
-    url,
-    coverImageUrl,
-    duration,
-    videoData.staticData?.videoTitle || oembedData.videoTitle || '',
-    0, // viewCount not available from RapidAPI
-    0, // likeCount not available from RapidAPI
-    0, // commentCount not available from RapidAPI
-    0, // shareCount not available from RapidAPI
-    0  // engagementRate - set to 0 since metrics not available
-  ])
+        caption = $5,
+        view_count = $6,
+        like_count = $7,
+        comment_count = $8,
+        share_count = $9,
+        engagement_rate = $10
+      WHERE id = $1
+    `, [
+      videoId,
+      url,
+      coverImageUrl,
+      duration,
+      videoData.staticData?.videoTitle || oembedData.videoTitle || '',
+      videoData.staticData?.viewCount || 0,
+      videoData.staticData?.likeCount || 0,
+      videoData.staticData?.commentCount || 0,
+      videoData.staticData?.shareCount || 0,
+      (videoData.staticData?.viewCount && videoData.staticData.viewCount > 0) 
+        ? ((videoData.staticData.likeCount || 0) + (videoData.staticData.commentCount || 0) + (videoData.staticData.shareCount || 0)) / videoData.staticData.viewCount
+        : 0
+    ])
     console.log(`✅ Updated video with ad-hoc metadata and metrics`)
     
     // Merge staticData from RapidAPI and oEmbed (RapidAPI takes priority)
@@ -211,11 +293,11 @@ router.post('/analyze-url', async (req, res) => {
       staticData: mergedStaticData,
       coverImageUrl,
       duration,
-      // Performance metrics (not available from RapidAPI)
-      viewCount: 0,
-      likeCount: 0,
-      commentCount: 0,
-      shareCount: 0,
+      // Performance metrics from RapidAPI
+      viewCount: videoData.staticData?.viewCount || 0,
+      likeCount: videoData.staticData?.likeCount || 0,
+      commentCount: videoData.staticData?.commentCount || 0,
+      shareCount: videoData.staticData?.shareCount || 0,
       // AI analysis results
       scores: analysis.scores,
       visual_scores: analysis.visual_scores,

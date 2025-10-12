@@ -79,6 +79,12 @@ export async function getVideoData(shareUrl: string): Promise<{
     authorAvatarUrl: string;
     musicTitle: string;
     musicArtist: string;
+    viewCount?: number;
+    likeCount?: number;
+    commentCount?: number;
+    shareCount?: number;
+    duration?: number;
+    coverImageUrl?: string;
   };
 }> {
   console.log(`🔗 Getting direct video URL from: ${shareUrl}`)

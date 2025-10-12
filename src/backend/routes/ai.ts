@@ -1,6 +1,6 @@
 import express from 'express'
 import { addVideoForAnalysis, getQueueStats } from '../queue/queue.ts'
-import { executeQuery } from '../database/connection.ts'
+import { executeQuery, executeQueryWithResult } from '../database/connection.ts'
 import { getRapidApiStatus, getVideoData } from '../utils/getVideoUrl.ts'
 import { analyzeVideo } from '../ai/pipeline.ts'
 import crypto from 'crypto'
@@ -168,28 +168,10 @@ router.get('/analysis', async (req, res) => {
 router.post('/reprocess/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params
-    const { videoUrl: providedVideoUrl } = req.body
+    const { videoUrl } = req.body
     
-    let videoUrl = providedVideoUrl
-    
-    // If no videoUrl provided, fetch it from the database
     if (!videoUrl) {
-      const videoResult = await executeQuery(
-        'SELECT share_url FROM videos WHERE id = $1',
-        [videoId]
-      )
-      
-      if (videoResult.length === 0) {
-        return res.status(404).json({ error: 'Video not found' })
-      }
-      
-      videoUrl = videoResult[0].share_url
-      
-      if (!videoUrl) {
-        return res.status(400).json({ 
-          error: 'Video URL not available in database and not provided in request' 
-        })
-      }
+      return res.status(400).json({ error: 'videoUrl is required' })
     }
     
     // Update status to pending
@@ -200,14 +182,40 @@ router.post('/reprocess/:videoId', async (req, res) => {
     
     // Add to queue for processing
     console.log(`🔄 Re-processing video ${videoId} with URL: ${videoUrl}`)
-    await addVideoForAnalysis(videoId, videoUrl)
-    console.log(`✅ Video ${videoId} queued for re-analysis`)
     
-    res.json({ 
-      message: 'Video queued for reprocessing',
-      videoId,
-      status: 'queued'
-    })
+    try {
+      await addVideoForAnalysis(videoId, videoUrl)
+      console.log(`✅ Video ${videoId} queued for re-analysis`)
+      
+      res.json({ 
+        message: 'Video queued for reprocessing',
+        videoId,
+        status: 'queued'
+      })
+    } catch (error) {
+      console.log(`⚠️ Queue unavailable, running analysis directly: ${error}`)
+      
+      // If queue is unavailable, run analysis directly
+      try {
+        const { analyzeVideo } = await import('../ai/pipeline.ts')
+        const analysisResult = await analyzeVideo(videoId, videoUrl)
+        
+        if (analysisResult && analysisResult.status === 'completed') {
+          console.log(`✅ Direct re-analysis completed for video ${videoId}`)
+          res.json({ 
+            message: 'Video re-analyzed successfully',
+            videoId,
+            status: 'completed',
+            scores: analysisResult.scores
+          })
+        } else {
+          throw new Error('Analysis failed to complete')
+        }
+      } catch (analysisError) {
+        console.error(`❌ Direct re-analysis failed for video ${videoId}:`, analysisError)
+        res.status(500).json({ error: 'Failed to reprocess video - both queue and direct analysis failed' })
+      }
+    }
   } catch (error) {
     console.error('❌ Error reprocessing video:', error)
     res.status(500).json({ error: 'Failed to reprocess video' })
@@ -287,8 +295,12 @@ router.delete('/video/:videoId', async (req, res) => {
     console.log(`✅ Deleted AI analysis data for video ${videoId}`)
     
     // Delete from videos table
-    await executeQuery('DELETE FROM videos WHERE id = $1', [videoId])
+    const result = await executeQueryWithResult('DELETE FROM videos WHERE id = $1', [videoId])
     console.log(`✅ Deleted video ${videoId} from database`)
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Video not found' })
+    }
     
     res.json({ 
       success: true,

@@ -5,42 +5,29 @@ import dotenv from 'dotenv'
 dotenv.config()
 
 // Redis connection with error handling
-let redis: Redis | null = null;
+let redis: Redis;
 let redisAvailable = false;
 
 try {
-  console.log('🔧 Attempting Redis connection...');
   redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
     maxRetriesPerRequest: 3,
-    lazyConnect: false, // Connect immediately
+    lazyConnect: true,
   });
   
   redis.on('connect', () => {
     redisAvailable = true;
-    console.log('✅ Redis connected successfully');
+    console.log('✅ Redis connected');
   });
   
   redis.on('error', (error) => {
     redisAvailable = false;
-    console.log('⚠️  Redis error event:', error.message);
-  });
-  
-  redis.on('ready', () => {
-    redisAvailable = true;
-    console.log('✅ Redis ready');
-  });
-  
-  // Test connection immediately
-  redis.ping().then(() => {
-    redisAvailable = true;
-    console.log('✅ Redis ping successful');
-  }).catch((error) => {
-    redisAvailable = false;
-    console.log('⚠️  Redis ping failed:', error.message);
+    console.log('⚠️  Redis unavailable:', error.message);
   });
 } catch (error) {
   redisAvailable = false;
-  console.log('⚠️  Redis connection failed:', (error as Error).message);
+  console.log('⚠️  Redis connection failed:', error instanceof Error ? error.message : String(error));
+  // Create a dummy Redis instance to prevent compilation errors
+  redis = new Redis({ lazyConnect: true, maxRetriesPerRequest: 0 });
 }
 
 // Queue configuration
@@ -54,32 +41,19 @@ export interface JobData {
   coverImageUrl?: string
 }
 
-// AI Analysis Queue (created lazily when needed)
-let aiAnalysisQueue: Queue<JobData> | null = null;
-
-function getQueue(): Queue<JobData> | null {
-  if (!redisAvailable || !redis) {
-    return null;
-  }
-  
-  if (!aiAnalysisQueue) {
-    aiAnalysisQueue = new Queue<JobData>('ai-analysis', {
-      connection: redis,
-      defaultJobOptions: {
-        removeOnComplete: 10,
-        removeOnFail: 5,
-        attempts: 3,
-        backoff: {
-          type: 'exponential',
-          delay: 2000,
-        },
-      },
-    });
-    console.log('✅ AI Analysis Queue created');
-  }
-  
-  return aiAnalysisQueue;
-}
+// AI Analysis Queue (only created if Redis is available)
+export const aiAnalysisQueue = redisAvailable ? new Queue<JobData>('ai-analysis', {
+  connection: redis,
+  defaultJobOptions: {
+    removeOnComplete: 10,
+    removeOnFail: 5,
+    attempts: 3,
+    backoff: {
+      type: 'exponential',
+      delay: 2000,
+    },
+  },
+}) : null
 
 // Job types
 export enum JobType {
@@ -128,7 +102,7 @@ async function processAIAnalysis(job: Job<JobData>) {
 }
 
 // Worker for AI analysis queue (only created if Redis is available)
-export const aiAnalysisWorker = (redisAvailable && redis) ? new Worker<JobData>(
+export const aiAnalysisWorker = redisAvailable ? new Worker<JobData>(
   'ai-analysis',
   processAIAnalysis,
   {
@@ -179,7 +153,7 @@ async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
 }
 
 // Worker for static content analysis queue
-export const staticAnalysisWorker = (redisAvailable && redis) ? new Worker<JobData>(
+export const staticAnalysisWorker = redisAvailable ? new Worker<JobData>(
   'ai-analysis',
   processStaticAnalysis,
   {
@@ -190,16 +164,15 @@ export const staticAnalysisWorker = (redisAvailable && redis) ? new Worker<JobDa
 
 // Queue management functions
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
-  const queue = getQueue();
-  if (!queue) {
+  if (!redisAvailable || !aiAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping queue addition for video', videoId)
-    return
+    throw new Error('Redis queue unavailable')
   }
   
   const contentHash = `hash_${videoId}_${Date.now()}` // TODO: Implement proper content hashing
   const rulesVersion = 1
   
-  await queue.add('analyze-video', {
+  await aiAnalysisQueue.add('analyze-video', {
     videoId,
     videoUrl,
     contentHash,
@@ -213,16 +186,15 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
 }
 
 export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
-  const queue = getQueue();
-  if (!queue) {
+  if (!redisAvailable || !aiAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping static content queue addition for video', videoId)
-    return
+    throw new Error('Redis queue unavailable')
   }
   
   const contentHash = `hash_${videoId}_${Date.now()}`
   const rulesVersion = 1
   
-  await queue.add('analyze-static', {
+  await aiAnalysisQueue.add('analyze-static', {
     videoId,
     videoUrl: '', // Empty for static content
     caption,
@@ -238,19 +210,7 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
 }
 
 export async function getQueueStats() {
-  // Check if Redis is actually connected by trying a ping
-  if (redis) {
-    try {
-      await redis.ping();
-      redisAvailable = true;
-    } catch (error) {
-      redisAvailable = false;
-      console.log('⚠️  Redis ping failed in getQueueStats:', (error as Error).message);
-    }
-  }
-  
-  const queue = getQueue();
-  if (!queue) {
+  if (!redisAvailable || !aiAnalysisQueue) {
     return {
       waiting: 0,
       active: 0,
@@ -260,10 +220,10 @@ export async function getQueueStats() {
     }
   }
   
-  const waiting = await queue.getWaiting()
-  const active = await queue.getActive()
-  const completed = await queue.getCompleted()
-  const failed = await queue.getFailed()
+  const waiting = await aiAnalysisQueue.getWaiting()
+  const active = await aiAnalysisQueue.getActive()
+  const completed = await aiAnalysisQueue.getCompleted()
+  const failed = await aiAnalysisQueue.getFailed()
   
   return {
     waiting: waiting.length,
