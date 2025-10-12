@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 import aiRoutes from './routes/ai.ts';
 import imageRoutes from './routes/images.ts';
 import adhocRoutes from './routes/adhoc.ts';
+import authRoutes from './routes/auth.ts';
 import { testDatabaseConnection } from './database/connection.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -25,6 +26,9 @@ app.use(express.static(path.join(__dirname, '../../dist')));
 
 // AI Analysis routes
 app.use('/api/ai', aiRoutes);
+
+// Authentication routes
+app.use('/api/auth', authRoutes);
 
 // Image proxy routes
 app.use('/api/images', imageRoutes);

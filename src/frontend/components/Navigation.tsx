@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiBarChart, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile } from 'react-icons/fi';
+import { FiMenu, FiX, FiBarChart, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile, FiLogOut } from 'react-icons/fi';
+import { useAuth } from '../contexts/AuthContext';
 
 interface NavigationProps {
   sidebarCollapsed: boolean;
@@ -10,6 +11,7 @@ interface NavigationProps {
 export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: NavigationProps) {
   const location = useLocation();
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => {
     // Initialize with proper mobile detection
@@ -100,6 +102,14 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
       category: 'tertiary',
       enabled: false
     },
+    { 
+      path: '/logout', 
+      label: 'Logout', 
+      icon: FiLogOut,
+      category: 'tertiary',
+      enabled: true,
+      isLogout: true
+    },
   ];
 
   const isActive = (path: string) => {
@@ -107,6 +117,11 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   };
   
   const handleNavClick = (path: string) => {
+    if (path === '/logout') {
+      logout();
+      setSidebarOpen(false); // Close sidebar on logout
+      return;
+    }
     navigate(path);
     setSidebarOpen(false); // Close sidebar on navigation
   };
@@ -131,9 +146,16 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
                 <FiMenu className="w-5 h-5 text-white/80" />
               </button>
               
-              <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                TikTok Analytics
-              </h1>
+              <div className="flex flex-col">
+                <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  TikTok Analytics
+                </h1>
+                {user && (
+                  <p className="text-xs text-white/50 truncate max-w-[200px]">
+                    {user.name || user.email}
+                  </p>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -291,21 +313,28 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
           {/* DEBUG: Desktop sidebar should NOT be visible on mobile! isMobile: {isMobile.toString()}, width: {typeof window !== 'undefined' ? window.innerWidth : 'unknown'} */}
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className={`flex items-center justify-between p-6 border-b border-white/10 ${sidebarCollapsed ? 'px-3' : ''}`}>
-            {!sidebarCollapsed && (
-              <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-                TikTok Analytics
-              </h1>
-            )}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-                className="p-2 rounded-lg hover:bg-white/10 transition-colors"
-                title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-              >
-                <FiMenu className="w-4 h-4 text-white/80" />
-              </button>
+          <div className={`flex flex-col p-6 border-b border-white/10 ${sidebarCollapsed ? 'px-3' : ''}`}>
+            <div className="flex items-center justify-between">
+              {!sidebarCollapsed && (
+                <h1 className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                  TikTok Analytics
+                </h1>
+              )}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+                  className="p-2 rounded-lg hover:bg-white/10 transition-colors"
+                  title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                >
+                  <FiMenu className="w-4 h-4 text-white/80" />
+                </button>
+              </div>
             </div>
+            {user && !sidebarCollapsed && (
+              <div className="mt-2 text-sm text-white/60 truncate">
+                {user.name || user.email}
+              </div>
+            )}
           </div>
 
           {/* Navigation Items */}
