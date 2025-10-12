@@ -15,6 +15,9 @@ export interface JobData {
   videoUrl: string
   contentHash: string
   rulesVersion: number
+  // For static content analysis
+  caption?: string
+  coverImageUrl?: string
 }
 
 // AI Analysis Queue
