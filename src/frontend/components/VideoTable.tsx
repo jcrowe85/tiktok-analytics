@@ -409,7 +409,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       <div className="space-y-2 pt-3.5 border-t border-white/10">
                         {/* AI Overall Score at top */}
                         <div className="flex items-center justify-between mb-1">
-                          <span className="text-xs font-bold text-white/90 uppercase tracking-wide">🧠 AI Score</span>
+                          <span className="text-xs font-bold text-white/90 uppercase tracking-wide">AI Score</span>
                           <span className={`text-base font-bold tabular-nums ${
                             video.ai_scores.overall_100 >= 80 ? 'text-green-400' :
                             video.ai_scores.overall_100 >= 60 ? 'text-yellow-400' :
