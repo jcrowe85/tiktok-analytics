@@ -1,10 +1,37 @@
 import axios from 'axios'
 
 /**
- * Get direct video URL from TikTok share URL
- * This URL can be streamed directly by FFmpeg without downloading
+ * Get comprehensive video data from TikTok share URL via RapidAPI
+ * Returns both video URL and rich metadata
  */
-export async function getDirectVideoUrl(shareUrl: string): Promise<string | null> {
+export async function getVideoData(shareUrl: string): Promise<{
+  videoUrl: string | null;
+  metadata?: {
+    id: string;
+    title: string;
+    author: {
+      id: string;
+      username: string;
+      nickname: string;
+      avatar: string;
+    };
+    duration: number;
+    playCount: number;
+    likeCount: number;
+    commentCount: number;
+    shareCount: number;
+    downloadCount: number;
+    collectCount: number;
+    createTime: number;
+    cover: string;
+    music: {
+      id: string;
+      title: string;
+      author: string;
+      duration: number;
+    };
+  };
+}> {
   console.log(`🔗 Getting direct video URL from: ${shareUrl}`)
   
   // Option 1: RapidAPI (reliable, paid)
@@ -19,11 +46,40 @@ export async function getDirectVideoUrl(shareUrl: string): Promise<string | null
         timeout: 10000
       })
       
-      const videoUrl = response.data?.data?.play || response.data?.data?.wmplay
+      const data = response.data?.data
+      const videoUrl = data?.play || data?.wmplay
       
-      if (videoUrl) {
-        console.log(`✅ Got direct video URL (can be streamed)`)
-        return videoUrl
+      if (videoUrl && data) {
+        console.log(`✅ Got video data from RapidAPI`)
+        
+        // Extract rich metadata
+        const metadata = {
+          id: data.id,
+          title: data.title || '',
+          author: {
+            id: data.author?.id || '',
+            username: data.author?.unique_id || '',
+            nickname: data.author?.nickname || '',
+            avatar: data.author?.avatar || ''
+          },
+          duration: data.duration || 0,
+          playCount: data.play_count || 0,
+          likeCount: data.digg_count || 0,
+          commentCount: data.comment_count || 0,
+          shareCount: data.share_count || 0,
+          downloadCount: data.download_count || 0,
+          collectCount: data.collect_count || 0,
+          createTime: data.create_time || 0,
+          cover: data.cover || '',
+          music: {
+            id: data.music_info?.id || '',
+            title: data.music_info?.title || '',
+            author: data.music_info?.author || '',
+            duration: data.music_info?.duration || 0
+          }
+        }
+        
+        return { videoUrl, metadata }
       }
     } catch (error: any) {
       console.warn(`⚠️  RapidAPI failed:`, {
@@ -39,14 +95,23 @@ export async function getDirectVideoUrl(shareUrl: string): Promise<string | null
   try {
     const freeUrl = await tryFreeVideoUrl(shareUrl)
     if (freeUrl) {
-      return freeUrl
+      console.log(`✅ Got video URL from free API`)
+      return { videoUrl: freeUrl }
     }
   } catch (error) {
     console.warn(`⚠️  Free API failed:`, error)
   }
   
   console.error(`❌ Could not get direct video URL`)
-  return null
+  return { videoUrl: null }
+}
+
+/**
+ * Backward-compatible function for getting just the video URL
+ */
+export async function getDirectVideoUrl(shareUrl: string): Promise<string | null> {
+  const result = await getVideoData(shareUrl)
+  return result.videoUrl
 }
 
 /**
