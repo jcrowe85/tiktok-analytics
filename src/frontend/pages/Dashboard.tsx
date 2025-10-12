@@ -60,7 +60,9 @@ function Dashboard() {
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      const data = await response.json()
+      const result = await response.json()
+      // Handle both old array format and new {success, data} format
+      const data = result.data || result
       // Ensure data is an array
       setVideos(Array.isArray(data) ? data : [])
     } catch (err) {
