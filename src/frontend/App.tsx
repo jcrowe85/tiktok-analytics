@@ -9,7 +9,7 @@ function App() {
 
   return (
     <BrowserRouter>
-      <div className="min-h-screen flex">
+      <div className="min-h-screen md:flex">
         <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
         <main className={`flex-1 overflow-hidden transition-all duration-300 ease-in-out
           ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64 lg:ml-72'}
