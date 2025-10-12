@@ -125,13 +125,15 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     return text.substring(0, maxLength) + '...'
   }
 
+  const [reanalyzing, setReanalyzing] = useState(false)
+
   const handleReanalyze = async (video: VideoMetrics) => {
     // Show confirmation dialog with cost warning
     const confirmed = window.confirm(
       `⚠️ RE-ANALYZE WARNING\n\n` +
       `This video was already analyzed ${video.ai_processed_at ? formatAnalysisTime(video.ai_processed_at) : 'previously'}.\n\n` +
       `Re-analyzing will:\n` +
-      `• Use OpenAI API credits (~$0.10-0.50)\n` +
+      `• Use OpenAI API credits (~$0.06)\n` +
       `• Take 30-60 seconds to complete\n` +
       `• Overwrite existing analysis\n\n` +
       `⚠️ Only re-analyze if you have a specific reason (e.g., video content changed, testing improvements).\n\n` +
@@ -141,6 +143,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     if (!confirmed) {
       return
     }
+
+    setReanalyzing(true)
 
     try {
       const response = await fetch(`/api/ai/reprocess/${video.id}`, {
@@ -159,13 +163,46 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
         throw new Error(data.error || 'Failed to queue re-analysis')
       }
 
-      // Show success message
-      alert(`✅ Video queued for re-analysis!\n\nThe analysis will complete in 30-60 seconds. Refresh the page to see updated results.`)
+      // Poll for completion (check every 5 seconds for up to 2 minutes)
+      let attempts = 0
+      const maxAttempts = 24 // 2 minutes / 5 seconds
       
-      // Close modal
-      setSelectedVideo(null)
+      const checkStatus = async () => {
+        try {
+          const statusResponse = await fetch('/api/data')
+          const statusData = await statusResponse.json()
+          
+          if (statusData.success) {
+            const updatedVideo = statusData.data.find((v: any) => v.id === video.id)
+            
+            if (updatedVideo && updatedVideo.ai_processed_at !== video.ai_processed_at) {
+              // Analysis complete! Close modal and refresh
+              setReanalyzing(false)
+              setSelectedVideo(null)
+              window.location.reload()
+              return
+            }
+          }
+          
+          attempts++
+          if (attempts < maxAttempts) {
+            setTimeout(checkStatus, 5000)
+          } else {
+            // Timeout - just refresh the page
+            window.location.reload()
+          }
+        } catch (error) {
+          console.error('Status check error:', error)
+          setTimeout(checkStatus, 5000)
+        }
+      }
+      
+      // Start polling after 10 seconds (give it time to process)
+      setTimeout(checkStatus, 10000)
+      
     } catch (error) {
       console.error('Re-analysis error:', error)
+      setReanalyzing(false)
       alert(`❌ Failed to queue re-analysis:\n\n${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -534,6 +571,24 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 </div>
               </div>
             </div>
+
+            {/* Reanalyzing Overlay */}
+            {reanalyzing && (
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-30 rounded-2xl">
+                <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 rounded-2xl p-8 max-w-md text-center shadow-2xl">
+                  <div className="w-16 h-16 border-4 border-blue-400/20 border-t-blue-400 rounded-full animate-spin mx-auto mb-4"></div>
+                  <h3 className="text-xl font-bold text-white mb-2">Re-analyzing Video...</h3>
+                  <p className="text-white/60 mb-4">
+                    Running AI analysis with improved scoring model
+                  </p>
+                  <div className="space-y-2 text-sm text-white/50">
+                    <p>⏱️ This will take 30-60 seconds</p>
+                    <p>🤖 Using GPT-4o for better accuracy</p>
+                    <p>♻️ Page will auto-refresh when complete</p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <div className="p-6 pt-4">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
