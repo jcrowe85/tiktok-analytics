@@ -118,7 +118,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   return (
     <>
       {/* Top Header - Only on mobile */}
-      <nav className="glass-card border-0 border-b border-white/10 rounded-none relative z-50 md:hidden">
+      <nav className="bg-black/20 backdrop-blur-sm border-b border-white/10 relative z-50 md:hidden">
         {/* DEBUG: Mobile header - should only show on mobile */}
         <div className="px-4">
           <div className="flex items-center justify-between h-16">
