@@ -126,11 +126,36 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   }
 
   const [reanalyzing, setReanalyzing] = useState(false)
-  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'warning', message: string } | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
-  const showToast = (type: 'success' | 'error' | 'warning', message: string) => {
-    setToast({ type, message })
-    setTimeout(() => setToast(null), 5000)
+  const handleDeleteVideo = async () => {
+    if (!selectedVideo) return
+    
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/ai/video/${selectedVideo.id}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to delete video')
+      }
+
+      // Close modal and refresh the page
+      setSelectedVideo(null)
+      setShowDeleteConfirm(false)
+      window.location.reload()
+    } catch (error) {
+      console.error('Delete error:', error)
+      alert(`Failed to delete video: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      setDeleting(false)
+    }
   }
 
   const handleReanalyze = async (video: VideoMetrics) => {
@@ -889,34 +914,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       {/* Delete Button */}
                       <div className="bg-slate-800/50 border border-red-500/30 rounded-xl p-4">
                         <button
-                          onClick={async () => {
-                            if (window.confirm('⚠️ Are you sure you want to delete this video and all its analysis data? This cannot be undone.')) {
-                              try {
-                                const response = await fetch(`/api/ai/video/${selectedVideo.id}`, {
-                                  method: 'DELETE',
-                                  headers: {
-                                    'Content-Type': 'application/json',
-                                  },
-                                })
-
-                                const data = await response.json()
-
-                                if (!response.ok) {
-                                  throw new Error(data.error || 'Failed to delete video')
-                                }
-
-                                // Show success message
-                                showToast('success', 'Video deleted successfully!')
-                                
-                                // Close modal and refresh the page to show updated video list
-                                setSelectedVideo(null)
-                                setTimeout(() => window.location.reload(), 1000)
-                              } catch (error) {
-                                console.error('Delete error:', error)
-                                showToast('error', `Failed to delete video: ${error instanceof Error ? error.message : 'Unknown error'}`)
-                              }
-                            }
-                          }}
+                          onClick={() => setShowDeleteConfirm(true)}
                           className="w-full px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-all backdrop-blur-sm text-red-400 text-sm font-medium"
                         >
                           Delete Video
@@ -931,24 +929,60 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
         </div>
       )}
 
-      {/* Custom Toast Notification */}
-      {toast && (
-        <div className="fixed top-4 right-4 z-50 animate-in slide-in-from-right duration-300">
-          <div className={`flex items-center gap-3 px-4 py-3 rounded-lg shadow-lg backdrop-blur-sm border ${
-            toast.type === 'success' ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-            toast.type === 'error' ? 'bg-red-500/20 text-red-400 border-red-500/30' :
-            'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-          }`}>
-            {toast.type === 'success' && <FiCheck className="w-5 h-5" />}
-            {toast.type === 'error' && <FiAlertTriangle className="w-5 h-5" />}
-            {toast.type === 'warning' && <FiAlertTriangle className="w-5 h-5" />}
-            <span className="font-medium">{toast.message}</span>
-            <button
-              onClick={() => setToast(null)}
-              className="ml-2 text-white/60 hover:text-white/80 transition-colors"
-            >
-              <FiX className="w-4 h-4" />
-            </button>
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-white/10">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                  <FiAlertTriangle className="w-6 h-6 text-red-400" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-white">Delete Video</h3>
+                  <p className="text-white/60 text-sm">This action cannot be undone</p>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <p className="text-white/90 mb-2">
+                  Are you sure you want to delete this video and all its analysis data?
+                </p>
+                <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3">
+                  <p className="text-red-400 text-sm">
+                    ⚠️ This will permanently remove:
+                  </p>
+                  <ul className="text-red-400/80 text-sm mt-1 ml-4 list-disc">
+                    <li>Video metadata and performance data</li>
+                    <li>All AI analysis results</li>
+                    <li>Visual analysis scores</li>
+                    <li>Key findings and suggestions</li>
+                  </ul>
+                </div>
+              </div>
+
+              {deleting ? (
+                <div className="flex items-center justify-center gap-3 py-4">
+                  <div className="w-6 h-6 border-2 border-white/20 border-t-white/60 rounded-full animate-spin"></div>
+                  <span className="text-white/80">Deleting video...</span>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="flex-1 px-4 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleDeleteVideo}
+                    className="flex-1 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 font-medium rounded-lg transition-colors"
+                  >
+                    Delete Video
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
