@@ -48,13 +48,13 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   }, [selectedVideo, showDeleteConfirm])
 
   // const formatNumber = (num: number) => { // Unused
-    if (num >= 1000000) {
-      return `${(num / 1000000).toFixed(1)}M`
-    } else if (num >= 1000) {
-      return `${(num / 1000).toFixed(1)}K`
-    }
-    return num.toLocaleString()
-  }
+  //   if (num >= 1000000) {
+  //     return `${(num / 1000000).toFixed(1)}M`
+  //   } else if (num >= 1000) {
+  //     return `${(num / 1000).toFixed(1)}K`
+  //   }
+  //   return num.toLocaleString()
+  // }
 
 
   // First filter videos based on AI quality selection
