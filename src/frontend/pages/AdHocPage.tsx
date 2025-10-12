@@ -92,7 +92,6 @@ function AdHocPage() {
                   onClick={() => setShowAdHocAnalysis(true)}
                   className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
                 >
-                  <span className="text-lg">➕</span>
                   <span className="text-xs sm:text-sm font-medium text-blue-400">
                     New Analysis
                   </span>
@@ -127,7 +126,6 @@ function AdHocPage() {
                   onClick={() => setShowAdHocAnalysis(true)}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
                 >
-                  <span>🎯</span>
                   <span>Analyze Your First Video</span>
                 </button>
 
@@ -177,7 +175,6 @@ function AdHocPage() {
                       onClick={() => setShowAdHocAnalysis(true)}
                       className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
                     >
-                      <span>🎯</span>
                       <span>Analyze</span>
                     </button>
                   </div>
