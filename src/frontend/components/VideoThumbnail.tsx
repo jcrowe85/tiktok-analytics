@@ -18,22 +18,34 @@ export function VideoThumbnail({
 }: VideoThumbnailProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
-  const [currentImageUrl, setCurrentImageUrl] = useState(coverImageUrl)
+  const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined)
 
-  // Try alternative thumbnail generation if original fails
+  // Initialize with proxy URL for videos, original URL for static content
   useEffect(() => {
-    if (imageError && shareUrl && !currentImageUrl?.includes('/api/images/')) {
-      // Try our backend proxy endpoint
+    if (shareUrl) {
+      // For videos, use our reliable proxy endpoint
       const videoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
       if (videoId) {
         const proxyUrl = `/api/images/thumbnail/${videoId}`
-        console.log(`🔄 Trying proxy thumbnail URL: ${proxyUrl}`)
+        console.log(`🖼️ Using proxy thumbnail for video: ${videoId}`)
         setCurrentImageUrl(proxyUrl)
-        setImageError(false)
-        setImageLoaded(false)
+      } else {
+        setCurrentImageUrl(coverImageUrl)
       }
+    } else {
+      setCurrentImageUrl(coverImageUrl)
     }
-  }, [imageError, shareUrl, currentImageUrl])
+  }, [coverImageUrl, shareUrl])
+
+  // Fallback to original URL if proxy fails
+  useEffect(() => {
+    if (imageError && currentImageUrl?.includes('/api/images/') && coverImageUrl) {
+      console.log(`🔄 Proxy failed, trying original URL: ${coverImageUrl}`)
+      setCurrentImageUrl(coverImageUrl)
+      setImageError(false)
+      setImageLoaded(false)
+    }
+  }, [imageError, currentImageUrl, coverImageUrl])
 
   // If no URL provided or image failed to load, show fallback
   if (!currentImageUrl || imageError) {
