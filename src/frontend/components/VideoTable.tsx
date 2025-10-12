@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiCheck, FiAlertTriangle } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 import { VideoThumbnail } from './VideoThumbnail'
@@ -30,6 +30,20 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
   const [captionExpanded, setCaptionExpanded] = useState(false)
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedVideo || showDeleteConfirm) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    // Cleanup function to restore scroll when component unmounts
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedVideo, showDeleteConfirm])
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -577,12 +591,14 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
       {/* Modern Video Detail Modal */}
       {selectedVideo && (
         <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]"
           onClick={() => setSelectedVideo(null)}
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
           <div 
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto relative z-10 shadow-2xl"
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto relative shadow-2xl"
             onClick={(e) => e.stopPropagation()}
+            style={{ maxHeight: '95vh' }}
           >
             {/* Modal Header */}
             <div className="sticky top-0 bg-white/5 backdrop-blur-xl border-b border-white/10 p-6 z-20 rounded-t-2xl">
@@ -941,7 +957,10 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+        <div 
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+        >
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-white/10">
             <div className="p-6">
               <div className="flex items-center gap-3 mb-4">
