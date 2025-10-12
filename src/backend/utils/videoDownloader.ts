@@ -119,7 +119,7 @@ async function downloadViaRapidAPI(
   console.log(`📡 Using RapidAPI to download video...`)
   
   try {
-    const response = await axios.get('https://tiktok-video-no-watermark2.p.rapidapi.com/video/download', {
+    const response = await axios.get('https://tiktok-video-no-watermark2.p.rapidapi.com/', {
       params: { url: shareUrl, hd: '1' },
       headers: {
         'X-RapidAPI-Key': process.env.RAPIDAPI_KEY!,
