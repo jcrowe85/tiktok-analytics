@@ -20,35 +20,29 @@ export function VideoThumbnail({
   const [imageLoaded, setImageLoaded] = useState(false)
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined)
 
-  // Initialize with proxy URL for videos, original URL for static content
+  // Always start with the original TikTok thumbnail URL
   useEffect(() => {
     console.log(`🔍 VideoThumbnail initialized:`, { coverImageUrl, shareUrl })
-    if (shareUrl) {
-      // For videos, use our reliable proxy endpoint
+    setCurrentImageUrl(coverImageUrl)
+  }, [coverImageUrl])
+
+  // Only use proxy as fallback if original URL fails
+  useEffect(() => {
+    if (imageError && shareUrl && !currentImageUrl?.includes('/api/images/')) {
+      // Try our backend proxy endpoint as fallback
       const videoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
       if (videoId) {
         const proxyUrl = `/api/images/thumbnail/${videoId}`
-        console.log(`🖼️ Using proxy thumbnail for video: ${videoId} -> ${proxyUrl}`)
+        console.log(`🔄 Original failed, trying proxy: ${proxyUrl}`)
         setCurrentImageUrl(proxyUrl)
-      } else {
-        console.log(`📝 No videoId found in shareUrl: ${shareUrl}`)
-        setCurrentImageUrl(coverImageUrl)
+        setImageError(false)
+        setImageLoaded(false)
       }
-    } else {
-      console.log(`🖼️ No shareUrl, using coverImageUrl: ${coverImageUrl}`)
-      setCurrentImageUrl(coverImageUrl)
+    } else if (imageError && currentImageUrl?.includes('/api/images/')) {
+      // Proxy also failed, show fallback icon
+      console.log(`❌ Proxy also failed, showing fallback icon`)
     }
-  }, [coverImageUrl, shareUrl])
-
-  // Fallback to original URL if proxy fails
-  useEffect(() => {
-    if (imageError && currentImageUrl?.includes('/api/images/') && coverImageUrl) {
-      console.log(`🔄 Proxy failed, trying original URL: ${coverImageUrl}`)
-      setCurrentImageUrl(coverImageUrl)
-      setImageError(false)
-      setImageLoaded(false)
-    }
-  }, [imageError, currentImageUrl, coverImageUrl])
+  }, [imageError, shareUrl, currentImageUrl])
 
   // If no URL provided or image failed to load, show fallback
   if (!currentImageUrl || imageError) {

@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const router = express.Router()
 
-// Generate a placeholder thumbnail for TikTok videos
+// Proxy TikTok thumbnails to bypass CORS and authentication issues
 router.get('/thumbnail/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params
@@ -12,70 +12,56 @@ router.get('/thumbnail/:videoId', async (req, res) => {
       return res.status(400).json({ error: 'Video ID is required' })
     }
 
-    console.log(`🖼️ Generating placeholder thumbnail for video ${videoId}`)
+    console.log(`🖼️ Fetching actual TikTok thumbnail for video ${videoId}`)
 
-    // Since TikTok's CDN is heavily protected, let's generate a placeholder
-    // using a service like placeholder.com or create a simple SVG
-    
-    const placeholderUrl = `https://via.placeholder.com/300x400/1a1a2e/ffffff?text=TikTok+Video`
-    
-    try {
-      const response = await axios.get(placeholderUrl, {
-        responseType: 'stream',
-        timeout: 5000,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        }
-      })
+    // Try to get the actual TikTok thumbnail using multiple CDN patterns
+    const possibleUrls = [
+      `https://p16-sign-va.tiktokcdn-us.com/tos-useast5-p-0068-tx/cover/${videoId}~tplv-tiktokx-cropcenter-q:300:400:q72.jpeg`,
+      `https://p19-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/cover/${videoId}~tplv-tiktokx-cropcenter-q:300:400:q72.jpeg`,
+      `https://p16-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/${videoId}`,
+      `https://p16-sign-va.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/${videoId}`,
+      `https://p19-common-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/${videoId}`,
+    ]
 
-      if (response.status === 200) {
-        console.log(`✅ Generated placeholder thumbnail`)
+    for (const url of possibleUrls) {
+      try {
+        console.log(`🔗 Trying TikTok CDN: ${url}`)
         
-        res.set({
-          'Content-Type': 'image/png',
-          'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
-          'Access-Control-Allow-Origin': '*',
+        const response = await axios.get(url, {
+          responseType: 'stream',
+          timeout: 8000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            'Referer': 'https://www.tiktok.com/',
+            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
+          }
         })
-        
-        response.data.pipe(res)
-        return
+
+        if (response.status === 200) {
+          console.log(`✅ Successfully fetched actual TikTok thumbnail`)
+          
+          res.set({
+            'Content-Type': response.headers['content-type'] || 'image/jpeg',
+            'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
+            'Access-Control-Allow-Origin': '*',
+          })
+          
+          response.data.pipe(res)
+          return
+        }
+      } catch (error) {
+        console.log(`❌ CDN failed: ${error.response?.status || error.message}`)
+        continue
       }
-    } catch (placeholderError) {
-      console.log(`❌ Placeholder service failed:`, placeholderError.message)
     }
 
-    // Final fallback: Return a more professional-looking SVG thumbnail
-    const svgContent = `<svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
-<defs>
-  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
-    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
-    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
-  </linearGradient>
-</defs>
-<rect width="300" height="400" fill="url(#bg)"/>
-<rect x="15" y="15" width="270" height="370" fill="#000000" fill-opacity="0.2" stroke="#ffffff" stroke-width="1" stroke-opacity="0.3"/>
-<!-- Play button -->
-<circle cx="150" cy="200" r="40" fill="#ffffff" fill-opacity="0.9"/>
-<polygon points="135,185 135,215 165,200" fill="#667eea"/>
-<!-- TikTok logo area -->
-<rect x="20" y="320" width="260" height="50" fill="#000000" fill-opacity="0.3"/>
-<text x="150" y="340" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14" font-weight="bold">TikTok</text>
-<text x="150" y="355" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" opacity="0.8">${videoId.slice(-8)}</text>
-</svg>`
-    
-    console.log(`✅ Generated simple SVG thumbnail`)
-    
-    res.set({
-      'Content-Type': 'image/svg+xml',
-      'Cache-Control': 'public, max-age=86400',
-      'Access-Control-Allow-Origin': '*',
-    })
-    
-    res.send(svgContent)
+    // If all CDN attempts failed, return 404 so frontend can show fallback icon
+    console.log(`❌ All TikTok CDN attempts failed for video ${videoId}`)
+    res.status(404).json({ error: 'Thumbnail not available' })
 
   } catch (error) {
-    console.error('❌ Thumbnail generation error:', error)
-    res.status(500).json({ error: 'Failed to generate thumbnail' })
+    console.error('❌ Thumbnail proxy error:', error)
+    res.status(500).json({ error: 'Failed to fetch thumbnail' })
   }
 })
 
