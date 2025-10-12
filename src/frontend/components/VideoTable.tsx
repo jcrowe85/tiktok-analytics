@@ -709,189 +709,142 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
 
                   {/* AI Analysis Section */}
                   {selectedVideo.ai_scores && (
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-6">
-                        <h4 className="text-lg font-bold text-white flex items-center gap-2">
-                          🧠 AI Creative Intelligence
-                        </h4>
-                        <div className="flex items-center gap-3">
-                          <span className={`px-4 py-2 rounded-lg text-2xl font-bold ${
-                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/30 text-green-400 border border-green-500/40' :
-                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/30 text-yellow-400 border border-yellow-500/40' :
-                            'bg-red-500/30 text-red-400 border border-red-500/40'
+                    <div className="space-y-6">
+                      {/* Overall Score - Big & Bold */}
+                      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="text-xl font-bold text-white">Overall Score</h3>
+                          <div className={`px-4 py-2 rounded-full text-sm font-bold border ${
+                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                            'bg-red-500/20 text-red-400 border-red-500/30'
                           }`}>
-                            {selectedVideo.ai_scores.overall_100}/100
-                          </span>
+                            {selectedVideo.ai_scores.overall_100 >= 80 ? '✅ Pass' :
+                             selectedVideo.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
+                             '❌ Reshoot'}
+                          </div>
+                        </div>
+                        <div className="text-6xl font-bold text-white mb-2">
+                          {selectedVideo.ai_scores.overall_100}
+                          <span className="text-2xl text-white/40">/100</span>
+                        </div>
+                        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                          <div
+                            className={`h-full transition-all ${
+                              selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500' :
+                              selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500' :
+                              'bg-red-500'
+                            }`}
+                            style={{ width: `${selectedVideo.ai_scores.overall_100}%` }}
+                          />
                         </div>
                       </div>
 
-                      {/* Quality Assessment */}
-                      <div className="mb-6 p-4 rounded-xl bg-white/5 backdrop-blur-sm border border-white/10">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-medium text-white/70">Quality Assessment:</span>
-                          <span className={`font-bold text-sm px-3 py-1 rounded-lg ${
-                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/30 text-green-400' :
-                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/30 text-yellow-400' :
-                            'bg-red-500/30 text-red-400'
-                          }`}>
-                            {selectedVideo.ai_scores.overall_100 >= 80 ? '✅ PASS - Publish as-is' :
-                             selectedVideo.ai_scores.overall_100 >= 60 ? '⚠️ REVISE - Minor improvements needed' :
-                             '❌ RESHOOT - Major issues detected'}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Score Breakdown */}
-                      <div className="grid grid-cols-2 gap-4">
-                        {Object.entries(selectedVideo.ai_scores)
-                          .filter(([key]) => key !== 'overall_100')
-                          .map(([key, value]) => (
-                            <div key={key} className="p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                              <div className="flex items-center justify-between mb-2">
-                                <span className="text-sm font-medium text-white/80 capitalize">
-                                  {key.replace(/_/g, ' ')}
-                                </span>
-                                <span className="text-sm font-bold text-white">
-                                  {value}/10
-                                </span>
-                              </div>
-                              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-500 ${
-                                    value >= 7 ? 'bg-green-400' :
-                                    value >= 5 ? 'bg-yellow-400' :
-                                    'bg-red-400'
-                                  }`}
-                                  style={{ width: `${(value / 10) * 100}%` }}
-                                />
+                      {/* Content Scores Grid */}
+                      <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                        <h3 className="text-lg font-bold text-white mb-4">📊 Content Scores</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                          {Object.entries({
+                            'Hook Strength': selectedVideo.ai_scores.hook_strength,
+                            'Depth': selectedVideo.ai_scores.depth,
+                            'Clarity': selectedVideo.ai_scores.clarity,
+                            'Pacing': selectedVideo.ai_scores.pacing,
+                            'CTA': selectedVideo.ai_scores.cta,
+                            'Brand Fit': selectedVideo.ai_scores.brand_fit,
+                          }).map(([label, score]) => (
+                            <div key={label} className="bg-slate-900/50 rounded-lg p-3">
+                              <div className="text-white/60 text-xs mb-1">{label}</div>
+                              <div className="text-2xl font-bold text-white">
+                                {score}<span className="text-sm text-white/40">/10</span>
                               </div>
                             </div>
                           ))}
+                        </div>
                       </div>
 
-                      {/* AI Findings & Suggestions */}
-                      <div className="mt-6 space-y-4">
-                        {/* Fix Suggestions */}
-                        {selectedVideo.ai_fix_suggestions && selectedVideo.ai_fix_suggestions.length > 0 && (
-                          <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                            <h5 className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
-                              🔧 Actionable Suggestions
-                            </h5>
-                            <div className="space-y-2">
-                              {selectedVideo.ai_fix_suggestions.slice(0, 3).map((suggestion, idx) => (
-                                <div key={idx} className="flex items-start gap-2 text-sm text-white/80">
-                                  <span className="text-green-400 font-bold text-xs mt-0.5">{idx + 1}.</span>
-                                  <span>{suggestion}</span>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-
-                        {/* AI Findings */}
-                        {selectedVideo.ai_findings && (
-                          <div className="p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                            <h5 className="text-sm font-semibold text-white/90 mb-3 flex items-center gap-2">
-                              💡 AI Insights
-                            </h5>
-                            <div className="space-y-2">
-                              {Object.entries(selectedVideo.ai_findings).slice(0, 3).map(([key, finding]) => (
-                                <div key={key} className="text-sm text-white/80">
-                                  <span className="font-medium text-white/60 capitalize">
-                                    {key.replace(/_/g, ' ')}:
+                      {/* Visual Scores with Progress Bars */}
+                      {selectedVideo.ai_visual_scores && (
+                        <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                          <h3 className="text-lg font-bold text-white mb-4">👁️ Visual Analysis</h3>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {Object.entries({
+                              'Thumbstop': selectedVideo.ai_visual_scores.thumbstop_prob,
+                              'First Frame': selectedVideo.ai_visual_scores.first_frame_strength,
+                              'Silent Comp.': selectedVideo.ai_visual_scores.silent_comprehension,
+                              'Aesthetics': selectedVideo.ai_visual_scores.visual_aesthetics,
+                              'Composition': selectedVideo.ai_visual_scores.composition,
+                              'Motion': selectedVideo.ai_visual_scores.motion_dynamics,
+                              'Pattern Int.': selectedVideo.ai_visual_scores.pattern_interrupt,
+                              'Text Legibility': selectedVideo.ai_visual_scores.text_legibility,
+                              'Emotion': selectedVideo.ai_visual_scores.emotion_score,
+                              'Save Trigger': selectedVideo.ai_visual_scores.save_share_trigger,
+                              'Loopability': selectedVideo.ai_visual_scores.loopability,
+                              'Trend Align': selectedVideo.ai_visual_scores.trend_alignment,
+                            }).map(([label, score]) => (
+                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
+                                <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all ${
+                                        score >= 8 ? 'bg-green-500' :
+                                        score >= 6 ? 'bg-yellow-500' :
+                                        'bg-red-500'
+                                      }`}
+                                      style={{ width: `${score * 10}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-bold text-white tabular-nums min-w-[24px]">
+                                    {score.toFixed(1)}
                                   </span>
-                                  <span className="ml-2">{finding}</span>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Visual Scores (Advanced) Section */}
-                  {selectedVideo.ai_scores && (
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-bold text-white flex items-center gap-2">
-                          <span className="w-5 h-5 flex items-center justify-center">
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clipRule="evenodd" />
-                            </svg>
-                          </span>
-                          Visual Scores (Advanced)
-                        </h4>
-                        <svg className="w-4 h-4 text-white/60" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-                        </svg>
-                      </div>
-                      
-                      <div className="space-y-4">
-                        {/* Visual Score Items */}
-                        <div className="space-y-3">
-                          {/* Composition */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Composition</span>
-                            <span className="text-white/60 text-sm font-medium">7/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '70%' }} />
-                          </div>
-
-                          {/* Loopability */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Loopability</span>
-                            <span className="text-white/60 text-sm font-medium">6/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-yellow-400 transition-all duration-500" style={{ width: '60%' }} />
-                          </div>
-
-                          {/* Emotion Score */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Emotion Score</span>
-                            <span className="text-white/60 text-sm font-medium">8/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
-                          </div>
-
-                          {/* Thumbstop Prob */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Thumbstop Prob</span>
-                            <span className="text-white/60 text-sm font-medium">8/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
-                          </div>
-
-                          {/* Motion Dynamics */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Motion Dynamics</span>
-                            <span className="text-white/60 text-sm font-medium">6/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-yellow-400 transition-all duration-500" style={{ width: '60%' }} />
-                          </div>
-
-                          {/* Text Legibility */}
-                          <div className="flex items-center justify-between">
-                            <span className="text-white text-sm font-medium">Text Legibility</span>
-                            <span className="text-white/60 text-sm font-medium">8/10</span>
-                          </div>
-                          <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-green-400 transition-all duration-500" style={{ width: '80%' }} />
+                              </div>
+                            ))}
                           </div>
                         </div>
+                      )}
 
-                        {/* View Full JSON Analysis Button */}
-                        <div className="pt-4 border-t border-white/10">
-                          <button className="w-full bg-blue-600/30 hover:bg-blue-600/50 text-white font-medium py-3 px-4 rounded-lg transition-all duration-200 backdrop-blur-sm border border-blue-500/30">
-                            View Full JSON Analysis
-                          </button>
+                      {/* Key Findings */}
+                      {selectedVideo.ai_findings && (Object.values(selectedVideo.ai_findings).some((v: any) => v && v.trim())) && (
+                        <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                          <h3 className="text-lg font-bold text-white mb-4">💡 Key Findings</h3>
+                          <div className="space-y-3">
+                            {selectedVideo.ai_findings.hook_strength && (
+                              <div>
+                                <span className="text-white/60 text-sm font-medium">Hook Analysis:</span>
+                                <p className="text-white/90 mt-1">{selectedVideo.ai_findings.hook_strength}</p>
+                              </div>
+                            )}
+                            {selectedVideo.ai_findings.depth && (
+                              <div>
+                                <span className="text-white/60 text-sm font-medium">Depth Analysis:</span>
+                                <p className="text-white/90 mt-1">{selectedVideo.ai_findings.depth}</p>
+                              </div>
+                            )}
+                            {selectedVideo.ai_findings.cta && (
+                              <div>
+                                <span className="text-white/60 text-sm font-medium">CTA Analysis:</span>
+                                <p className="text-white/90 mt-1">{selectedVideo.ai_findings.cta}</p>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
+                      )}
+
+                      {/* Suggestions */}
+                      {selectedVideo.ai_fix_suggestions && selectedVideo.ai_fix_suggestions.length > 0 && (
+                        <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
+                          <h3 className="text-lg font-bold text-white mb-4">🔧 Suggestions</h3>
+                          <ul className="space-y-2">
+                            {selectedVideo.ai_fix_suggestions.map((suggestion: string, idx: number) => (
+                              <li key={idx} className="text-white/80 flex items-start gap-2">
+                                <span className="text-blue-400 mt-1">→</span>
+                                <span>{suggestion}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
