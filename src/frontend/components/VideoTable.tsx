@@ -1128,9 +1128,18 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
       {showReanalyzeConfirm && videoToReanalyze && createPortal(
         <div 
           className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
-          style={{ zIndex: 1000000 }}
+          style={{ zIndex: 9999999 }}
+          onClick={(e) => {
+            // Only close if clicking the backdrop, not the modal content
+            if (e.target === e.currentTarget) {
+              cancelReanalyze();
+            }
+          }}
         >
-          <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-md w-full mx-4 overflow-hidden">
+          <div 
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-md w-full mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Header */}
             <div className="px-6 py-4 border-b border-white/10">
               <div className="flex items-center gap-3">
