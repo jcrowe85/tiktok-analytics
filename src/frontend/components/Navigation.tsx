@@ -4,8 +4,6 @@ export function Navigation() {
   const location = useLocation();
   const navigate = useNavigate();
   
-  console.log('Navigation rendered, current path:', location.pathname);
-  
   const navItems = [
     { path: '/', label: 'My Videos', icon: '🎥' },
     { path: '/ad-hoc', label: 'Ad-Hoc Analysis', icon: '🔍' },
@@ -16,8 +14,6 @@ export function Navigation() {
   };
   
   const handleNavClick = (path: string) => {
-    alert(`Clicked! Navigating to: ${path}`);
-    console.log('Navigating to:', path);
     navigate(path);
   };
 
