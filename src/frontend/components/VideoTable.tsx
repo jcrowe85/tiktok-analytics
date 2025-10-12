@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiCheck, FiAlertTriangle } from 'react-icons/fi'
+import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiAlertTriangle } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 import { VideoThumbnail } from './VideoThumbnail'
 // import fleurLogo from '../../assets/logo.jpg' // Unused for now
@@ -30,7 +30,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
-  const [captionExpanded, setCaptionExpanded] = useState(false)
+  // const [captionExpanded, setCaptionExpanded] = useState(false) // Unused
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
   // Prevent body scroll when modal is open
@@ -47,7 +47,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     }
   }, [selectedVideo, showDeleteConfirm])
 
-  const formatNumber = (num: number) => {
+  // const formatNumber = (num: number) => { // Unused
     if (num >= 1000000) {
       return `${(num / 1000000).toFixed(1)}M`
     } else if (num >= 1000) {

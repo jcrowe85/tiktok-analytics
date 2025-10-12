@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { FiVideo, FiImage } from 'react-icons/fi'
+import { FiVideo } from 'react-icons/fi'
 
 interface VideoThumbnailProps {
   coverImageUrl?: string
