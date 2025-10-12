@@ -174,8 +174,23 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
           
           if (statusData.success) {
             const updatedVideo = statusData.data.find((v: any) => v.id === video.id)
+            console.log(`🔍 Checking video ${video.id}:`, {
+              found: !!updatedVideo,
+              oldProcessedAt: video.ai_processed_at,
+              newProcessedAt: updatedVideo?.ai_processed_at,
+              hasAIScores: !!updatedVideo?.ai_scores,
+              hasVisualScores: !!updatedVideo?.ai_visual_scores,
+              hasFindings: !!updatedVideo?.ai_findings
+            })
             
-            if (updatedVideo && updatedVideo.ai_processed_at !== video.ai_processed_at) {
+            // Check if analysis completed (either timestamp changed OR we now have AI scores)
+            const hasNewAnalysis = updatedVideo && (
+              updatedVideo.ai_processed_at !== video.ai_processed_at ||
+              (!video.ai_scores && updatedVideo.ai_scores) ||
+              (!video.ai_visual_scores && updatedVideo.ai_visual_scores)
+            )
+            
+            if (hasNewAnalysis) {
               // Analysis complete! Update modal with new data
               console.log('🔄 Re-analysis complete! Updating modal with new data:', updatedVideo)
               setReanalyzing(false)

@@ -181,7 +181,9 @@ router.post('/reprocess/:videoId', async (req, res) => {
     )
     
     // Add to queue for processing
+    console.log(`🔄 Re-processing video ${videoId} with URL: ${videoUrl}`)
     await addVideoForAnalysis(videoId, videoUrl)
+    console.log(`✅ Video ${videoId} queued for re-analysis`)
     
     res.json({ 
       message: 'Video queued for reprocessing',
