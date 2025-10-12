@@ -189,6 +189,7 @@ function AdHocPage() {
           )}
         </div>
       </div>
+      </div>
       
       {/* Ad-Hoc Analysis Modal */}
       {showAdHocAnalysis && (
