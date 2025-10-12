@@ -44,23 +44,16 @@ router.get('/thumbnail/:videoId', async (req, res) => {
       console.log(`❌ Placeholder service failed:`, placeholderError.message)
     }
 
-    // Final fallback: Return a simple SVG
-    const svgThumbnail = `
-      <svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
-        <rect width="300" height="400" fill="#1a1a2e"/>
-        <rect x="20" y="20" width="260" height="360" fill="#16213e" stroke="#4a5568" stroke-width="2"/>
-        <text x="150" y="200" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16">
-          TikTok Video
-        </text>
-        <text x="150" y="230" text-anchor="middle" fill="#a0aec0" font-family="Arial, sans-serif" font-size="12">
-          ID: ${videoId}
-        </text>
-        <polygon points="120,280 140,280 130,300" fill="#ffffff"/>
-        <circle cx="130" cy="290" r="15" fill="none" stroke="#ffffff" stroke-width="2"/>
-      </svg>
-    `
-
-    console.log(`✅ Generated SVG thumbnail fallback`)
+    // Final fallback: Return a simple SVG that should definitely work
+    const svgContent = `<svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
+<rect width="300" height="400" fill="#1a1a2e"/>
+<rect x="20" y="20" width="260" height="360" fill="#16213e" stroke="#4a5568" stroke-width="2"/>
+<text x="150" y="200" text-anchor="middle" fill="#ffffff" font-family="Arial" font-size="16">TikTok Video</text>
+<text x="150" y="230" text-anchor="middle" fill="#a0aec0" font-family="Arial" font-size="12">ID: ${videoId}</text>
+<circle cx="150" cy="280" r="20" fill="#ffffff"/>
+</svg>`
+    
+    console.log(`✅ Generated simple SVG thumbnail`)
     
     res.set({
       'Content-Type': 'image/svg+xml',
@@ -68,7 +61,7 @@ router.get('/thumbnail/:videoId', async (req, res) => {
       'Access-Control-Allow-Origin': '*',
     })
     
-    res.send(svgThumbnail)
+    res.send(svgContent)
 
   } catch (error) {
     console.error('❌ Thumbnail generation error:', error)

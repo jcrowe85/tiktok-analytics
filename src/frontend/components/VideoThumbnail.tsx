@@ -22,17 +22,20 @@ export function VideoThumbnail({
 
   // Initialize with proxy URL for videos, original URL for static content
   useEffect(() => {
+    console.log(`🔍 VideoThumbnail initialized:`, { coverImageUrl, shareUrl })
     if (shareUrl) {
       // For videos, use our reliable proxy endpoint
       const videoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
       if (videoId) {
         const proxyUrl = `/api/images/thumbnail/${videoId}`
-        console.log(`🖼️ Using proxy thumbnail for video: ${videoId}`)
+        console.log(`🖼️ Using proxy thumbnail for video: ${videoId} -> ${proxyUrl}`)
         setCurrentImageUrl(proxyUrl)
       } else {
+        console.log(`📝 No videoId found in shareUrl: ${shareUrl}`)
         setCurrentImageUrl(coverImageUrl)
       }
     } else {
+      console.log(`🖼️ No shareUrl, using coverImageUrl: ${coverImageUrl}`)
       setCurrentImageUrl(coverImageUrl)
     }
   }, [coverImageUrl, shareUrl])
