@@ -42,6 +42,23 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
       }
 
       setResult(data);
+      
+      // Save to localStorage for the Ad-Hoc page
+      try {
+        const stored = localStorage.getItem('adHocAnalyses') || '[]';
+        const analyses = JSON.parse(stored);
+        
+        // Add new analysis to the beginning of the array
+        analyses.unshift(data);
+        
+        // Keep only the last 50 analyses to avoid storage issues
+        const limitedAnalyses = analyses.slice(0, 50);
+        
+        localStorage.setItem('adHocAnalyses', JSON.stringify(limitedAnalyses));
+      } catch (storageError) {
+        console.warn('Failed to save to localStorage:', storageError);
+        // Don't show error to user, just log it
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to analyze video');
     } finally {
