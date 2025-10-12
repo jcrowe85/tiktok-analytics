@@ -389,8 +389,7 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
       artifacts: {
         transcript: '',
         ocr_text: imageText ? [imageText] : [],
-        keyframes: [],
-        audio_segments: []
+        keyframes: []
       },
       processing_metadata: {
         processed_at: new Date().toISOString(),

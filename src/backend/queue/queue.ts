@@ -60,7 +60,7 @@ async function processAIAnalysis(job: Job<JobData>) {
     await job.updateProgress(20)
     
     // Run the full AI analysis pipeline
-    const result = await analyzeVideo(videoId, videoUrl)
+    const result = await analyzeVideo(videoId, videoUrl || '')
     
     // Update job progress
     await job.updateProgress(100)
