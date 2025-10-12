@@ -235,7 +235,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          videoUrl: video.share_url 
+          videoUrl: video.share_url || null // Let backend fetch from DB if not available
         }),
       })
 

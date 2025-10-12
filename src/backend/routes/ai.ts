@@ -168,10 +168,28 @@ router.get('/analysis', async (req, res) => {
 router.post('/reprocess/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params
-    const { videoUrl } = req.body
+    const { videoUrl: providedVideoUrl } = req.body
     
+    let videoUrl = providedVideoUrl
+    
+    // If no videoUrl provided, fetch it from the database
     if (!videoUrl) {
-      return res.status(400).json({ error: 'videoUrl is required' })
+      const videoResult = await executeQuery(
+        'SELECT share_url FROM videos WHERE id = $1',
+        [videoId]
+      )
+      
+      if (videoResult.length === 0) {
+        return res.status(404).json({ error: 'Video not found' })
+      }
+      
+      videoUrl = videoResult[0].share_url
+      
+      if (!videoUrl) {
+        return res.status(400).json({ 
+          error: 'Video URL not available in database and not provided in request' 
+        })
+      }
     }
     
     // Update status to pending
