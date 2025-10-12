@@ -651,66 +651,12 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                   </div>
                 </div>
 
-                {/* Right Column - Metrics & AI Analysis */}
+                {/* Right Column - AI Analysis */}
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Key Performance Metrics */}
-                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-6">
-                    <h4 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                      📊 Performance Metrics
-                    </h4>
-                    
-                    {/* Primary Metrics */}
-                    <div className="grid grid-cols-2 gap-6 mb-6">
-                      <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                        <div className="text-3xl font-bold text-white mb-1">
-                          {formatNumber(selectedVideo.view_count)}
-                        </div>
-                        <div className="text-sm text-white/70 font-medium">Total Views</div>
-                      </div>
-                      <div className="text-center p-4 bg-white/5 backdrop-blur-sm rounded-xl border border-white/10">
-                        <div className="text-3xl font-bold text-white mb-1">
-                          {(selectedVideo.engagement_rate * 100).toFixed(1)}%
-                        </div>
-                        <div className="text-sm text-white/70 font-medium">Engagement Rate</div>
-                      </div>
-                    </div>
-
-                    {/* Secondary Metrics */}
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                        <div className="text-xl font-bold text-white mb-1">
-                          {formatNumber(selectedVideo.like_count)}
-                        </div>
-                        <div className="text-xs text-white/60">Likes</div>
-                        <div className="text-xs text-white/50">
-                          {(selectedVideo.like_rate * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                        <div className="text-xl font-bold text-white mb-1">
-                          {formatNumber(selectedVideo.comment_count)}
-                        </div>
-                        <div className="text-xs text-white/60">Comments</div>
-                        <div className="text-xs text-white/50">
-                          {(selectedVideo.comment_rate * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                      <div className="text-center p-3 bg-white/5 backdrop-blur-sm rounded-lg border border-white/10">
-                        <div className="text-xl font-bold text-white mb-1">
-                          {formatNumber(selectedVideo.share_count)}
-                        </div>
-                        <div className="text-xs text-white/60">Shares</div>
-                        <div className="text-xs text-white/50">
-                          {(selectedVideo.share_rate * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
                   {/* AI Analysis Section */}
                   {selectedVideo.ai_scores && (
                     <div className="space-y-6">
-                      {/* Overall Score - Big & Bold */}
+                      {/* Overall Score Card with Content Scores */}
                       <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-xl font-bold text-white">Overall Score</h3>
@@ -724,11 +670,11 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                              '❌ Reshoot'}
                           </div>
                         </div>
-                        <div className="text-6xl font-bold text-white mb-2">
+                        <div className="text-6xl font-bold text-white mb-4">
                           {selectedVideo.ai_scores.overall_100}
                           <span className="text-2xl text-white/40">/100</span>
                         </div>
-                        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
+                        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden mb-6">
                           <div
                             className={`h-full transition-all ${
                               selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500' :
@@ -738,27 +684,85 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                             style={{ width: `${selectedVideo.ai_scores.overall_100}%` }}
                           />
                         </div>
+
+                        {/* Content Scores - Inline in same card */}
+                        <div className="pt-4 border-t border-white/10">
+                          <h4 className="text-sm font-bold text-white/80 mb-3">📊 Content Breakdown</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            {Object.entries({
+                              'Hook': selectedVideo.ai_scores.hook_strength,
+                              'Depth': selectedVideo.ai_scores.depth,
+                              'Clarity': selectedVideo.ai_scores.clarity,
+                              'Pacing': selectedVideo.ai_scores.pacing,
+                              'CTA': selectedVideo.ai_scores.cta,
+                              'Brand Fit': selectedVideo.ai_scores.brand_fit,
+                            }).map(([label, score]) => (
+                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
+                                <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
+                                <div className="text-xl font-bold text-white">
+                                  {score}<span className="text-xs text-white/40">/10</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
 
-                      {/* Content Scores Grid */}
+                      {/* Performance Metrics */}
                       <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">📊 Content Scores</h3>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                          {Object.entries({
-                            'Hook Strength': selectedVideo.ai_scores.hook_strength,
-                            'Depth': selectedVideo.ai_scores.depth,
-                            'Clarity': selectedVideo.ai_scores.clarity,
-                            'Pacing': selectedVideo.ai_scores.pacing,
-                            'CTA': selectedVideo.ai_scores.cta,
-                            'Brand Fit': selectedVideo.ai_scores.brand_fit,
-                          }).map(([label, score]) => (
-                            <div key={label} className="bg-slate-900/50 rounded-lg p-3">
-                              <div className="text-white/60 text-xs mb-1">{label}</div>
-                              <div className="text-2xl font-bold text-white">
-                                {score}<span className="text-sm text-white/40">/10</span>
-                              </div>
+                        <h3 className="text-lg font-bold text-white mb-4">📈 Performance Metrics</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-white mb-1">
+                              {selectedVideo.view_count >= 1000000 
+                                ? `${(selectedVideo.view_count / 1000000).toFixed(1)}M`
+                                : selectedVideo.view_count >= 1000 
+                                ? `${(selectedVideo.view_count / 1000).toFixed(1)}K`
+                                : selectedVideo.view_count.toLocaleString()}
                             </div>
-                          ))}
+                            <div className="text-xs text-white/60">Views</div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-white mb-1">
+                              {selectedVideo.like_count >= 1000 
+                                ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
+                                : selectedVideo.like_count.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-white/60">Likes</div>
+                            <div className="text-[10px] text-white/50 mt-1">
+                              {(selectedVideo.like_rate * 100).toFixed(1)}% rate
+                            </div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-white mb-1">
+                              {selectedVideo.comment_count >= 1000 
+                                ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
+                                : selectedVideo.comment_count.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-white/60">Comments</div>
+                            <div className="text-[10px] text-white/50 mt-1">
+                              {(selectedVideo.comment_rate * 100).toFixed(1)}% rate
+                            </div>
+                          </div>
+                          <div className="bg-slate-900/50 rounded-lg p-4 text-center">
+                            <div className="text-2xl font-bold text-white mb-1">
+                              {selectedVideo.share_count >= 1000 
+                                ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
+                                : selectedVideo.share_count.toLocaleString()}
+                            </div>
+                            <div className="text-xs text-white/60">Shares</div>
+                            <div className="text-[10px] text-white/50 mt-1">
+                              {(selectedVideo.share_rate * 100).toFixed(1)}% rate
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-white/10">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-white/60">Engagement Rate</span>
+                            <span className="text-lg font-bold text-white">
+                              {(selectedVideo.engagement_rate * 100).toFixed(2)}%
+                            </span>
+                          </div>
                         </div>
                       </div>
 
