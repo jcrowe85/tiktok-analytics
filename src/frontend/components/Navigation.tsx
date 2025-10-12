@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { FiMenu, FiX, FiBarChart, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile } from 'react-icons/fi';
 
@@ -11,6 +11,20 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen]);
   
   // Organized by priority and user flow
   const navItems = [
@@ -99,6 +113,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
         <div 
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 md:hidden"
           onClick={() => setSidebarOpen(false)}
+          onTouchEnd={() => setSidebarOpen(false)}
         />
       )}
 

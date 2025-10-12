@@ -13,6 +13,7 @@ function App() {
         <Navigation sidebarCollapsed={sidebarCollapsed} setSidebarCollapsed={setSidebarCollapsed} />
         <main className={`flex-1 overflow-hidden transition-all duration-300 ease-in-out
           ${sidebarCollapsed ? 'md:ml-16' : 'md:ml-64 lg:ml-72'}
+          ml-0
         `}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
