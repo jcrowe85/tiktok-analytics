@@ -128,6 +128,14 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
+/**
+ * Serve React SPA for all non-API routes
+ * This ensures client-side routing works on refresh
+ */
+app.get('*', (_req, res) => {
+  res.sendFile(path.join(__dirname, '../../dist/index.html'));
+});
+
 // Start server
 app.listen(PORT, async () => {
   console.log('\n🚀 TikTok Analytics Server');
