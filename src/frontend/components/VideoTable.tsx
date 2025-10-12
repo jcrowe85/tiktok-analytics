@@ -10,6 +10,8 @@ interface VideoTableProps {
   showFilters: boolean
   setShowFilters: (show: boolean) => void
   hasActiveFilters: () => boolean
+  selectedVideo?: VideoMetrics | null
+  setSelectedVideo?: (video: VideoMetrics | null) => void
 }
 
 type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h' | 'ai_overall_score' | 'ai_pass' | 'ai_revise' | 'ai_reshoot'
@@ -25,10 +27,14 @@ const scoreTooltips: Record<string, string> = {
   'Brand Fit': 'How well does it align with brand values?',
 }
 
-function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: VideoTableProps) {
+function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, selectedVideo: externalSelectedVideo, setSelectedVideo: externalSetSelectedVideo }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
-  const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
+  const [internalSelectedVideo, setInternalSelectedVideo] = useState<VideoMetrics | null>(null)
+  
+  // Use external state if provided, otherwise use internal state
+  const selectedVideo = externalSelectedVideo !== undefined ? externalSelectedVideo : internalSelectedVideo
+  const setSelectedVideo = externalSetSelectedVideo || setInternalSelectedVideo
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
   // const [captionExpanded, setCaptionExpanded] = useState(false) // Unused
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -373,7 +379,6 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 className="modern-card overflow-hidden cursor-pointer group"
                 onClick={() => {
                   setSelectedVideo(video)
-                  setCaptionExpanded(false) // Reset caption expansion when selecting new video
                 }}
               >
                 {/* Header Section */}

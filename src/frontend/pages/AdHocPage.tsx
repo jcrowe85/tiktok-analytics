@@ -1,18 +1,32 @@
 import { useState, useEffect } from 'react'
 import VideoTable from '../components/VideoTable'
-import { AdHocAnalysis } from '../components/AdHocAnalysis'
 import type { VideoMetrics } from '../types'
 
 function AdHocPage() {
   const [adHocVideos, setAdHocVideos] = useState<VideoMetrics[]>([])
-  const [showAdHocAnalysis, setShowAdHocAnalysis] = useState(false)
+  const [url, setUrl] = useState('')
+  const [isAnalyzing, setIsAnalyzing] = useState(false)
+  const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
 
   // Load ad-hoc analyses from database on mount
   useEffect(() => {
     loadAdHocAnalyses()
   }, [])
 
-  const loadAdHocAnalyses = async () => {
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (selectedVideo) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [selectedVideo])
+
+  const loadAdHocAnalyses = async (): Promise<VideoMetrics[]> => {
     try {
       // Fetch from database instead of localStorage
       const response = await fetch('/api/adhoc-analyses')
@@ -51,18 +65,68 @@ function AdHocPage() {
         }))
         
         setAdHocVideos(videos)
+        return videos
       }
+      return []
     } catch (error) {
       console.error('Failed to load ad-hoc analyses:', error)
+      return []
     }
   }
 
   // Removed clearAllAnalyses - users paid for these analyses
 
-  const handleAnalysisComplete = () => {
-    // Reload analyses after new one is added
-    console.log('🔄 Reloading analyses after completion...')
-    loadAdHocAnalyses()
+  const handleAnalyze = async () => {
+    if (!url.trim()) {
+      alert('Please enter a TikTok URL')
+      return
+    }
+
+    // Validate TikTok URL format
+    if (!url.includes('tiktok.com') && !url.includes('vm.tiktok.com')) {
+      alert('Please enter a valid TikTok URL')
+      return
+    }
+
+    setIsAnalyzing(true)
+
+    try {
+      const response = await fetch('/api/analyze-url', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Analysis failed')
+      }
+
+      // Clear the URL input
+      setUrl('')
+      
+      // Reload analyses and show the newly analyzed video
+      setTimeout(async () => {
+        const refreshedVideos = await loadAdHocAnalyses()
+        
+        // Find the most recently created video (newest analysis)
+        if (refreshedVideos.length > 0) {
+          const sortedByCreation = [...refreshedVideos].sort((a, b) => b.create_time - a.create_time)
+          const newestVideo = sortedByCreation[0]
+          setSelectedVideo(newestVideo)
+        }
+      }, 1000) // Small delay to ensure analysis is complete and data is refreshed
+      
+      console.log('✅ Analysis completed successfully')
+    } catch (error) {
+      console.error('❌ Analysis failed:', error)
+      alert(error instanceof Error ? error.message : 'Failed to analyze video')
+    } finally {
+      setIsAnalyzing(false)
+    }
   }
 
   return (
@@ -80,34 +144,68 @@ function AdHocPage() {
         {/* Content */}
         <div className="relative z-10">
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
-            {/* Page Actions */}
+            {/* Page Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
                 <p className="text-white/60 text-sm">
                   Analyze competitors and external videos
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowAdHocAnalysis(true)}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
-                >
-                  <span className="text-lg">➕</span>
-                  <span className="text-xs sm:text-sm font-medium text-blue-400">
-                    New Analysis
-                  </span>
-                </button>
-                <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
-                    {adHocVideos.length} {adHocVideos.length === 1 ? 'analysis' : 'analyses'}
-                  </span>
-                </div>
+              <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-xs sm:text-sm font-medium text-white/80">
+                  {adHocVideos.length} {adHocVideos.length === 1 ? 'analysis' : 'analyses'}
+                </span>
               </div>
             </div>
 
             {/* Empty State */}
             {adHocVideos.length === 0 ? (
-              <div className="glass-card rounded-2xl p-12 text-center">
+              <>
+                {/* TikTok URL Input Section */}
+                <div className="glass-card rounded-2xl p-6 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        TikTok Video URL
+                      </label>
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://www.tiktok.com/@username/video/..."
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors"
+                        disabled={isAnalyzing}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !isAnalyzing) {
+                            handleAnalyze()
+                          }
+                        }}
+                      />
+                      <p className="text-white/50 text-xs mt-2">
+                        Paste any public TikTok URL to analyze performance and get insights
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing || !url.trim()}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap min-w-[120px] justify-center shadow-lg hover:shadow-purple-500/25"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Analyzing...</span>
+                        </>
+                      ) : (
+                        <span>Analyze</span>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="glass-card rounded-2xl p-12 text-center">
                 {/* Beautiful gradient icon container */}
                 <div className="relative w-24 h-24 mx-auto mb-8">
                   <div className="absolute inset-0 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-3xl opacity-20 blur-2xl"></div>
@@ -121,15 +219,8 @@ function AdHocPage() {
                   Start Analyzing Competitors
                 </h3>
                 <p className="text-white/60 mb-8 max-w-md mx-auto">
-                  Analyze any TikTok video to see insights. Perfect for competitive research and learning from top performers.
+                  Paste any TikTok URL above to analyze video performance and get AI-powered insights. Perfect for competitive research and learning from top performers.
                 </p>
-                <button
-                  onClick={() => setShowAdHocAnalysis(true)}
-                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors inline-flex items-center gap-2"
-                >
-                  <span>🎯</span>
-                  <span>Analyze Your First Video</span>
-                </button>
 
                 {/* Info Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12 text-left">
@@ -149,19 +240,51 @@ function AdHocPage() {
                     <p className="text-white/60 text-sm">Actionable feedback on any public TikTok</p>
                   </div>
                 </div>
-              </div>
+                </div>
+              </>
             ) : (
               <>
-                {/* Info Banner */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">ℹ️</span>
-                    <div>
-                      <h4 className="text-blue-400 font-medium mb-1">About Ad-Hoc Analyses</h4>
-                      <p className="text-white/60 text-sm">
-                        These competitor analyses are permanently saved to your account. They won't affect your main dashboard stats but will always be available for reference.
+                {/* TikTok URL Input Section */}
+                <div className="glass-card rounded-2xl p-6 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        TikTok Video URL
+                      </label>
+                      <input
+                        type="text"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                        placeholder="https://www.tiktok.com/@username/video/..."
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors"
+                        disabled={isAnalyzing}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !isAnalyzing) {
+                            handleAnalyze()
+                          }
+                        }}
+                      />
+                      <p className="text-white/50 text-xs mt-2">
+                        Paste any public TikTok URL to analyze performance and get insights
                       </p>
                     </div>
+                    <button
+                      onClick={handleAnalyze}
+                      disabled={isAnalyzing || !url.trim()}
+                      className="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-all duration-200 flex items-center gap-2 whitespace-nowrap min-w-[120px] justify-center shadow-lg hover:shadow-purple-500/25"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          <span>Analyzing...</span>
+                        </>
+                      ) : (
+                        <span>Analyze</span>
+                      )}
+                    </button>
                   </div>
                 </div>
 
@@ -171,26 +294,14 @@ function AdHocPage() {
                   showFilters={false}
                   setShowFilters={() => {}}
                   hasActiveFilters={() => false}
+                  selectedVideo={selectedVideo}
+                  setSelectedVideo={setSelectedVideo}
                 />
               </>
             )}
           </div>
         </div>
       </div>
-      
-      {/* Ad-Hoc Analysis Modal */}
-      {showAdHocAnalysis && (
-        <AdHocAnalysis 
-          onClose={() => {
-            console.log('🚪 Closing modal...')
-            setShowAdHocAnalysis(false)
-            // Small delay to ensure localStorage is saved
-            setTimeout(() => {
-              handleAnalysisComplete()
-            }, 100)
-          }} 
-        />
-      )}
     </>
   )
 }
