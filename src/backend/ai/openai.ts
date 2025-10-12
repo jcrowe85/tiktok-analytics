@@ -1,5 +1,6 @@
 import OpenAI from 'openai'
 import dotenv from 'dotenv'
+import fs from 'fs'
 
 dotenv.config()
 
@@ -20,23 +21,18 @@ export async function transcribeAudio(audioFilePath: string): Promise<{
   try {
     console.log('🎤 Starting Whisper transcription...')
     
-    // Read the audio file
-    const fs = await import('fs/promises')
-    const audioBuffer = await fs.readFile(audioFilePath)
-    console.log(`   Audio size: ${audioBuffer.length} bytes`)
+    // Check if audio file exists and get size
+    const stats = await fs.promises.stat(audioFilePath)
+    console.log(`   Audio size: ${stats.size} bytes`)
     
-    // Check if audio buffer is valid
-    if (audioBuffer.length < 1000) {
+    // Check if audio file is valid
+    if (stats.size < 1000) {
       console.log('⚠️  Audio file is too small, likely silent video')
       return {
         text: '',
         segments: []
       }
     }
-    
-    // Create a File-like object for Node.js (using fs.createReadStream)
-    const fs = await import('fs')
-    const filename = audioFilePath.split('/').pop() || 'audio.wav'
     
     // Transcribe with Whisper using file stream
     const transcription = await openai.audio.transcriptions.create({
