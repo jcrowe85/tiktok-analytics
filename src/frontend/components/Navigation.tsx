@@ -111,6 +111,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
     <>
       {/* Top Header - Only on mobile */}
       <nav className="glass-card border-0 border-b border-white/10 rounded-none relative z-50 md:hidden">
+        {/* DEBUG: Mobile header - should only show on mobile */}
         <div className="px-4">
           <div className="flex items-center justify-between h-16">
             {/* Left: Menu Button + Title */}
@@ -266,11 +267,14 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
 
       {/* Desktop Sidebar */}
       {!isMobile && (
-        <div className={`
-          fixed top-0 left-0 h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 z-40 transform transition-all duration-300 ease-in-out
-          ${sidebarCollapsed ? 'w-16' : 'w-64 lg:w-72'}
-        `}>
-          {/* Debug: Desktop sidebar rendered - isMobile: {isMobile.toString()}, width: {typeof window !== 'undefined' ? window.innerWidth : 'unknown'} */}
+        <div 
+          className={`
+            fixed top-0 left-0 h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 z-40 transform transition-all duration-300 ease-in-out
+            ${sidebarCollapsed ? 'w-16' : 'w-64 lg:w-72'}
+          `}
+          style={{ display: isMobile ? 'none !important' : 'flex' }}
+        >
+          {/* DEBUG: Desktop sidebar should NOT be visible on mobile! isMobile: {isMobile.toString()} */}
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className={`flex items-center justify-between p-6 border-b border-white/10 ${sidebarCollapsed ? 'px-3' : ''}`}>
