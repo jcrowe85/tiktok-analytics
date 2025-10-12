@@ -9,7 +9,7 @@ const router = express.Router()
 /**
  * Get all saved ad-hoc analyses
  */
-router.get('/adhoc-analyses', async (req, res) => {
+router.get('/adhoc-analyses', async (_req, res) => {
   try {
     const result = await executeQuery(`
       SELECT 
@@ -28,7 +28,7 @@ router.get('/adhoc-analyses', async (req, res) => {
     
     res.json({
       success: true,
-      data: result.rows
+      data: result
     })
   } catch (error) {
     console.error('❌ Error fetching ad-hoc analyses:', error)
@@ -211,22 +211,22 @@ router.post('/analyze-url', async (req, res) => {
     `, [
       videoId,
       new Date().toISOString(),
-      videoData.staticData?.videoDescription || mergedStaticData.videoDescription || '',
+      videoData.staticData?.videoTitle || oembedData.videoTitle || '',
       duration,
       videoData.staticData?.viewCount || 0,
       videoData.staticData?.likeCount || 0,
       videoData.staticData?.commentCount || 0,
       videoData.staticData?.shareCount || 0,
       0, // engagement_rate (will be calculated)
-      JSON.stringify(videoData.staticData?.hashtags || []),
+      JSON.stringify([]),
       url,
       coverImageUrl,
-      mergedStaticData.videoTitle,
-      mergedStaticData.authorUsername,
-      mergedStaticData.authorNickname,
-      mergedStaticData.authorAvatarUrl,
-      mergedStaticData.musicTitle,
-      mergedStaticData.musicArtist,
+      videoData.staticData?.videoTitle || oembedData.videoTitle || 'Ad-Hoc Video',
+      videoData.staticData?.authorUsername || oembedData.authorName || '',
+      videoData.staticData?.authorNickname || oembedData.authorName || '',
+      videoData.staticData?.authorAvatarUrl || '',
+      videoData.staticData?.musicTitle || '',
+      videoData.staticData?.musicArtist || '',
       true // is_adhoc
     ])
     
