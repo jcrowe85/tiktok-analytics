@@ -18,16 +18,24 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
+    console.log('🚀 Form submitted:', { isLogin, email, hasPassword: !!password, hasName: !!name });
+
     try {
       if (isLogin) {
+        console.log('👤 Calling login...');
         await login(email, password);
+        console.log('✅ Login completed successfully');
       } else {
+        console.log('📝 Calling register...');
         await register(email, password, name);
+        console.log('✅ Registration completed successfully');
       }
     } catch (error) {
+      console.error('❌ Form submission error:', error);
       setError(error instanceof Error ? error.message : 'Authentication failed');
     } finally {
       setIsLoading(false);
+      console.log('🏁 Form submission completed');
     }
   };
 

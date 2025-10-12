@@ -66,6 +66,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
 
     try {
+      console.log('🔐 Attempting login for:', email);
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: {
@@ -74,7 +75,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password }),
       });
 
+      console.log('📡 Login response status:', response.status);
       const data = await response.json();
+      console.log('📦 Login response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Login failed');
@@ -83,7 +86,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Store token and user data
       localStorage.setItem('auth_token', data.token);
       setUser(data.user);
+      console.log('✅ Login successful, user:', data.user);
     } catch (error) {
+      console.error('❌ Login error:', error);
       setError(error instanceof Error ? error.message : 'Login failed');
       throw error;
     } finally {
@@ -96,6 +101,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setError(null);
 
     try {
+      console.log('📝 Attempting registration for:', email);
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
@@ -104,7 +110,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         body: JSON.stringify({ email, password, name }),
       });
 
+      console.log('📡 Registration response status:', response.status);
       const data = await response.json();
+      console.log('📦 Registration response data:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Registration failed');
@@ -113,7 +121,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Store token and user data
       localStorage.setItem('auth_token', data.token);
       setUser(data.user);
+      console.log('✅ Registration successful, user:', data.user);
     } catch (error) {
+      console.error('❌ Registration error:', error);
       setError(error instanceof Error ? error.message : 'Registration failed');
       throw error;
     } finally {
