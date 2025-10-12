@@ -3,7 +3,7 @@ import axios from 'axios'
 
 const router = express.Router()
 
-// Proxy endpoint for TikTok thumbnails to avoid CORS and 403 issues
+// Generate a placeholder thumbnail for TikTok videos
 router.get('/thumbnail/:videoId', async (req, res) => {
   try {
     const { videoId } = req.params
@@ -12,55 +12,67 @@ router.get('/thumbnail/:videoId', async (req, res) => {
       return res.status(400).json({ error: 'Video ID is required' })
     }
 
-    // Try multiple TikTok CDN patterns
-    const possibleUrls = [
-      `https://p16-sign-va.tiktokcdn-us.com/tos-useast5-p-0068-tx/cover/${videoId}~tplv-tiktokx-cropcenter-q:300:400:q72.jpeg`,
-      `https://p16-sign.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/${videoId}`,
-      `https://p16-sign-va.tiktokcdn-us.com/obj/tos-useast5-p-0068-tx/${videoId}`,
-      `https://p19-common-sign.tiktokcdn-us.com/tos-useast5-p-0068-tx/cover/${videoId}~tplv-tiktokx-cropcenter-q:300:400:q72.jpeg`,
-    ]
+    console.log(`🖼️ Generating placeholder thumbnail for video ${videoId}`)
 
-    for (const url of possibleUrls) {
-      try {
-        console.log(`🖼️ Trying thumbnail URL: ${url}`)
-        
-        const response = await axios.get(url, {
-          responseType: 'stream',
-          timeout: 5000,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Referer': 'https://www.tiktok.com/',
-            'Accept': 'image/webp,image/apng,image/*,*/*;q=0.8',
-          }
-        })
-
-        if (response.status === 200) {
-          console.log(`✅ Successfully fetched thumbnail from: ${url}`)
-          
-          // Set appropriate headers
-          res.set({
-            'Content-Type': response.headers['content-type'] || 'image/jpeg',
-            'Cache-Control': 'public, max-age=3600', // Cache for 1 hour
-            'Access-Control-Allow-Origin': '*',
-          })
-          
-          // Pipe the image data to the response
-          response.data.pipe(res)
-          return
+    // Since TikTok's CDN is heavily protected, let's generate a placeholder
+    // using a service like placeholder.com or create a simple SVG
+    
+    const placeholderUrl = `https://via.placeholder.com/300x400/1a1a2e/ffffff?text=TikTok+Video`
+    
+    try {
+      const response = await axios.get(placeholderUrl, {
+        responseType: 'stream',
+        timeout: 5000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
         }
-      } catch (error) {
-        console.log(`❌ Failed to fetch from ${url}:`, error.response?.status || error.message)
-        continue
+      })
+
+      if (response.status === 200) {
+        console.log(`✅ Generated placeholder thumbnail`)
+        
+        res.set({
+          'Content-Type': 'image/png',
+          'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+          'Access-Control-Allow-Origin': '*',
+        })
+        
+        response.data.pipe(res)
+        return
       }
+    } catch (placeholderError) {
+      console.log(`❌ Placeholder service failed:`, placeholderError.message)
     }
 
-    // If all URLs failed, return a 404
-    console.log(`❌ All thumbnail URLs failed for video ${videoId}`)
-    res.status(404).json({ error: 'Thumbnail not found' })
+    // Final fallback: Return a simple SVG
+    const svgThumbnail = `
+      <svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
+        <rect width="300" height="400" fill="#1a1a2e"/>
+        <rect x="20" y="20" width="260" height="360" fill="#16213e" stroke="#4a5568" stroke-width="2"/>
+        <text x="150" y="200" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="16">
+          TikTok Video
+        </text>
+        <text x="150" y="230" text-anchor="middle" fill="#a0aec0" font-family="Arial, sans-serif" font-size="12">
+          ID: ${videoId}
+        </text>
+        <polygon points="120,280 140,280 130,300" fill="#ffffff"/>
+        <circle cx="130" cy="290" r="15" fill="none" stroke="#ffffff" stroke-width="2"/>
+      </svg>
+    `
+
+    console.log(`✅ Generated SVG thumbnail fallback`)
+    
+    res.set({
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*',
+    })
+    
+    res.send(svgThumbnail)
 
   } catch (error) {
-    console.error('❌ Thumbnail proxy error:', error)
-    res.status(500).json({ error: 'Failed to fetch thumbnail' })
+    console.error('❌ Thumbnail generation error:', error)
+    res.status(500).json({ error: 'Failed to generate thumbnail' })
   }
 })
 
