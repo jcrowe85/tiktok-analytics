@@ -4,10 +4,31 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// Redis connection
-const redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
-  maxRetriesPerRequest: null,
-})
+// Redis connection with error handling
+let redis: Redis;
+let redisAvailable = false;
+
+try {
+  redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+    maxRetriesPerRequest: null,
+    retryDelayOnFailover: 100,
+    maxRetriesPerRequest: 3,
+    lazyConnect: true,
+  });
+  
+  redis.on('connect', () => {
+    redisAvailable = true;
+    console.log('✅ Redis connected');
+  });
+  
+  redis.on('error', (error) => {
+    redisAvailable = false;
+    console.log('⚠️  Redis unavailable:', error.message);
+  });
+} catch (error) {
+  redisAvailable = false;
+  console.log('⚠️  Redis connection failed:', error.message);
+}
 
 // Queue configuration
 export interface JobData {
@@ -20,8 +41,8 @@ export interface JobData {
   coverImageUrl?: string
 }
 
-// AI Analysis Queue
-export const aiAnalysisQueue = new Queue<JobData>('ai-analysis', {
+// AI Analysis Queue (only created if Redis is available)
+export const aiAnalysisQueue = redisAvailable ? new Queue<JobData>('ai-analysis', {
   connection: redis,
   defaultJobOptions: {
     removeOnComplete: 10,
@@ -32,7 +53,7 @@ export const aiAnalysisQueue = new Queue<JobData>('ai-analysis', {
       delay: 2000,
     },
   },
-})
+}) : null
 
 // Job types
 export enum JobType {
@@ -80,15 +101,15 @@ async function processAIAnalysis(job: Job<JobData>) {
   }
 }
 
-// Worker for AI analysis queue
-export const aiAnalysisWorker = new Worker<JobData>(
+// Worker for AI analysis queue (only created if Redis is available)
+export const aiAnalysisWorker = redisAvailable ? new Worker<JobData>(
   'ai-analysis',
   processAIAnalysis,
   {
     connection: redis,
     concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
   }
-)
+) : null
 
 // Process static content analysis
 async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
@@ -132,17 +153,22 @@ async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
 }
 
 // Worker for static content analysis queue
-export const staticAnalysisWorker = new Worker<JobData>(
+export const staticAnalysisWorker = redisAvailable ? new Worker<JobData>(
   'ai-analysis',
   processStaticAnalysis,
   {
     connection: redis,
     concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
   }
-)
+) : null
 
 // Queue management functions
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
+  if (!redisAvailable || !aiAnalysisQueue) {
+    console.log('⚠️  Redis unavailable, skipping queue addition for video', videoId)
+    return
+  }
+  
   const contentHash = `hash_${videoId}_${Date.now()}` // TODO: Implement proper content hashing
   const rulesVersion = 1
   
@@ -160,6 +186,11 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
 }
 
 export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
+  if (!redisAvailable || !aiAnalysisQueue) {
+    console.log('⚠️  Redis unavailable, skipping static content queue addition for video', videoId)
+    return
+  }
+  
   const contentHash = `hash_${videoId}_${Date.now()}`
   const rulesVersion = 1
   
@@ -179,6 +210,16 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
 }
 
 export async function getQueueStats() {
+  if (!redisAvailable || !aiAnalysisQueue) {
+    return {
+      waiting: 0,
+      active: 0,
+      completed: 0,
+      failed: 0,
+      status: 'Redis unavailable'
+    }
+  }
+  
   const waiting = await aiAnalysisQueue.getWaiting()
   const active = await aiAnalysisQueue.getActive()
   const completed = await aiAnalysisQueue.getCompleted()
@@ -194,20 +235,24 @@ export async function getQueueStats() {
 
 // Graceful shutdown
 export async function closeQueues() {
-  await aiAnalysisWorker.close()
-  await aiAnalysisQueue.close()
-  await redis.quit()
+  if (redisAvailable) {
+    if (aiAnalysisWorker) await aiAnalysisWorker.close()
+    if (aiAnalysisQueue) await aiAnalysisQueue.close()
+    if (redis) await redis.quit()
+  }
 }
 
-// Error handling
-aiAnalysisWorker.on('error', (error) => {
-  console.error('❌ AI Analysis Worker Error:', error)
-})
+// Error handling (only if worker exists)
+if (aiAnalysisWorker) {
+  aiAnalysisWorker.on('error', (error) => {
+    console.error('❌ AI Analysis Worker Error:', error)
+  })
 
-aiAnalysisWorker.on('completed', (job) => {
-  console.log(`✅ Job ${job.id} completed successfully`)
-})
+  aiAnalysisWorker.on('completed', (job) => {
+    console.log(`✅ Job ${job.id} completed successfully`)
+  })
 
-aiAnalysisWorker.on('failed', (job, error) => {
-  console.error(`❌ Job ${job?.id} failed:`, error)
-})
+  aiAnalysisWorker.on('failed', (job, error) => {
+    console.error(`❌ Job ${job?.id} failed:`, error)
+  })
+}

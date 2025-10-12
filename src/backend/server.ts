@@ -51,19 +51,27 @@ app.get('/api/data', async (_req, res) => {
     
     console.log(`📊 Loaded ${videos.length} videos from JSON file`)
     
-    // Get AI analysis for all videos
-    const aiAnalyses = await executeQuery(`
-      SELECT 
-        video_id,
-        status as ai_status,
-        scores,
-        visual_scores,
-        findings,
-        fix_suggestions,
-        processed_at
-      FROM video_ai_analysis
-      WHERE status = 'completed'
-    `);
+    // Get AI analysis for all videos (with error handling)
+    let aiAnalyses = [];
+    try {
+      aiAnalyses = await executeQuery(`
+        SELECT 
+          video_id,
+          status as ai_status,
+          scores,
+          visual_scores,
+          findings,
+          fix_suggestions,
+          processed_at
+        FROM video_ai_analysis
+        WHERE status = 'completed'
+      `);
+      console.log(`📊 Loaded ${aiAnalyses.length} AI analyses from database`)
+    } catch (error) {
+      console.log(`⚠️  Database not available, using fallback data: ${error.message}`)
+      // Use empty array as fallback
+      aiAnalyses = [];
+    }
     
     // Create a map of AI scores by video ID
     const aiScoresMap = new Map(
