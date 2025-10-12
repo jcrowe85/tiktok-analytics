@@ -65,8 +65,14 @@ export function VideoThumbnail({
         src={currentImageUrl} 
         alt={alt}
         className={`${className} ${!imageLoaded ? 'opacity-0' : 'opacity-100'}`}
-        onLoad={() => setImageLoaded(true)}
-        onError={() => setImageError(true)}
+        onLoad={() => {
+          console.log(`✅ Image loaded successfully: ${currentImageUrl}`)
+          setImageLoaded(true)
+        }}
+        onError={(e) => {
+          console.log(`❌ Image failed to load: ${currentImageUrl}`, e)
+          setImageError(true)
+        }}
       />
       {!imageLoaded && !imageError && (
         <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-white/5 to-white/2">

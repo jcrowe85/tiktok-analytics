@@ -44,13 +44,23 @@ router.get('/thumbnail/:videoId', async (req, res) => {
       console.log(`❌ Placeholder service failed:`, placeholderError.message)
     }
 
-    // Final fallback: Return a simple SVG that should definitely work
+    // Final fallback: Return a more professional-looking SVG thumbnail
     const svgContent = `<svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
-<rect width="300" height="400" fill="#1a1a2e"/>
-<rect x="20" y="20" width="260" height="360" fill="#16213e" stroke="#4a5568" stroke-width="2"/>
-<text x="150" y="200" text-anchor="middle" fill="#ffffff" font-family="Arial" font-size="16">TikTok Video</text>
-<text x="150" y="230" text-anchor="middle" fill="#a0aec0" font-family="Arial" font-size="12">ID: ${videoId}</text>
-<circle cx="150" cy="280" r="20" fill="#ffffff"/>
+<defs>
+  <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+    <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+    <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+  </linearGradient>
+</defs>
+<rect width="300" height="400" fill="url(#bg)"/>
+<rect x="15" y="15" width="270" height="370" fill="#000000" fill-opacity="0.2" stroke="#ffffff" stroke-width="1" stroke-opacity="0.3"/>
+<!-- Play button -->
+<circle cx="150" cy="200" r="40" fill="#ffffff" fill-opacity="0.9"/>
+<polygon points="135,185 135,215 165,200" fill="#667eea"/>
+<!-- TikTok logo area -->
+<rect x="20" y="320" width="260" height="50" fill="#000000" fill-opacity="0.3"/>
+<text x="150" y="340" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="14" font-weight="bold">TikTok</text>
+<text x="150" y="355" text-anchor="middle" fill="#ffffff" font-family="Arial, sans-serif" font-size="10" opacity="0.8">${videoId.slice(-8)}</text>
 </svg>`
     
     console.log(`✅ Generated simple SVG thumbnail`)
