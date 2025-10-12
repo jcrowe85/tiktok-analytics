@@ -236,13 +236,29 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
     setReanalyzing(true)
 
     try {
+      // Debug logging to help identify the issue
+      console.log('🔄 Re-analyzing video:', {
+        id: videoToReanalyze.id,
+        share_url: videoToReanalyze.share_url,
+        hasShareUrl: !!videoToReanalyze.share_url
+      })
+
+      // Check if share_url exists, if not try alternative fields or construct from video ID
+      let videoUrl = videoToReanalyze.share_url || (videoToReanalyze as any).shareUrl || (videoToReanalyze as any).url
+      if (!videoUrl) {
+        // Fallback: construct TikTok URL from video ID and username if available
+        const username = videoToReanalyze.username || 'user'
+        videoUrl = `https://www.tiktok.com/@${username}/video/${videoToReanalyze.id}`
+        console.log('⚠️ No share_url found, using constructed URL:', videoUrl)
+      }
+
       const response = await fetch(`/api/ai/reprocess/${videoToReanalyze.id}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-          videoUrl: videoToReanalyze.share_url 
+          videoUrl: videoUrl
         }),
       })
 
