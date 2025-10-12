@@ -201,39 +201,6 @@ function Dashboard() {
       
       {/* Content */}
       <div className="relative z-10">
-        {/* Header */}
-        <header className="glass-card border-0 border-b border-white/10 rounded-none">
-          <div className="px-4 sm:px-8 lg:px-12 py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white">
-                  My Videos
-                </h2>
-                <p className="text-xs sm:text-sm text-white/60 font-medium">
-                  @tryfleur performance insights
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowAdHocAnalysis(true)}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
-                  title="Analyze any TikTok video"
-                >
-                  <span className="text-lg">🔍</span>
-                  <span className="text-xs sm:text-sm font-medium text-blue-400 hidden sm:inline">
-                    Analyze URL
-                  </span>
-                </button>
-                <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
-                    {filteredVideos.length} videos
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
-
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
           {/* Overview */}
           <div className="animate-fade-in-up">

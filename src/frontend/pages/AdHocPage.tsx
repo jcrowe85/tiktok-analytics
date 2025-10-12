@@ -89,50 +89,43 @@ function AdHocPage() {
       
       {/* Content */}
       <div className="relative z-10">
-        {/* Header */}
-        <header className="glass-card border-0 border-b border-white/10 rounded-none">
-          <div className="px-4 sm:px-8 lg:px-12 py-4 sm:py-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-0">
-              <div>
-                <h2 className="text-xl sm:text-2xl font-bold text-white">
-                  🔍 Ad-Hoc Analysis
-                </h2>
-                <p className="text-xs sm:text-sm text-white/60 font-medium">
-                  Analyze competitors and external videos
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
+          {/* Page Actions */}
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <p className="text-white/60 text-sm">
+                Analyze competitors and external videos
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAdHocAnalysis(true)}
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
+              >
+                <span className="text-lg">➕</span>
+                <span className="text-xs sm:text-sm font-medium text-blue-400">
+                  New Analysis
+                </span>
+              </button>
+              {adHocVideos.length > 0 && (
                 <button
-                  onClick={() => setShowAdHocAnalysis(true)}
-                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
+                  onClick={clearAllAnalyses}
+                  className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl transition-colors flex items-center gap-2"
                 >
-                  <span className="text-lg">➕</span>
-                  <span className="text-xs sm:text-sm font-medium text-blue-400">
-                    New Analysis
+                  <span className="text-lg">🗑️</span>
+                  <span className="text-xs sm:text-sm font-medium text-red-400 hidden sm:inline">
+                    Clear All
                   </span>
                 </button>
-                {adHocVideos.length > 0 && (
-                  <button
-                    onClick={clearAllAnalyses}
-                    className="px-3 py-1.5 sm:px-4 sm:py-2 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-xl transition-colors flex items-center gap-2"
-                  >
-                    <span className="text-lg">🗑️</span>
-                    <span className="text-xs sm:text-sm font-medium text-red-400 hidden sm:inline">
-                      Clear All
-                    </span>
-                  </button>
-                )}
-                <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
-                  <span className="text-xs sm:text-sm font-medium text-white/80">
-                    {adHocVideos.length} analyses
-                  </span>
-                </div>
+              )}
+              <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
+                <span className="text-xs sm:text-sm font-medium text-white/80">
+                  {adHocVideos.length} analyses
+                </span>
               </div>
             </div>
           </div>
-        </header>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
           {/* Empty State */}
           {adHocVideos.length === 0 ? (
             <div className="glass-card rounded-2xl p-12 text-center">
