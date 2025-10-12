@@ -594,82 +594,67 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Video & Basic Info */}
                 <div className="lg:col-span-1 space-y-4">
-                  {/* Video Player/Thumbnail */}
+                  {/* Video Player/Thumbnail with Performance Metrics */}
                   {selectedVideo.cover_image_url && (
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                      <div className="w-full h-[300px] rounded-lg overflow-hidden relative">
+                      <div className="w-full h-[300px] rounded-lg overflow-hidden relative mb-4">
                         <VideoThumbnail 
                           coverImageUrl={selectedVideo.cover_image_url} 
                           shareUrl={selectedVideo.share_url}
                           className="w-full h-full object-cover"
                         />
                       </div>
-                    </div>
-                  )}
-
-                  {/* Performance Metrics */}
-                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
-                    <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance</h4>
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">Views</span>
-                        <span className="text-white font-bold">
-                          {selectedVideo.view_count >= 1000000 
-                            ? `${(selectedVideo.view_count / 1000000).toFixed(1)}M`
-                            : selectedVideo.view_count >= 1000 
-                            ? `${(selectedVideo.view_count / 1000).toFixed(1)}K`
-                            : selectedVideo.view_count.toLocaleString()}
-                        </span>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">Likes</span>
-                        <div className="text-right">
-                          <div className="text-white font-bold">
-                            {selectedVideo.like_count >= 1000 
-                              ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
-                              : selectedVideo.like_count.toLocaleString()}
+                      
+                      {/* Performance Metrics */}
+                      <div className="pt-4 border-t border-white/10">
+                        <h4 className="text-sm font-semibold text-white/70 mb-4">📈 Performance</h4>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60 text-sm">Views</span>
+                            <span className="text-white font-bold">
+                              {selectedVideo.view_count >= 1000000 
+                                ? `${(selectedVideo.view_count / 1000000).toFixed(1)}M`
+                                : selectedVideo.view_count >= 1000 
+                                ? `${(selectedVideo.view_count / 1000).toFixed(1)}K`
+                                : selectedVideo.view_count.toLocaleString()}
+                            </span>
                           </div>
-                          <div className="text-white/50 text-xs">
-                            {(selectedVideo.like_rate * 100).toFixed(1)}% rate
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60 text-sm">Likes</span>
+                            <span className="text-white font-bold">
+                              {selectedVideo.like_count >= 1000 
+                                ? `${(selectedVideo.like_count / 1000).toFixed(1)}K`
+                                : selectedVideo.like_count.toLocaleString()}
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">Comments</span>
-                        <div className="text-right">
-                          <div className="text-white font-bold">
-                            {selectedVideo.comment_count >= 1000 
-                              ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
-                              : selectedVideo.comment_count.toLocaleString()}
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60 text-sm">Comments</span>
+                            <span className="text-white font-bold">
+                              {selectedVideo.comment_count >= 1000 
+                                ? `${(selectedVideo.comment_count / 1000).toFixed(1)}K`
+                                : selectedVideo.comment_count.toLocaleString()}
+                            </span>
                           </div>
-                          <div className="text-white/50 text-xs">
-                            {(selectedVideo.comment_rate * 100).toFixed(1)}% rate
+                          <div className="flex justify-between items-center">
+                            <span className="text-white/60 text-sm">Shares</span>
+                            <span className="text-white font-bold">
+                              {selectedVideo.share_count >= 1000 
+                                ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
+                                : selectedVideo.share_count.toLocaleString()}
+                            </span>
                           </div>
-                        </div>
-                      </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-white/60 text-sm">Shares</span>
-                        <div className="text-right">
-                          <div className="text-white font-bold">
-                            {selectedVideo.share_count >= 1000 
-                              ? `${(selectedVideo.share_count / 1000).toFixed(1)}K`
-                              : selectedVideo.share_count.toLocaleString()}
+                          <div className="pt-3 border-t border-white/10">
+                            <div className="flex justify-between items-center">
+                              <span className="text-white/60 text-sm font-medium">Engagement</span>
+                              <span className="text-white font-bold text-lg">
+                                {(selectedVideo.engagement_rate * 100).toFixed(2)}%
+                              </span>
+                            </div>
                           </div>
-                          <div className="text-white/50 text-xs">
-                            {(selectedVideo.share_rate * 100).toFixed(1)}% rate
-                          </div>
-                        </div>
-                      </div>
-                      <div className="pt-3 border-t border-white/10">
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/60 text-sm font-medium">Engagement</span>
-                          <span className="text-white font-bold text-lg">
-                            {(selectedVideo.engagement_rate * 100).toFixed(2)}%
-                          </span>
                         </div>
                       </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Video Details */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
