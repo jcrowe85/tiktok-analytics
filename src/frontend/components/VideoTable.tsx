@@ -596,9 +596,13 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
           style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
         >
           <div 
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl max-w-5xl w-full max-h-[95vh] overflow-y-auto relative shadow-2xl"
+            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-4xl mx-auto max-h-[90vh] overflow-y-auto relative shadow-2xl"
             onClick={(e) => e.stopPropagation()}
-            style={{ maxHeight: '95vh' }}
+            style={{ 
+              maxHeight: '90vh',
+              width: '95vw',
+              maxWidth: '1200px'
+            }}
           >
             {/* Modal Header */}
             <div className="sticky top-0 bg-white/5 backdrop-blur-xl border-b border-white/10 p-6 z-20 rounded-t-2xl">
@@ -643,14 +647,14 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
               </div>
             )}
 
-            <div className="p-6 pt-4">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="p-4 lg:p-6 pt-4">
+              <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 lg:gap-6">
                 {/* Left Column - Video & Basic Info */}
-                <div className="lg:col-span-1 space-y-4">
+                <div className="xl:col-span-1 space-y-4">
                   {/* Video Player/Thumbnail */}
                   {selectedVideo.cover_image_url && (
                     <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden">
-                      <div className="w-full h-[300px] relative">
+                      <div className="w-full h-[250px] lg:h-[300px] relative">
                         <VideoThumbnail 
                           coverImageUrl={selectedVideo.cover_image_url} 
                           shareUrl={selectedVideo.share_url}
@@ -787,7 +791,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 </div>
 
                 {/* Right Column - AI Analysis */}
-                <div className="lg:col-span-2 space-y-6">
+                <div className="xl:col-span-2 space-y-4 lg:space-y-6">
                   {/* AI Analysis Section */}
                   {selectedVideo.ai_scores && (
                     <div className="space-y-6">
@@ -823,7 +827,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         {/* Content Scores - Inline in same card */}
                         <div className="pt-4 border-t border-white/10">
                           <h4 className="text-sm font-bold text-white/80 mb-3">Content Breakdown</h4>
-                          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
                             {Object.entries({
                               'Hook': selectedVideo.ai_scores.hook_strength,
                               'Depth': selectedVideo.ai_scores.depth,
