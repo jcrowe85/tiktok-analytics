@@ -152,16 +152,34 @@ function AdHocPage() {
               </div>
             ) : (
               <>
-                {/* Info Banner */}
-                <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">ℹ️</span>
-                    <div>
-                      <h4 className="text-blue-400 font-medium mb-1">About Ad-Hoc Analyses</h4>
-                      <p className="text-white/60 text-sm">
-                        These competitor analyses are permanently saved to your account. They won't affect your main dashboard stats but will always be available for reference.
+                {/* TikTok URL Input Section */}
+                <div className="glass-card rounded-2xl p-6 mb-6">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-white/80 mb-2">
+                        TikTok Video URL
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="https://www.tiktok.com/@username/video/..."
+                        className="w-full px-4 py-3 bg-white/5 border border-white/20 rounded-lg text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-colors"
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            setShowAdHocAnalysis(true)
+                          }
+                        }}
+                      />
+                      <p className="text-white/50 text-xs mt-2">
+                        Paste any public TikTok URL to analyze performance and get insights
                       </p>
                     </div>
+                    <button
+                      onClick={() => setShowAdHocAnalysis(true)}
+                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center gap-2 whitespace-nowrap"
+                    >
+                      <span>🎯</span>
+                      <span>Analyze</span>
+                    </button>
                   </div>
                 </div>
 
