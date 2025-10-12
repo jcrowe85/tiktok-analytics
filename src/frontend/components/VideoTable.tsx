@@ -28,6 +28,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [selectedVideo, setSelectedVideo] = useState<VideoMetrics | null>(null)
   const [hoveredTooltip, setHoveredTooltip] = useState<string | null>(null)
+  const [captionExpanded, setCaptionExpanded] = useState(false)
 
   const formatNumber = (num: number) => {
     if (num >= 1000000) {
@@ -185,7 +186,10 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
               <div 
                 key={video.id}
                 className="modern-card overflow-hidden cursor-pointer group"
-                onClick={() => setSelectedVideo(video)}
+                onClick={() => {
+                  setSelectedVideo(video)
+                  setCaptionExpanded(false) // Reset caption expansion when selecting new video
+                }}
               >
                 {/* Header Section */}
                 <div className="p-4 border-b border-white/5">
@@ -529,18 +533,24 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     </div>
                   </div>
 
-                  {/* Shortened Caption */}
+                  {/* Caption */}
                   <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
                     <h4 className="text-sm font-semibold text-white/70 mb-3">Caption</h4>
-                    <p className="text-white/90 text-sm leading-relaxed line-clamp-4">
-                      {selectedVideo.caption.length > 200 
+                    <p className={`text-white/90 text-sm leading-relaxed ${!captionExpanded && selectedVideo.caption.length > 200 ? 'line-clamp-4' : ''}`}>
+                      {!captionExpanded && selectedVideo.caption.length > 200 
                         ? `${selectedVideo.caption.substring(0, 200)}...` 
                         : selectedVideo.caption
                       }
                     </p>
                     {selectedVideo.caption.length > 200 && (
-                      <button className="text-blue-400 text-xs mt-2 hover:text-blue-300 transition-colors">
-                        Show full caption
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setCaptionExpanded(!captionExpanded)
+                        }}
+                        className="text-blue-400 text-xs mt-2 hover:text-blue-300 transition-colors"
+                      >
+                        {captionExpanded ? 'Show less' : 'Show full caption'}
                       </button>
                     )}
                   </div>
