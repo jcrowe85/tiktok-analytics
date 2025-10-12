@@ -1,5 +1,6 @@
 import express from 'express'
 import { analyzeVideo } from '../ai/pipeline.ts'
+import { getVideoData } from '../utils/getVideoUrl.ts'
 import axios from 'axios'
 
 const router = express.Router()
@@ -88,9 +89,12 @@ router.post('/analyze-url', async (req, res) => {
     
     console.log(`📹 Video ID: ${videoId}`)
     
-    // Get video metadata
-    const metadata = await getVideoMetadata(url)
-    console.log(`📊 Metadata: ${metadata.videoTitle} by ${metadata.authorName}`)
+    // Get comprehensive video data from RapidAPI
+    const videoData = await getVideoData(url)
+    console.log(`📊 Video data: ${videoData.staticData?.videoTitle || 'Unknown'} by ${videoData.staticData?.authorUsername || 'Unknown'}`)
+    
+    // Get oEmbed metadata as fallback for thumbnail
+    const oembedData = await getVideoMetadata(url)
     
     // Analyze the video
     console.log(`🚩 Step 1: Starting AI analysis...`)
@@ -109,13 +113,25 @@ router.post('/analyze-url', async (req, res) => {
       ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
       : 0
     
+    // Merge staticData from RapidAPI and oEmbed (RapidAPI takes priority)
+    const mergedStaticData = {
+      videoTitle: videoData.staticData?.videoTitle || oembedData.videoTitle || 'Ad-Hoc Video',
+      authorName: videoData.staticData?.authorUsername || videoData.staticData?.authorNickname || oembedData.authorName || 'Unknown',
+      authorUsername: videoData.staticData?.authorUsername || '',
+      authorNickname: videoData.staticData?.authorNickname || '',
+      authorAvatarUrl: videoData.staticData?.authorAvatarUrl || '',
+      musicTitle: videoData.staticData?.musicTitle || '',
+      musicArtist: videoData.staticData?.musicArtist || '',
+      thumbnailUrl: oembedData.thumbnailUrl || '',
+    }
+    
     // Return analysis results
     res.json({
       success: true,
       videoId,
       url,
-      staticData: metadata,
-      coverImageUrl: metadata.thumbnailUrl,
+      staticData: mergedStaticData,
+      coverImageUrl: oembedData.thumbnailUrl || '',
       duration,
       scores: analysis.scores,
       visual_scores: analysis.visual_scores,
