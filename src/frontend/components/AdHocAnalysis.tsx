@@ -373,9 +373,9 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
                   <div className="flex justify-end">
                     <button
                       onClick={onClose}
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                      className="px-6 py-3 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-medium rounded-lg transition-colors"
                     >
-                      ✅ Done - View in List
+                      Done
                     </button>
                   </div>
                 </div>
