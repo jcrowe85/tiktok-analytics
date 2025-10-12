@@ -37,23 +37,19 @@ app.use('/api', adhocRoutes);
  */
 app.get('/api/data', async (_req, res) => {
   try {
+    if (!fs.existsSync(DATA_PATH)) {
+      return res.status(404).json({
+        error: 'No data found. Run "npm run fetch" first.',
+      });
+    }
+
+    const data = fs.readFileSync(DATA_PATH, 'utf-8');
+    const videos = JSON.parse(data);
+
     // Import database connection
     const { executeQuery } = await import('./database/connection.ts');
     
-    // Get all videos from database (fresh data)
-    const videos = await executeQuery(`
-      SELECT 
-        id, caption, video_description, hashtags, posted_at_iso, create_time,
-        duration, view_count, like_count, comment_count, share_count, 
-        engagement_rate, like_rate, comment_rate, share_rate, views_24h, velocity_24h,
-        share_url, embed_link, cover_image_url, video_title, author_username, 
-        author_nickname, author_avatar_url, music_title, music_artist, is_adhoc,
-        created_at, updated_at
-      FROM videos 
-      ORDER BY posted_at_iso DESC
-    `)
-    
-    console.log(`📊 Fetched ${videos.length} videos from database`)
+    console.log(`📊 Loaded ${videos.length} videos from JSON file`)
     
     // Get AI analysis for all videos
     const aiAnalyses = await executeQuery(`
@@ -97,8 +93,6 @@ app.get('/api/data', async (_req, res) => {
       }
       return {
         ...video,
-        // Add username fallback for compatibility
-        username: video.author_username || 'unknown',
         ...(aiData || {})
       }
     });
