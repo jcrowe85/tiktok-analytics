@@ -1,9 +1,24 @@
 #!/bin/bash
 
 # TikTok Analytics VPS Deployment Script
-# Run this script on your VPS to deploy the latest changes
+# ⚠️  IMPORTANT: This script should ONLY be run on the VPS server!
+# Do NOT run this script locally - it will overwrite local development setup
 
 set -e  # Exit on any error
+
+# Safety check to prevent local execution
+if [ -f "package.json" ] && [ -d "node_modules" ] && [ ! -f "/etc/hostname" ]; then
+    echo "❌ ERROR: This script appears to be running in a local development environment!"
+    echo "This deploy script should ONLY be run on the VPS server."
+    echo ""
+    echo "To deploy from local machine:"
+    echo "1. Ensure all changes are committed and pushed to GitHub"
+    echo "2. SSH into your VPS: ssh user@your-vps-ip"
+    echo "3. Navigate to project directory: cd /path/to/tiktok-analytics"
+    echo "4. Run this script: ./deploy-to-vps.sh"
+    echo ""
+    exit 1
+fi
 
 echo "🚀 Starting VPS Deployment..."
 echo "================================"
@@ -216,17 +231,29 @@ if [ -f "ai_analysis_data.sql" ]; then
     fi
     
     if [ -n "$POSTGRES_CONTAINER_ID" ]; then
-        if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql 2>/dev/null; then
-            print_success "AI analysis data imported"
+        # Check if database is ready
+        print_status "Waiting for database to be fully ready..."
+        sleep 5
+        
+        # Test database connection first
+        if docker exec "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics -c "SELECT 1;" > /dev/null 2>&1; then
+            print_status "Database connection confirmed, importing data..."
+            if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql; then
+                print_success "AI analysis data imported successfully"
+            else
+                print_warning "AI analysis data import failed - check logs above"
+            fi
         else
-            print_warning "AI analysis data import failed"
+            print_warning "Database not ready for import - try running import manually later"
         fi
     else
         print_warning "PostgreSQL container not found for data import"
     fi
 else
     print_warning "Step 6: No AI analysis data file found (ai_analysis_data.sql)"
-    echo "You'll need to transfer this file from your local machine"
+    echo "To import AI data later:"
+    echo "1. Transfer file: scp ai_analysis_data.sql user@vps:/path/to/project/"
+    echo "2. Import: docker exec -i \$(docker ps -q --filter \"name=postgres\") psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql"
 fi
 
 # Step 7: Verify services are running
