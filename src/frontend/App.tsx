@@ -20,17 +20,24 @@ function App() {
 
   useEffect(() => {
     fetchData()
+  }, [])
+
+  // Separate effect for auto-refresh polling
+  useEffect(() => {
+    // Only poll if there are videos being analyzed
+    const hasUnanalyzedVideos = videos.some(v => !v.ai_scores)
     
-    // Auto-refresh every 30 seconds if there are videos being analyzed
+    if (!hasUnanalyzedVideos) {
+      return // Don't set up polling if all videos are analyzed
+    }
+    
+    // Auto-refresh every 30 seconds
     const interval = setInterval(() => {
-      // Only auto-refresh if there are videos without AI scores (being analyzed)
-      if (videos.some(v => !v.ai_scores)) {
-        fetchData()
-      }
+      fetchData()
     }, 30000) // 30 seconds
     
     return () => clearInterval(interval)
-  }, [videos])
+  }, [videos.length]) // Only re-run if number of videos changes
 
   const fetchData = async () => {
     try {
