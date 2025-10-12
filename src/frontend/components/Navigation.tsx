@@ -23,11 +23,12 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   useEffect(() => {
     const checkIsMobile = () => {
       const mobile = window.innerWidth < 768;
-      console.log('📱 Screen width:', window.innerWidth, 'isMobile:', mobile, 'sidebarOpen:', sidebarOpen);
+      const wasMobile = isMobile;
+      console.log('📱 Screen width:', window.innerWidth, 'isMobile:', mobile, 'wasMobile:', wasMobile, 'sidebarOpen:', sidebarOpen);
       
-      // If transitioning to mobile, ensure mobile sidebar is closed
-      if (mobile && sidebarOpen) {
-        console.log('🔧 Auto-closing mobile sidebar on resize to mobile');
+      // Only auto-close if transitioning FROM desktop TO mobile
+      if (mobile && !wasMobile && sidebarOpen) {
+        console.log('🔧 Auto-closing mobile sidebar on resize from desktop to mobile');
         setSidebarOpen(false);
       }
       
@@ -39,7 +40,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
     window.addEventListener('resize', checkIsMobile);
     
     return () => window.removeEventListener('resize', checkIsMobile);
-  }, [sidebarOpen]); // Add sidebarOpen as dependency
+  }, [isMobile, sidebarOpen]); // Track both isMobile and sidebarOpen
 
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
