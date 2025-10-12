@@ -49,9 +49,9 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
             <FiX className="w-5 h-5" />
           </button>
         </div>
-        <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4 sm:flex-wrap">
         {/* Search */}
-        <div className="relative flex-1 min-w-[280px]">
+        <div className="relative w-full sm:flex-1 sm:min-w-[280px]">
           <FiSearch className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white/40" />
           <input
             type="text"
@@ -63,19 +63,19 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
         </div>
 
         {/* Date Range */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <input
             type="date"
             value={filters.dateRange.start}
             onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, start: e.target.value })}
-            className={`${modernInputClass} w-36`}
+            className={`${modernInputClass} w-full sm:w-36`}
           />
-          <span className="text-white/40 text-sm font-medium">to</span>
+          <span className="text-white/40 text-sm font-medium text-center sm:text-left">to</span>
           <input
             type="date"
             value={filters.dateRange.end}
             onChange={(e) => updateFilter('dateRange', { ...filters.dateRange, end: e.target.value })}
-            className={`${modernInputClass} w-36`}
+            className={`${modernInputClass} w-full sm:w-36`}
           />
         </div>
 
@@ -83,7 +83,7 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
         <select
           value={filters.durationBucket}
           onChange={(e) => updateFilter('durationBucket', e.target.value)}
-          className={`${modernInputClass} w-32`}
+          className={`${modernInputClass} w-full sm:w-32`}
         >
           <option value="all">All Durations</option>
           <option value="short">&lt;10s</option>
@@ -97,14 +97,14 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
           value={filters.hashtag}
           onChange={(e) => updateFilter('hashtag', e.target.value)}
           placeholder="#hashtag"
-          className={`${modernInputClass} w-32`}
+          className={`${modernInputClass} w-full sm:w-32`}
         />
 
         {/* AI Quality Band */}
         <select
           value={filters.aiQualityBand}
           onChange={(e) => updateFilter('aiQualityBand', e.target.value)}
-          className={`${modernInputClass} w-36`}
+          className={`${modernInputClass} w-full sm:w-36`}
           title="Filter by AI Quality Score"
         >
           <option value="all">All AI Quality</option>
@@ -117,7 +117,7 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
         <select
           value={filters.contentType}
           onChange={(e) => updateFilter('contentType', e.target.value)}
-          className={`${modernInputClass} w-36`}
+          className={`${modernInputClass} w-full sm:w-36`}
           title="Filter by Content Type"
         >
           <option value="all">All Content</option>
@@ -127,7 +127,7 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
         </select>
 
         {/* Top Movers Toggle */}
-        <label className="flex items-center gap-3 cursor-pointer modern-input px-4 py-3 transition-all hover:bg-white/8">
+        <label className="flex items-center justify-center sm:justify-start gap-3 cursor-pointer modern-input px-4 py-3 transition-all hover:bg-white/8">
           <input
             type="checkbox"
             checked={filters.showTopMovers}
@@ -144,7 +144,7 @@ function Filters({ filters, setFilters, setShowFilters }: FiltersProps) {
         {hasActiveFilters && (
           <button
             onClick={resetFilters}
-            className="flex items-center gap-2 text-sm text-white/70 hover:text-white transition-all px-4 py-3 rounded-xl hover:bg-white/5 border border-white/10 hover:border-white/20"
+            className="flex items-center justify-center gap-2 text-sm text-white/70 hover:text-white transition-all px-4 py-3 rounded-xl hover:bg-white/5 border border-white/10 hover:border-white/20 w-full sm:w-auto"
             title="Clear all filters"
           >
             <FiX className="w-4 h-4" />

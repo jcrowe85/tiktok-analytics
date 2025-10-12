@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiCheck, FiAlertTriangle } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 import { VideoThumbnail } from './VideoThumbnail'
@@ -115,23 +116,53 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   }
 
   const formatAnalysisTime = (iso: string) => {
+    if (!iso) return 'Unknown'
+    
     const date = new Date(iso)
     const now = new Date()
-    const diffMs = now.getTime() - date.getTime()
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid date format:', iso)
+      return 'Invalid date'
+    }
+    
+    const diffMs = Math.abs(now.getTime() - date.getTime()) // Use absolute value to handle timezone issues
+    
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
     const diffDays = Math.floor(diffHours / 24)
+    const diffWeeks = Math.floor(diffDays / 7)
+    const diffMonths = Math.floor(diffDays / 30)
+    const diffYears = Math.floor(diffDays / 365)
     
-    if (diffDays > 0) {
+    // Debug logging for timezone issues
+    const actualDiff = now.getTime() - date.getTime()
+    if (actualDiff < 0) {
+      console.warn('Future timestamp detected (showing absolute time):', {
+        iso,
+        parsedDate: date.toISOString(),
+        now: now.toISOString(),
+        actualDiffMs: actualDiff,
+        actualDiffHours: Math.floor(actualDiff / (1000 * 60 * 60)),
+        showingAbsoluteTime: true
+      })
+    }
+    
+    if (diffYears > 0) {
+      return `${diffYears}y ago`
+    } else if (diffMonths > 0) {
+      return `${diffMonths}mo ago`
+    } else if (diffWeeks > 0) {
+      return `${diffWeeks}w ago`
+    } else if (diffDays > 0) {
       return `${diffDays}d ago`
     } else if (diffHours > 0) {
       return `${diffHours}h ago`
+    } else if (diffMinutes > 0) {
+      return `${diffMinutes}m ago`
     } else {
-      const diffMinutes = Math.floor(diffMs / (1000 * 60))
-      if (diffMinutes > 0) {
-        return `${diffMinutes}m ago`
-      } else {
-        return 'Just now'
-      }
+      return 'Just now'
     }
   }
 
@@ -272,8 +303,10 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
   return (
     <>
       <div className="overflow-hidden">
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between">
+        <div className="px-4 sm:px-6 py-4">
+          {/* Mobile-first responsive header */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            {/* Title section */}
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-full flex items-center justify-center glass-card">
                 <FiVideo className="w-4 h-4 text-white" />
@@ -282,10 +315,13 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 Top Videos ({videos.length})
               </h2>
             </div>
-            <div className="flex items-center gap-3">
+            
+            {/* Controls section - responsive layout */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-3">
+              {/* Filters button */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`px-3 py-1 rounded-lg border transition-all flex items-center gap-2 ${
+                className={`px-3 py-2 rounded-lg border transition-all flex items-center justify-center gap-2 w-full sm:w-auto ${
                   showFilters || hasActiveFilters() 
                     ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' 
                     : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80'
@@ -301,26 +337,30 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                 )}
               </button>
-              <span className="text-sm text-white/70">Sort by:</span>
-              <select 
-                value={`${sortKey}-${sortDirection}`}
-                onChange={(e) => {
-                  const [key, dir] = e.target.value.split('-')
-                  setSortKey(key as SortKey)
-                  setSortDirection(dir as SortDirection)
-                }}
-                className="bg-white/10 border border-white/20 rounded-lg px-3 py-1 text-sm text-white"
-              >
-                <option value="posted_at_iso-desc">Latest First</option>
-                <option value="view_count-desc">Most Views</option>
-                <option value="engagement_rate-desc">Best Engagement</option>
-                <option value="velocity_24h-desc">Highest Velocity</option>
-                <option disabled>──────────────</option>
-                <option value="ai_overall_score-desc">AI Score (High to Low)</option>
-                <option value="ai_pass-desc">✅ Pass (80+)</option>
-                <option value="ai_revise-desc">⚠️ Revise (60-79)</option>
-                <option value="ai_reshoot-desc">❌ Reshoot (&lt;60)</option>
-              </select>
+              
+              {/* Sort section */}
+              <div className="flex items-center gap-2 sm:gap-3">
+                <span className="text-sm text-white/70 whitespace-nowrap">Sort by:</span>
+                <select 
+                  value={`${sortKey}-${sortDirection}`}
+                  onChange={(e) => {
+                    const [key, dir] = e.target.value.split('-')
+                    setSortKey(key as SortKey)
+                    setSortDirection(dir as SortDirection)
+                  }}
+                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white w-full sm:w-auto min-w-[140px]"
+                >
+                  <option value="posted_at_iso-desc">Latest First</option>
+                  <option value="view_count-desc">Most Views</option>
+                  <option value="engagement_rate-desc">Best Engagement</option>
+                  <option value="velocity_24h-desc">Highest Velocity</option>
+                  <option disabled>──────────────</option>
+                  <option value="ai_overall_score-desc">AI Score (High to Low)</option>
+                  <option value="ai_pass-desc">✅ Pass (80+)</option>
+                  <option value="ai_revise-desc">⚠️ Revise (60-79)</option>
+                  <option value="ai_reshoot-desc">❌ Reshoot (&lt;60)</option>
+                </select>
+              </div>
             </div>
           </div>
         </div>
@@ -379,7 +419,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                             />
                           </div>
                         </div>
-                        <span className="text-xs text-white/70 font-semibold">
+                        <span className="text-xs text-white/70 font-bold">
                           {(video.engagement_rate * 100).toFixed(1)}%
                         </span>
                       </div>
@@ -534,28 +574,28 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     {/* BOTTOM: Social Metrics */}
                     <div className="pt-3 border-t border-white/5 flex items-center justify-between">
                       {/* Bottom Left: Likes, Comments, Shares */}
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex items-center gap-0.5">
-                          <FiHeart className="w-3.5 h-3.5 text-red-400/80" />
-                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                          <FiHeart className="w-4 h-4 text-red-400" />
+                          <span className="text-xs text-white font-bold tabular-nums">
                             {video.like_count > 1000 
                               ? `${(video.like_count / 1000).toFixed(0)}K`
                               : video.like_count.toLocaleString()
                             }
                           </span>
                         </div>
-                        <div className="flex items-center gap-0.5">
-                          <FiMessageCircle className="w-3.5 h-3.5 text-blue-400/80" />
-                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                        <div className="flex items-center gap-1">
+                          <FiMessageCircle className="w-4 h-4 text-blue-400" />
+                          <span className="text-xs text-white font-bold tabular-nums">
                             {video.comment_count > 1000 
                               ? `${(video.comment_count / 1000).toFixed(0)}K`
                               : video.comment_count.toLocaleString()
                             }
                           </span>
                         </div>
-                        <div className="flex items-center gap-0.5">
-                          <FiShare2 className="w-3.5 h-3.5 text-green-400/80" />
-                          <span className="text-[11px] text-white/70 font-medium tabular-nums">
+                        <div className="flex items-center gap-1">
+                          <FiShare2 className="w-4 h-4 text-green-400" />
+                          <span className="text-xs text-white font-bold tabular-nums">
                             {video.share_count > 1000 
                               ? `${(video.share_count / 1000).toFixed(0)}K`
                               : video.share_count.toLocaleString()
@@ -565,9 +605,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                       </div>
 
                       {/* Bottom Right: Velocity - Ensure perfect alignment */}
-                      <div className="flex items-center gap-0.5 h-[18px]">
-                        <FiTrendingUp className="w-3.5 h-3.5 text-purple-400/80" />
-                        <span className="text-[11px] text-white/70 font-medium tabular-nums leading-none">
+                      <div className="flex items-center gap-1">
+                        <FiTrendingUp className="w-4 h-4 text-purple-400" />
+                        <span className="text-xs text-white font-bold tabular-nums leading-none">
                           {video.velocity_24h ? video.velocity_24h.toFixed(0) : '0'}/hr
                         </span>
                       </div>
@@ -589,45 +629,38 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
       </div>
 
       {/* Modern Video Detail Modal */}
-      {selectedVideo && (
+      {selectedVideo && createPortal(
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-[9999]"
+          className="fixed inset-0 bg-gradient-to-br from-black/60 via-gray-900/50 to-black/70 backdrop-blur-lg flex items-center justify-center p-4"
           onClick={() => setSelectedVideo(null)}
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 999999,
+            width: '100vw',
+            height: '100vh'
+          }}
         >
           <div 
-            className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl w-full max-w-4xl mx-auto max-h-[90vh] overflow-y-auto relative shadow-2xl"
+            className="bg-gradient-to-br from-gray-900/95 via-gray-800/95 to-gray-900/95 backdrop-blur-2xl border border-white/25 rounded-2xl w-full max-w-3xl mx-auto max-h-[90vh] overflow-y-auto relative shadow-2xl"
             onClick={(e) => e.stopPropagation()}
             style={{ 
               maxHeight: '90vh',
-              width: '95vw',
-              maxWidth: '1200px'
+              width: '90vw',
+              maxWidth: '900px',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.1)'
             }}
           >
-            {/* Modal Header */}
-            <div className="sticky top-0 bg-white/5 backdrop-blur-xl border-b border-white/10 p-6 z-20 rounded-t-2xl">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <FiVideo className="w-5 h-5 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-bold text-white">
-                      Video Analytics
-                    </h3>
-                    <p className="text-sm text-white/60 font-medium">
-                      Detailed performance insights
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => setSelectedVideo(null)}
-                  className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
-                >
-                  <FiX className="w-4 h-4 text-white/80" />
-                </button>
-              </div>
-            </div>
+            {/* Close button in top right */}
+            <button
+              onClick={() => setSelectedVideo(null)}
+              className="absolute top-4 right-4 w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm z-50"
+            >
+              <FiX className="w-4 h-4 text-white/80" />
+            </button>
 
             {/* Reanalyzing Overlay */}
             {reanalyzing && (
@@ -653,7 +686,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 <div className="xl:col-span-1 space-y-4">
                   {/* Video Player/Thumbnail */}
                   {selectedVideo.cover_image_url && (
-                    <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl overflow-hidden">
+                    <div className="bg-gray-800/80 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden">
                       <div className="w-full h-[250px] lg:h-[300px] relative">
                         <VideoThumbnail 
                           coverImageUrl={selectedVideo.cover_image_url} 
@@ -711,7 +744,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                   )}
 
                   {/* Performance & Details */}
-                  <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-xl p-4">
+                  <div className="bg-gray-800/80 backdrop-blur-sm border border-white/15 rounded-xl p-4">
                     <h4 className="text-sm font-semibold text-white/70 mb-4">Performance & Details</h4>
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
@@ -956,14 +989,22 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
-          style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0 }}
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4"
+          style={{ 
+            position: 'fixed', 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0,
+            zIndex: 999999
+          }}
         >
           <div className="bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl shadow-2xl max-w-md w-full border border-white/10">
             <div className="p-6">
