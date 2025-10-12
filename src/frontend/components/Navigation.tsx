@@ -16,6 +16,7 @@ export function Navigation() {
   };
   
   const handleNavClick = (path: string) => {
+    alert(`Clicked! Navigating to: ${path}`);
     console.log('Navigating to:', path);
     navigate(path);
   };
