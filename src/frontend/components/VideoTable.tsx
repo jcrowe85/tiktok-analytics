@@ -176,10 +176,9 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
             const updatedVideo = statusData.data.find((v: any) => v.id === video.id)
             
             if (updatedVideo && updatedVideo.ai_processed_at !== video.ai_processed_at) {
-              // Analysis complete! Close modal and refresh
+              // Analysis complete! Update modal with new data
               setReanalyzing(false)
-              setSelectedVideo(null)
-              window.location.reload()
+              setSelectedVideo(updatedVideo)
               return
             }
           }
@@ -188,7 +187,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
           if (attempts < maxAttempts) {
             setTimeout(checkStatus, 5000)
           } else {
-            // Timeout - just refresh the page
+            // Timeout - refresh to get latest data
+            setReanalyzing(false)
             window.location.reload()
           }
         } catch (error) {
