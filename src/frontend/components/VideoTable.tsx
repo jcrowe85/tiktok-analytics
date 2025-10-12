@@ -816,10 +816,22 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                               'CTA': selectedVideo.ai_scores.cta,
                               'Brand Fit': selectedVideo.ai_scores.brand_fit,
                             }).map(([label, score]) => (
-                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
-                                <div className="text-white/60 text-xs md:text-sm mb-0.5">{label}</div>
-                                <div className="text-xl md:text-2xl font-bold text-white">
-                                  {score}<span className="text-xs md:text-sm text-white/40">/10</span>
+                              <div key={label} className="bg-slate-900/50 rounded-lg p-3">
+                                <div className="text-white/70 text-xs md:text-sm font-medium mb-2">{label}</div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <div className="w-16 md:w-20 h-1.5 bg-white/15 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full transition-all duration-500 ease-out ${
+                                        score >= 7 ? 'bg-green-400' :
+                                        score >= 5 ? 'bg-yellow-400' :
+                                        'bg-red-400'
+                                      }`}
+                                      style={{ width: `${(score / 10) * 100}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-sm md:text-base font-bold text-white/90 tabular-nums">
+                                    {score}<span className="text-xs text-white/40">/10</span>
+                                  </span>
                                 </div>
                               </div>
                             ))}
