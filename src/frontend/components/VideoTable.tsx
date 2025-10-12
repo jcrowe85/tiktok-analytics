@@ -124,6 +124,51 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     return text.substring(0, maxLength) + '...'
   }
 
+  const handleReanalyze = async (video: VideoMetrics) => {
+    // Show confirmation dialog with cost warning
+    const confirmed = window.confirm(
+      `⚠️ RE-ANALYZE WARNING\n\n` +
+      `This video was already analyzed ${video.ai_processed_at ? formatAnalysisTime(video.ai_processed_at) : 'previously'}.\n\n` +
+      `Re-analyzing will:\n` +
+      `• Use OpenAI API credits (~$0.10-0.50)\n` +
+      `• Take 30-60 seconds to complete\n` +
+      `• Overwrite existing analysis\n\n` +
+      `⚠️ Only re-analyze if you have a specific reason (e.g., video content changed, testing improvements).\n\n` +
+      `Do you want to continue?`
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/ai/reprocess/${video.id}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          videoUrl: video.share_url 
+        }),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to queue re-analysis')
+      }
+
+      // Show success message
+      alert(`✅ Video queued for re-analysis!\n\nThe analysis will complete in 30-60 seconds. Refresh the page to see updated results.`)
+      
+      // Close modal
+      setSelectedVideo(null)
+    } catch (error) {
+      console.error('Re-analysis error:', error)
+      alert(`❌ Failed to queue re-analysis:\n\n${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
   return (
     <>
       <div className="overflow-hidden">
@@ -489,12 +534,23 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setSelectedVideo(null)}
-                  className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
-                >
-                  <FiX className="w-4 h-4 text-white/80" />
-                </button>
+                <div className="flex items-center gap-2">
+                  {selectedVideo.ai_scores && (
+                    <button
+                      onClick={() => handleReanalyze(selectedVideo)}
+                      className="px-4 py-2 bg-yellow-600/20 hover:bg-yellow-600/30 border border-yellow-500/30 rounded-lg transition-all backdrop-blur-sm text-yellow-400 text-sm font-medium flex items-center gap-2"
+                      title="Re-analyze this video"
+                    >
+                      🔄 Re-analyze
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setSelectedVideo(null)}
+                    className="w-8 h-8 bg-white/10 hover:bg-white/20 rounded-lg flex items-center justify-center transition-all backdrop-blur-sm"
+                  >
+                    <FiX className="w-4 h-4 text-white/80" />
+                  </button>
+                </div>
               </div>
             </div>
 

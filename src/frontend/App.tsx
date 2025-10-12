@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import Overview from './components/Overview'
 import VideoTable from './components/VideoTable'
 import Filters from './components/Filters'
+import { AdHocAnalysis } from './components/AdHocAnalysis'
 import type { VideoMetrics, Filters as FilterType } from './types'
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
     contentType: 'all',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [showAdHocAnalysis, setShowAdHocAnalysis] = useState(false)
 
   // Helper function to detect carousel content
   const isCarousel = (caption: string): boolean => {
@@ -252,6 +254,16 @@ function App() {
               </p>
             </div>
             <div className="flex items-center gap-3">
+              <button
+                onClick={() => setShowAdHocAnalysis(true)}
+                className="px-3 py-1.5 sm:px-4 sm:py-2 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-xl transition-colors flex items-center gap-2"
+                title="Analyze any TikTok video"
+              >
+                <span className="text-lg">🔍</span>
+                <span className="text-xs sm:text-sm font-medium text-blue-400 hidden sm:inline">
+                  Analyze URL
+                </span>
+              </button>
               <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
                 <span className="text-xs sm:text-sm font-medium text-white/80">
                   {filteredVideos.length} videos
@@ -286,6 +298,11 @@ function App() {
         </div>
       </div>
       </div>
+      
+      {/* Ad-Hoc Analysis Modal */}
+      {showAdHocAnalysis && (
+        <AdHocAnalysis onClose={() => setShowAdHocAnalysis(false)} />
+      )}
     </div>
   )
 }

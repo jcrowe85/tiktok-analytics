@@ -1,7 +1,9 @@
 import express from 'express'
 import { addVideoForAnalysis, getQueueStats } from '../queue/queue.ts'
 import { executeQuery } from '../database/connection.ts'
-import { getRapidApiStatus } from '../utils/getVideoUrl.ts'
+import { getRapidApiStatus, getVideoData } from '../utils/getVideoUrl.ts'
+import { analyzeVideo } from '../ai/pipeline.ts'
+import crypto from 'crypto'
 
 const router = express.Router()
 
@@ -189,6 +191,67 @@ router.post('/reprocess/:videoId', async (req, res) => {
   } catch (error) {
     console.error('❌ Error reprocessing video:', error)
     res.status(500).json({ error: 'Failed to reprocess video' })
+  }
+})
+
+// Ad-hoc analysis - analyze any TikTok URL without saving to database
+router.post('/analyze-url', async (req, res) => {
+  try {
+    const { url } = req.body
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL is required' })
+    }
+    
+    // Validate TikTok URL format
+    if (!url.includes('tiktok.com') && !url.includes('vm.tiktok.com')) {
+      return res.status(400).json({ error: 'Please provide a valid TikTok URL' })
+    }
+    
+    console.log(`🔍 Starting ad-hoc analysis for URL: ${url}`)
+    
+    // Get video data and URL from RapidAPI
+    const { videoUrl, staticData } = await getVideoData(url)
+    
+    if (!videoUrl) {
+      return res.status(400).json({ 
+        error: 'Could not retrieve video URL. Video may be private or unavailable.' 
+      })
+    }
+    
+    // Generate a temporary video ID for analysis (won't be saved to database)
+    const tempVideoId = `adhoc_${crypto.randomBytes(8).toString('hex')}`
+    
+    console.log(`   🎯 Running AI analysis for ad-hoc video: ${tempVideoId}`)
+    
+    // Run the AI analysis pipeline
+    const analysis = await analyzeVideo(tempVideoId, videoUrl)
+    
+    console.log(`✅ Ad-hoc analysis completed: ${analysis.scores.overall_100}/100`)
+    
+    // Return the analysis results (without saving to database)
+    res.json({
+      success: true,
+      url,
+      videoId: tempVideoId,
+      staticData, // Include metadata if available
+      scores: analysis.scores,
+      visual_scores: analysis.visual_scores,
+      classifiers: analysis.classifiers,
+      findings: analysis.findings,
+      fix_suggestions: analysis.fix_suggestions,
+      artifacts: {
+        transcript: analysis.artifacts.transcript,
+        ocr_text: analysis.artifacts.ocr_text,
+      },
+      processed_at: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('❌ Ad-hoc analysis failed:', error)
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Analysis failed. Please try again.' 
+    })
   }
 })
 
