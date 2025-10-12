@@ -1,12 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import Overview from '../components/Overview'
 import VideoTable from '../components/VideoTable'
 import Filters from '../components/Filters'
 import type { VideoMetrics, Filters as FilterType } from '../types'
 
 function Dashboard() {
-  const navigate = useNavigate()
   const [videos, setVideos] = useState<VideoMetrics[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
