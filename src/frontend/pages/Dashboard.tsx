@@ -221,6 +221,7 @@ function Dashboard() {
               showFilters={showFilters}
               setShowFilters={setShowFilters}
               hasActiveFilters={hasActiveFilters}
+              onVideoUpdate={fetchData}
             />
           </div>
         </div>
