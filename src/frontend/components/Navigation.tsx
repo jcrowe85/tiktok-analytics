@@ -11,7 +11,20 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
   
+  // Detect mobile vs desktop
+  useEffect(() => {
+    const checkIsMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkIsMobile();
+    window.addEventListener('resize', checkIsMobile);
+    
+    return () => window.removeEventListener('resize', checkIsMobile);
+  }, []);
+
   // Prevent body scroll when mobile menu is open
   useEffect(() => {
     if (sidebarOpen) {
@@ -243,11 +256,11 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
       </div>
 
       {/* Desktop Sidebar */}
-      <div className={`
-        fixed top-0 left-0 h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 z-40 transform transition-all duration-300 ease-in-out
-        ${sidebarCollapsed ? 'w-16' : 'w-64 lg:w-72'}
-        hidden md:block
-      `}>
+      {!isMobile && (
+        <div className={`
+          fixed top-0 left-0 h-screen bg-black/20 backdrop-blur-xl border-r border-white/10 z-40 transform transition-all duration-300 ease-in-out
+          ${sidebarCollapsed ? 'w-16' : 'w-64 lg:w-72'}
+        `}>
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
           <div className={`flex items-center justify-between p-6 border-b border-white/10 ${sidebarCollapsed ? 'px-3' : ''}`}>
@@ -389,6 +402,7 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
           </div>
         </div>
       </div>
+      )}
     </>
   );
 }
