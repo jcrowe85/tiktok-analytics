@@ -97,6 +97,27 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
     })
   }
 
+  const formatAnalysisTime = (iso: string) => {
+    const date = new Date(iso)
+    const now = new Date()
+    const diffMs = now.getTime() - date.getTime()
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    const diffDays = Math.floor(diffHours / 24)
+    
+    if (diffDays > 0) {
+      return `${diffDays}d ago`
+    } else if (diffHours > 0) {
+      return `${diffHours}h ago`
+    } else {
+      const diffMinutes = Math.floor(diffMs / (1000 * 60))
+      if (diffMinutes > 0) {
+        return `${diffMinutes}m ago`
+      } else {
+        return 'Just now'
+      }
+    }
+  }
+
   const truncate = (text: string, maxLength: number) => {
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
@@ -170,21 +191,30 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                 <div className="p-4 border-b border-white/5">
                   <div className="flex items-center justify-between">
                     {/* Left: AI Quality Badge (if available) or Date */}
-                    {video.ai_scores ? (
-                      <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                        video.ai_scores.overall_100 >= 80 ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                        video.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                        'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {video.ai_scores.overall_100 >= 80 ? '✅ Pass' :
-                         video.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
-                         '❌ Reshoot'}
-                      </div>
-                    ) : (
-                      <div className="text-xs text-white/50 font-medium">
-                        {formatFullDate(video.posted_at_iso)}
-                      </div>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      {video.ai_scores ? (
+                        <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                          video.ai_scores.overall_100 >= 80 ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                          video.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                          'bg-red-500/20 text-red-400 border border-red-500/30'
+                        }`}>
+                          {video.ai_scores.overall_100 >= 80 ? '✅ Pass' :
+                           video.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
+                           '❌ Reshoot'}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-white/50 font-medium">
+                          {formatFullDate(video.posted_at_iso)}
+                        </div>
+                      )}
+                      
+                      {/* Analysis timestamp */}
+                      {video.ai_processed_at && (
+                        <div className="text-[10px] text-white/40 font-medium">
+                          Analyzed: {formatAnalysisTime(video.ai_processed_at)}
+                        </div>
+                      )}
+                    </div>
                     
                     {/* Right side - Engagement */}
                     <div className="flex flex-col items-end gap-1">
