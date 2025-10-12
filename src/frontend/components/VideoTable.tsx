@@ -208,7 +208,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                         </div>
                       ) : (
                         <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30">
-                          ⏳ Analyzing
+                          🔄 Analyzing
                         </div>
                       )}
                       
