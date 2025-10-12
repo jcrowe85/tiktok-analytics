@@ -1,41 +1,90 @@
 import axios from 'axios'
 
+// Circuit breaker for RapidAPI failures
+let rapidApiFailureCount = 0
+let rapidApiLastFailure = 0
+const MAX_RAPIDAPI_FAILURES = 3
+const RAPIDAPI_COOLDOWN_MS = 300000 // 5 minutes
+
+/**
+ * Check if RapidAPI should be attempted based on recent failures
+ */
+function shouldAttemptRapidAPI(): boolean {
+  const now = Date.now()
+  
+  // If we haven't had failures recently, allow attempts
+  if (rapidApiFailureCount === 0) {
+    return true
+  }
+  
+  // If we're in cooldown period, skip RapidAPI
+  if (now - rapidApiLastFailure < RAPIDAPI_COOLDOWN_MS) {
+    console.log(`⏳ RapidAPI in cooldown (${Math.round((RAPIDAPI_COOLDOWN_MS - (now - rapidApiLastFailure)) / 1000)}s remaining)`)
+    return false
+  }
+  
+  // Reset failure count after cooldown
+  if (rapidApiFailureCount >= MAX_RAPIDAPI_FAILURES) {
+    console.log(`🔄 RapidAPI cooldown expired, resetting failure count`)
+    rapidApiFailureCount = 0
+    return true
+  }
+  
+  return true
+}
+
+/**
+ * Record RapidAPI failure
+ */
+function recordRapidApiFailure(): void {
+  rapidApiFailureCount++
+  rapidApiLastFailure = Date.now()
+  console.log(`⚠️  RapidAPI failure #${rapidApiFailureCount}/${MAX_RAPIDAPI_FAILURES}`)
+  
+  if (rapidApiFailureCount >= MAX_RAPIDAPI_FAILURES) {
+    console.log(`🚫 RapidAPI circuit breaker triggered - switching to free APIs for ${RAPIDAPI_COOLDOWN_MS / 1000 / 60} minutes`)
+  }
+}
+
+/**
+ * Get current RapidAPI circuit breaker status
+ */
+export function getRapidApiStatus(): {
+  isActive: boolean
+  failureCount: number
+  maxFailures: number
+  cooldownRemaining?: number
+} {
+  const now = Date.now()
+  const cooldownRemaining = Math.max(0, RAPIDAPI_COOLDOWN_MS - (now - rapidApiLastFailure))
+  
+  return {
+    isActive: rapidApiFailureCount >= MAX_RAPIDAPI_FAILURES && cooldownRemaining > 0,
+    failureCount: rapidApiFailureCount,
+    maxFailures: MAX_RAPIDAPI_FAILURES,
+    cooldownRemaining: cooldownRemaining > 0 ? Math.round(cooldownRemaining / 1000) : undefined
+  }
+}
+
 /**
  * Get comprehensive video data from TikTok share URL via RapidAPI
  * Returns both video URL and rich metadata
  */
 export async function getVideoData(shareUrl: string): Promise<{
   videoUrl: string | null;
-  metadata?: {
-    id: string;
-    title: string;
-    author: {
-      id: string;
-      username: string;
-      nickname: string;
-      avatar: string;
-    };
-    duration: number;
-    playCount: number;
-    likeCount: number;
-    commentCount: number;
-    shareCount: number;
-    downloadCount: number;
-    collectCount: number;
-    createTime: number;
-    cover: string;
-    music: {
-      id: string;
-      title: string;
-      author: string;
-      duration: number;
-    };
+  staticData?: {
+    videoTitle: string;
+    authorUsername: string;
+    authorNickname: string;
+    authorAvatarUrl: string;
+    musicTitle: string;
+    musicArtist: string;
   };
 }> {
   console.log(`🔗 Getting direct video URL from: ${shareUrl}`)
   
-  // Option 1: RapidAPI (reliable, paid)
-  if (process.env.RAPIDAPI_KEY) {
+  // Option 1: RapidAPI (reliable, paid) - with circuit breaker
+  if (process.env.RAPIDAPI_KEY && shouldAttemptRapidAPI()) {
     try {
       const response = await axios.get('https://tiktok-video-no-watermark2.p.rapidapi.com/', {
         params: { url: shareUrl, hd: '1' },
@@ -52,36 +101,22 @@ export async function getVideoData(shareUrl: string): Promise<{
       if (videoUrl && data) {
         console.log(`✅ Got video data from RapidAPI`)
         
-        // Extract rich metadata
-        const metadata = {
-          id: data.id,
-          title: data.title || '',
-          author: {
-            id: data.author?.id || '',
-            username: data.author?.unique_id || '',
-            nickname: data.author?.nickname || '',
-            avatar: data.author?.avatar || ''
-          },
-          duration: data.duration || 0,
-          playCount: data.play_count || 0,
-          likeCount: data.digg_count || 0,
-          commentCount: data.comment_count || 0,
-          shareCount: data.share_count || 0,
-          downloadCount: data.download_count || 0,
-          collectCount: data.collect_count || 0,
-          createTime: data.create_time || 0,
-          cover: data.cover || '',
-          music: {
-            id: data.music_info?.id || '',
-            title: data.music_info?.title || '',
-            author: data.music_info?.author || '',
-            duration: data.music_info?.duration || 0
-          }
+        // Extract only valuable static content data (no performance metrics)
+        const staticData = {
+          videoTitle: data.title || '',
+          authorUsername: data.author?.unique_id || '',
+          authorNickname: data.author?.nickname || '',
+          authorAvatarUrl: data.author?.avatar || '',
+          musicTitle: data.music_info?.title || '',
+          musicArtist: data.music_info?.author || ''
         }
         
-        return { videoUrl, metadata }
+        return { videoUrl, staticData }
       }
     } catch (error: any) {
+      // Record RapidAPI failure for circuit breaker
+      recordRapidApiFailure()
+      
       console.warn(`⚠️  RapidAPI failed:`, {
         status: error.response?.status,
         statusText: error.response?.statusText,
@@ -89,6 +124,8 @@ export async function getVideoData(shareUrl: string): Promise<{
         message: error.message
       })
     }
+  } else if (process.env.RAPIDAPI_KEY) {
+    console.log(`⏳ Skipping RapidAPI (circuit breaker active)`)
   }
   
   // Option 2: Try alternative free APIs (less reliable)
