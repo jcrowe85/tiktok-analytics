@@ -770,8 +770,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                             }).map(([label, score]) => (
                               <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
                                 <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
-                                <div className="text-xl font-bold text-white">
-                                  {score}<span className="text-xs text-white/40">/10</span>
+                                <div className="text-xl md:text-2xl font-bold text-white">
+                                  {score}<span className="text-xs md:text-sm text-white/40">/10</span>
                                 </div>
                               </div>
                             ))}
@@ -840,10 +840,10 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                               'Loopability': selectedVideo.ai_visual_scores.loopability,
                               'Trend Align': selectedVideo.ai_visual_scores.trend_alignment,
                             }).map(([label, score]) => (
-                              <div key={label} className="bg-slate-900/50 rounded-lg p-2.5">
-                                <div className="text-white/60 text-[10px] mb-0.5">{label}</div>
+                              <div key={label} className="bg-slate-900/50 rounded-lg p-3">
+                                <div className="text-white/60 text-[11px] mb-1">{label}</div>
                                 <div className="flex items-center gap-2">
-                                  <div className="flex-1 bg-slate-700 rounded-full h-1.5 overflow-hidden">
+                                  <div className="flex-1 bg-slate-700 rounded-full h-2 overflow-hidden">
                                     <div 
                                       className={`h-full transition-all ${
                                         score >= 8 ? 'bg-green-500' :
@@ -853,7 +853,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                                       style={{ width: `${score * 10}%` }}
                                     />
                                   </div>
-                                  <span className="text-xs font-bold text-white tabular-nums min-w-[24px]">
+                                  <span className="text-sm font-bold text-white tabular-nums min-w-[28px]">
                                     {score.toFixed(1)}
                                   </span>
                                 </div>
@@ -862,6 +862,21 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
                           </div>
                         </div>
                       )}
+
+                      {/* Delete Button */}
+                      <div className="bg-slate-800/50 border border-red-500/30 rounded-xl p-4">
+                        <button
+                          onClick={() => {
+                            if (window.confirm('⚠️ Are you sure you want to delete this video and all its analysis data? This cannot be undone.')) {
+                              // TODO: Implement delete functionality
+                              alert('Delete functionality coming soon!')
+                            }
+                          }}
+                          className="w-full px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-all backdrop-blur-sm text-red-400 text-sm font-medium"
+                        >
+                          Delete Video
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
