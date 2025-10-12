@@ -203,9 +203,10 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters }: V
           if (attempts < maxAttempts) {
             setTimeout(checkStatus, 5000)
           } else {
-            // Timeout - refresh to get latest data
+            // Timeout - stop loading and show error
+            console.error('⏰ Re-analysis timeout - no completion detected after 2 minutes')
             setReanalyzing(false)
-            window.location.reload()
+            alert('⚠️ Re-analysis timed out. The analysis may have failed. Please try again or check the backend logs.')
           }
         } catch (error) {
           console.error('Status check error:', error)
