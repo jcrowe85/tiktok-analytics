@@ -55,6 +55,7 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
         const limitedAnalyses = analyses.slice(0, 50);
         
         localStorage.setItem('adHocAnalyses', JSON.stringify(limitedAnalyses));
+        console.log('✅ Saved analysis to localStorage')
       } catch (storageError) {
         console.warn('Failed to save to localStorage:', storageError);
         // Don't show error to user, just log it
@@ -202,23 +203,31 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
               </div>
 
               {/* Key Findings */}
-              <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
-                <h3 className="text-lg font-bold text-white mb-4">💡 Key Findings</h3>
-                <div className="space-y-3">
-                  <div>
-                    <span className="text-white/60 text-sm">Hook Verdict:</span>
-                    <p className="text-white">{result.findings.hook_verdict}</p>
-                  </div>
-                  <div>
-                    <span className="text-white/60 text-sm">Depth Verdict:</span>
-                    <p className="text-white">{result.findings.depth_verdict}</p>
-                  </div>
-                  <div>
-                    <span className="text-white/60 text-sm">CTA Notes:</span>
-                    <p className="text-white">{result.findings.cta_notes}</p>
+              {result.findings && (result.findings.hook_verdict || result.findings.depth_verdict || result.findings.cta_notes) && (
+                <div className="bg-slate-800/50 border border-white/10 rounded-lg p-6">
+                  <h3 className="text-lg font-bold text-white mb-4">💡 Key Findings</h3>
+                  <div className="space-y-3">
+                    {result.findings.hook_verdict && (
+                      <div>
+                        <span className="text-white/60 text-sm">Hook Verdict:</span>
+                        <p className="text-white">{result.findings.hook_verdict}</p>
+                      </div>
+                    )}
+                    {result.findings.depth_verdict && (
+                      <div>
+                        <span className="text-white/60 text-sm">Depth Verdict:</span>
+                        <p className="text-white">{result.findings.depth_verdict}</p>
+                      </div>
+                    )}
+                    {result.findings.cta_notes && (
+                      <div>
+                        <span className="text-white/60 text-sm">CTA Notes:</span>
+                        <p className="text-white">{result.findings.cta_notes}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
+              )}
 
               {/* Suggestions */}
               {result.fix_suggestions && result.fix_suggestions.length > 0 && (
@@ -234,6 +243,16 @@ export function AdHocAnalysis({ onClose }: AdHocAnalysisProps) {
                   </ul>
                 </div>
               )}
+
+              {/* Close button after results */}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={onClose}
+                  className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+                >
+                  ✅ Done - View in List
+                </button>
+              </div>
             </div>
           )}
 
