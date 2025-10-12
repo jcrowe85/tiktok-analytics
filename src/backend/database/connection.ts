@@ -83,14 +83,22 @@ export async function upsertVideo(videoData: {
   share_url?: string
   embed_link?: string
   cover_image_url?: string
+  // Static content data from RapidAPI (optional)
+  video_title?: string
+  author_username?: string
+  author_nickname?: string
+  author_avatar_url?: string
+  music_title?: string
+  music_artist?: string
 }) {
   const query = `
     INSERT INTO videos (
       id, username, caption, video_description, hashtags, posted_at_iso, create_time,
       duration, view_count, like_count, comment_count, share_count,
       engagement_rate, like_rate, comment_rate, share_rate,
-      views_24h, velocity_24h, share_url, embed_link, cover_image_url
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
+      views_24h, velocity_24h, share_url, embed_link, cover_image_url,
+      video_title, author_username, author_nickname, author_avatar_url, music_title, music_artist
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
     ON CONFLICT (id) 
     DO UPDATE SET
       username = EXCLUDED.username,
@@ -113,6 +121,12 @@ export async function upsertVideo(videoData: {
       share_url = EXCLUDED.share_url,
       embed_link = EXCLUDED.embed_link,
       cover_image_url = EXCLUDED.cover_image_url,
+      video_title = EXCLUDED.video_title,
+      author_username = EXCLUDED.author_username,
+      author_nickname = EXCLUDED.author_nickname,
+      author_avatar_url = EXCLUDED.author_avatar_url,
+      music_title = EXCLUDED.music_title,
+      music_artist = EXCLUDED.music_artist,
       updated_at = CURRENT_TIMESTAMP
     RETURNING id
   `
@@ -139,6 +153,12 @@ export async function upsertVideo(videoData: {
     videoData.share_url || null,
     videoData.embed_link || null,
     videoData.cover_image_url || null,
+    videoData.video_title || null,
+    videoData.author_username || null,
+    videoData.author_nickname || null,
+    videoData.author_avatar_url || null,
+    videoData.music_title || null,
+    videoData.music_artist || null,
   ]
   
   const result = await executeQuery(query, values)

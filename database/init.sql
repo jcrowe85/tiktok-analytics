@@ -24,6 +24,15 @@ CREATE TABLE IF NOT EXISTS videos (
     share_url TEXT,
     embed_link TEXT,
     cover_image_url TEXT,
+    
+    -- Static content data from RapidAPI (one-time fetch during AI analysis)
+    video_title TEXT,
+    author_username VARCHAR(255),
+    author_nickname VARCHAR(255),
+    author_avatar_url TEXT,
+    music_title VARCHAR(255),
+    music_artist VARCHAR(255),
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
