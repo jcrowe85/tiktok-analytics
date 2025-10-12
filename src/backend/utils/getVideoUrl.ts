@@ -101,14 +101,21 @@ export async function getVideoData(shareUrl: string): Promise<{
       if (videoUrl && data) {
         console.log(`✅ Got video data from RapidAPI`)
         
-        // Extract only valuable static content data (no performance metrics)
+        // Extract comprehensive video data
         const staticData = {
           videoTitle: data.title || '',
           authorUsername: data.author?.unique_id || '',
           authorNickname: data.author?.nickname || '',
           authorAvatarUrl: data.author?.avatar || '',
           musicTitle: data.music_info?.title || '',
-          musicArtist: data.music_info?.author || ''
+          musicArtist: data.music_info?.author || '',
+          // Performance metrics
+          viewCount: data.play_count || 0,
+          likeCount: data.digg_count || 0,
+          commentCount: data.comment_count || 0,
+          shareCount: data.share_count || 0,
+          duration: data.duration || 0,
+          coverImageUrl: data.cover || data.origin_cover || '',
         }
         
         return { videoUrl, staticData }

@@ -108,10 +108,14 @@ router.post('/analyze-url', async (req, res) => {
     
     console.log(`✅ Analysis complete!`)
     
-    // Extract duration from artifacts if available
-    const duration = analysis.artifacts?.keyframes?.[0]?.timestamp 
-      ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
-      : 0
+    // Use duration from RapidAPI first, fallback to artifacts
+    const duration = videoData.staticData?.duration || 
+      (analysis.artifacts?.keyframes?.[0]?.timestamp 
+        ? Math.round(analysis.artifacts.keyframes[analysis.artifacts.keyframes.length - 1].timestamp)
+        : 0)
+    
+    // Use thumbnail from RapidAPI first, fallback to oEmbed
+    const coverImageUrl = videoData.staticData?.coverImageUrl || oembedData.thumbnailUrl || ''
     
     // Merge staticData from RapidAPI and oEmbed (RapidAPI takes priority)
     const mergedStaticData = {
@@ -122,17 +126,23 @@ router.post('/analyze-url', async (req, res) => {
       authorAvatarUrl: videoData.staticData?.authorAvatarUrl || '',
       musicTitle: videoData.staticData?.musicTitle || '',
       musicArtist: videoData.staticData?.musicArtist || '',
-      thumbnailUrl: oembedData.thumbnailUrl || '',
+      thumbnailUrl: coverImageUrl,
     }
     
-    // Return analysis results
+    // Return analysis results with all metrics
     res.json({
       success: true,
       videoId,
       url,
       staticData: mergedStaticData,
-      coverImageUrl: oembedData.thumbnailUrl || '',
+      coverImageUrl,
       duration,
+      // Performance metrics from RapidAPI
+      viewCount: videoData.staticData?.viewCount || 0,
+      likeCount: videoData.staticData?.likeCount || 0,
+      commentCount: videoData.staticData?.commentCount || 0,
+      shareCount: videoData.staticData?.shareCount || 0,
+      // AI analysis results
       scores: analysis.scores,
       visual_scores: analysis.visual_scores,
       findings: analysis.findings,

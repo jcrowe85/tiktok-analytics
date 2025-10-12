@@ -15,6 +15,14 @@ function convertAdHocToVideo(analysis: any): VideoMetrics {
     brand_fit: '',
   } : undefined;
 
+  // Calculate engagement rate
+  const viewCount = analysis.viewCount || 0
+  const likeCount = analysis.likeCount || 0
+  const commentCount = analysis.commentCount || 0
+  const shareCount = analysis.shareCount || 0
+  const totalEngagement = likeCount + commentCount + shareCount
+  const engagementRate = viewCount > 0 ? (totalEngagement / viewCount) * 100 : 0
+
   return {
     id: analysis.videoId,
     caption: analysis.staticData?.videoTitle || 'Ad-Hoc Analysis',
@@ -23,15 +31,15 @@ function convertAdHocToVideo(analysis: any): VideoMetrics {
     duration: analysis.duration || 0,
     create_time: Date.now(),
     video_description: '',
-    view_count: 0,
-    like_count: 0,
-    comment_count: 0,
-    share_count: 0,
-    engagement_rate: 0,
-    like_rate: 0,
-    comment_rate: 0,
-    share_rate: 0,
-    velocity_24h: 0,
+    view_count: viewCount,
+    like_count: likeCount,
+    comment_count: commentCount,
+    share_count: shareCount,
+    engagement_rate: engagementRate,
+    like_rate: viewCount > 0 ? (likeCount / viewCount) * 100 : 0,
+    comment_rate: viewCount > 0 ? (commentCount / viewCount) * 100 : 0,
+    share_rate: viewCount > 0 ? (shareCount / viewCount) * 100 : 0,
+    velocity_24h: 0, // Not available for ad-hoc
     share_url: analysis.url,
     cover_image_url: analysis.coverImageUrl || '',
     ai_scores: analysis.scores,
