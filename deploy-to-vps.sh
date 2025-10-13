@@ -189,14 +189,14 @@ print_success "Services restarted"
 print_status "Step 4.5: Fixing file permissions for container access"
 # Fix data directory permissions
 if [ -d "data" ]; then
-    sudo chown -R 1000:1000 data/
+    sudo chown -R 1001:65533 data/
     sudo chmod -R 755 data/
     print_success "Fixed data directory permissions"
 fi
 
 # Fix .env file permissions
 if [ -f ".env" ]; then
-    sudo chown 1000:1000 .env
+    sudo chown 1001:65533 .env
     sudo chmod 644 .env
     print_success "Fixed .env file permissions"
 fi
