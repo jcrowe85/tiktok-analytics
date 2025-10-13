@@ -509,11 +509,19 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                         className="block w-full h-full"
                         title="Open video on TikTok"
                       >
-                        <VideoThumbnail coverImageUrl={video.cover_image_url} shareUrl={video.share_url} />
+                        <VideoThumbnail 
+                          coverImageUrl={video.cover_image_url} 
+                          shareUrl={video.share_url}
+                          videoId={video.id}
+                        />
                       </a>
                     ) : (
                       <>
-                        <VideoThumbnail coverImageUrl={video.cover_image_url} shareUrl={video.share_url} />
+                        <VideoThumbnail 
+                          coverImageUrl={video.cover_image_url} 
+                          shareUrl={video.share_url}
+                          videoId={video.id}
+                        />
                       </>
                     )}
                     
@@ -754,6 +762,7 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                         <VideoThumbnail 
                           coverImageUrl={selectedVideo.cover_image_url} 
                           shareUrl={selectedVideo.share_url}
+                          videoId={selectedVideo.id}
                           className="w-full h-full object-cover"
                         />
                         

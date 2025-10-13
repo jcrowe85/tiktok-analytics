@@ -7,6 +7,7 @@ interface VideoThumbnailProps {
   className?: string
   fallbackIcon?: React.ReactNode
   shareUrl?: string // For generating alternative thumbnails
+  videoId?: string // Direct video ID for proxy endpoint
 }
 
 export function VideoThumbnail({ 
@@ -14,7 +15,8 @@ export function VideoThumbnail({
   alt = "Video thumbnail",
   className = "w-full h-full object-cover transition-opacity duration-300",
   // fallbackIcon, // Currently unused
-  shareUrl
+  shareUrl,
+  videoId
 }: VideoThumbnailProps) {
   const [imageError, setImageError] = useState(false)
   const [imageLoaded, setImageLoaded] = useState(false)
@@ -22,23 +24,24 @@ export function VideoThumbnail({
 
   // Always use backend proxy to avoid TikTok CDN blocking
   useEffect(() => {
-    if (shareUrl) {
-      // Try our backend proxy endpoint first
-      const videoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
-      if (videoId) {
-        const proxyUrl = `/api/images/thumbnail/${videoId}`
-        setCurrentImageUrl(proxyUrl)
-        setImageError(false)
-        setImageLoaded(false)
-      } else {
-        // Fallback to original URL if no video ID found
-        setCurrentImageUrl(coverImageUrl)
-      }
+    let extractedVideoId = videoId // Use direct videoId if provided
+    
+    // If no direct videoId, try to extract from shareUrl
+    if (!extractedVideoId && shareUrl) {
+      extractedVideoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
+    }
+    
+    if (extractedVideoId) {
+      // Use backend proxy endpoint
+      const proxyUrl = `/api/images/thumbnail/${extractedVideoId}`
+      setCurrentImageUrl(proxyUrl)
+      setImageError(false)
+      setImageLoaded(false)
     } else {
-      // No share URL, use original cover image URL
+      // No video ID available, use original cover image URL
       setCurrentImageUrl(coverImageUrl)
     }
-  }, [coverImageUrl, shareUrl])
+  }, [coverImageUrl, shareUrl, videoId])
 
   // Fallback to original URL if proxy fails
   useEffect(() => {
