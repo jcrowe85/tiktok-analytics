@@ -10,7 +10,7 @@ let redisAvailable = false;
 
 try {
   redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
-    maxRetriesPerRequest: 3,
+    maxRetriesPerRequest: null, // Required by BullMQ
     enableReadyCheck: true,
     retryStrategy(times) {
       const delay = Math.min(times * 50, 2000);
