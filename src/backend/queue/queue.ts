@@ -9,23 +9,47 @@ let redis: Redis;
 let redisAvailable = false;
 
 try {
-  redis = new Redis(process.env.REDIS_URL || 'redis://localhost:6379', {
+  redis = new Redis(process.env.REDIS_URL || 'redis://redis:6379', {
     maxRetriesPerRequest: 3,
-    lazyConnect: true,
+    enableReadyCheck: true,
+    retryStrategy(times) {
+      const delay = Math.min(times * 50, 2000);
+      return delay;
+    },
+  });
+  
+  redis.on('ready', () => {
+    redisAvailable = true;
+    console.log('✅ Redis connected and ready');
+    
+    // Initialize queues now that Redis is ready
+    if (!aiAnalysisQueue) {
+      initializeQueues();
+    }
   });
   
   redis.on('connect', () => {
-    redisAvailable = true;
-    console.log('✅ Redis connected');
+    console.log('🔄 Redis connecting...');
   });
   
   redis.on('error', (error) => {
     redisAvailable = false;
-    console.log('⚠️  Redis unavailable:', error.message);
+    console.log('⚠️  Redis error:', error.message);
+  });
+
+  redis.on('close', () => {
+    redisAvailable = false;
+    console.log('⚠️  Redis connection closed');
+  });
+
+  // Actually connect (removed lazyConnect)
+  redis.connect().catch(err => {
+    redisAvailable = false;
+    console.log('⚠️  Redis connection failed:', err.message);
   });
 } catch (error) {
   redisAvailable = false;
-  console.log('⚠️  Redis connection failed:', error instanceof Error ? error.message : String(error));
+  console.log('⚠️  Redis connection error:', error instanceof Error ? error.message : String(error));
   // Create a dummy Redis instance to prevent compilation errors
   redis = new Redis({ lazyConnect: true, maxRetriesPerRequest: 0 });
 }
@@ -41,19 +65,37 @@ export interface JobData {
   coverImageUrl?: string
 }
 
-// AI Analysis Queue (only created if Redis is available)
-export const aiAnalysisQueue = redisAvailable ? new Queue<JobData>('ai-analysis', {
-  connection: redis,
-  defaultJobOptions: {
-    removeOnComplete: 10,
-    removeOnFail: 5,
-    attempts: 3,
-    backoff: {
-      type: 'exponential',
-      delay: 2000,
-    },
-  },
-}) : null
+// AI Analysis Queue (created after Redis connection is ready)
+export let aiAnalysisQueue: Queue<JobData> | null = null
+
+// Initialize queues after Redis is ready
+function initializeQueues() {
+  try {
+    console.log('🚀 Initializing BullMQ queues...');
+    
+    aiAnalysisQueue = new Queue<JobData>('ai-analysis', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 5,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    });
+    
+    console.log('✅ AI analysis queue initialized');
+    
+    // Start worker
+    startWorker();
+  } catch (error) {
+    console.error('❌ Failed to initialize queues:', error);
+    aiAnalysisQueue = null;
+    redisAvailable = false;
+  }
+}
 
 // Job types
 export enum JobType {
@@ -101,15 +143,8 @@ async function processAIAnalysis(job: Job<JobData>) {
   }
 }
 
-// Worker for AI analysis queue (only created if Redis is available)
-export const aiAnalysisWorker = redisAvailable ? new Worker<JobData>(
-  'ai-analysis',
-  processAIAnalysis,
-  {
-    connection: redis,
-    concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
-  }
-) : null
+// Worker for AI analysis queue (created after Redis connection is ready)
+export let aiAnalysisWorker: Worker<JobData> | null = null
 
 // Process static content analysis
 async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
@@ -152,15 +187,35 @@ async function processStaticAnalysis(job: Job<JobData>): Promise<any> {
   }
 }
 
-// Worker for static content analysis queue
-export const staticAnalysisWorker = redisAvailable ? new Worker<JobData>(
-  'ai-analysis',
-  processStaticAnalysis,
-  {
-    connection: redis,
-    concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
+// Worker for static content analysis queue (created after Redis connection is ready)
+export let staticAnalysisWorker: Worker<JobData> | null = null
+
+// Start workers after Redis is ready
+function startWorker() {
+  try {
+    aiAnalysisWorker = new Worker<JobData>(
+      'ai-analysis',
+      processAIAnalysis,
+      {
+        connection: redis,
+        concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
+      }
+    );
+    
+    staticAnalysisWorker = new Worker<JobData>(
+      'ai-analysis',
+      processStaticAnalysis,
+      {
+        connection: redis,
+        concurrency: parseInt(process.env.MAX_CONCURRENT_JOBS || '3'),
+      }
+    );
+    
+    console.log('✅ BullMQ workers started');
+  } catch (error) {
+    console.error('❌ Failed to start workers:', error);
   }
-) : null
+}
 
 // Queue management functions
 export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
