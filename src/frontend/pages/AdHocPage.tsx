@@ -62,6 +62,7 @@ function AdHocPage() {
           ai_findings: video.findings,
           ai_fix_suggestions: video.fix_suggestions,
           ai_processed_at: video.ai_processed_at,
+          is_adhoc: video.is_adhoc,
         }))
         
         setAdHocVideos(videos)
