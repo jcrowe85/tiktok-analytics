@@ -50,6 +50,18 @@ print_error() {
 # Step 1: Handle local changes and pull latest code
 print_status "Step 1: Preparing for code update"
 
+# Step 1.1: Fix file permissions for git operations
+print_status "Step 1.1: Ensuring proper file ownership for git operations"
+# Reset ownership to current user for git operations
+if [ -d "data" ]; then
+    sudo chown -R $(whoami):$(whoami) data/
+    print_success "Reset data directory ownership to $(whoami)"
+fi
+if [ -f ".env" ]; then
+    sudo chown $(whoami):$(whoami) .env
+    print_success "Reset .env file ownership to $(whoami)"
+fi
+
 # Backup any local changes to critical production files
 print_status "Backing up production-specific files..."
 
@@ -91,6 +103,10 @@ print_status "Stashed local changes"
 
 # Pull latest code
 print_status "Pulling latest code from GitHub"
+# Clean up any partial git operations first
+git stash drop 2>/dev/null || true
+git reset --hard HEAD 2>/dev/null || true
+
 git pull origin main
 print_success "Code updated from GitHub"
 
