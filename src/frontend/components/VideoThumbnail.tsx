@@ -20,24 +20,35 @@ export function VideoThumbnail({
   const [imageLoaded, setImageLoaded] = useState(false)
   const [currentImageUrl, setCurrentImageUrl] = useState<string | undefined>(undefined)
 
-  // Always start with the original TikTok thumbnail URL
+  // Always use backend proxy to avoid TikTok CDN blocking
   useEffect(() => {
-    setCurrentImageUrl(coverImageUrl)
-  }, [coverImageUrl])
-
-  // Only use proxy as fallback if original URL fails
-  useEffect(() => {
-    if (imageError && shareUrl && !currentImageUrl?.includes('/api/images/')) {
-      // Try our backend proxy endpoint as fallback
+    if (shareUrl) {
+      // Try our backend proxy endpoint first
       const videoId = shareUrl.match(/\/video\/(\d+)/)?.[1]
       if (videoId) {
         const proxyUrl = `/api/images/thumbnail/${videoId}`
         setCurrentImageUrl(proxyUrl)
         setImageError(false)
         setImageLoaded(false)
+      } else {
+        // Fallback to original URL if no video ID found
+        setCurrentImageUrl(coverImageUrl)
       }
+    } else {
+      // No share URL, use original cover image URL
+      setCurrentImageUrl(coverImageUrl)
     }
-  }, [imageError, shareUrl, currentImageUrl])
+  }, [coverImageUrl, shareUrl])
+
+  // Fallback to original URL if proxy fails
+  useEffect(() => {
+    if (imageError && shareUrl && currentImageUrl?.includes('/api/images/')) {
+      // Try original TikTok thumbnail URL as fallback
+      setCurrentImageUrl(coverImageUrl)
+      setImageError(false)
+      setImageLoaded(false)
+    }
+  }, [imageError, shareUrl, currentImageUrl, coverImageUrl])
 
   // If no URL provided or image failed to load, show fallback
   if (!currentImageUrl || imageError) {
