@@ -211,6 +211,21 @@ function startWorker() {
       }
     );
     
+    // Add event handlers for workers
+    if (aiAnalysisWorker) {
+      aiAnalysisWorker.on('error', (error: Error) => {
+        console.error('❌ AI Analysis Worker Error:', error)
+      })
+
+      aiAnalysisWorker.on('completed', (job: Job) => {
+        console.log(`✅ Job ${job.id} completed successfully`)
+      })
+
+      aiAnalysisWorker.on('failed', (job: Job | undefined, error: Error) => {
+        console.error(`❌ Job ${job?.id} failed:`, error)
+      })
+    }
+    
     console.log('✅ BullMQ workers started');
   } catch (error) {
     console.error('❌ Failed to start workers:', error);
@@ -297,17 +312,4 @@ export async function closeQueues() {
   }
 }
 
-// Error handling (only if worker exists)
-if (aiAnalysisWorker) {
-  aiAnalysisWorker.on('error', (error) => {
-    console.error('❌ AI Analysis Worker Error:', error)
-  })
-
-  aiAnalysisWorker.on('completed', (job) => {
-    console.log(`✅ Job ${job.id} completed successfully`)
-  })
-
-  aiAnalysisWorker.on('failed', (job, error) => {
-    console.error(`❌ Job ${job?.id} failed:`, error)
-  })
-}
+// Event handlers are now added in startWorker() function
