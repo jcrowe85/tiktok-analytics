@@ -235,8 +235,9 @@ router.post('/analyze-url', async (req, res) => {
     console.log(`   Video ID: ${videoId}`)
     console.log(`   Video URL: ${url}`)
     
+    let analysis: any
     try {
-      const analysis = await Promise.race([
+      analysis = await Promise.race([
         analyzeVideo(videoId, url),
         new Promise((_, reject) => 
           setTimeout(() => reject(new Error('Analysis timeout after 5 minutes')), 300000)
@@ -249,10 +250,10 @@ router.post('/analyze-url', async (req, res) => {
           error: 'Analysis failed - could not complete AI analysis' 
         })
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(`❌ Analysis error for video ${videoId}:`, error)
       return res.status(500).json({ 
-        error: `Analysis failed: ${error.message}` 
+        error: `Analysis failed: ${error?.message || 'Unknown error'}` 
       })
     }
     
