@@ -164,7 +164,7 @@ export async function analyzeVideo(videoId: string, shareUrl: string): Promise<A
         asr_engine: 'whisper-1',
         ocr_engine: 'google-vision',
         vision_model: 'google-vision',
-        llm_model: 'gpt-4',
+        llm_model: 'gpt-4o',
         content_hash: generateContentHash(transcriptResult.text, ocrResults.join(' ')),
         detected_language: 'en', // Will be detected from transcript
         processed_at: new Date().toISOString()
@@ -403,7 +403,7 @@ export async function analyzeStaticContent(videoId: string, caption: string, cov
         asr_engine: 'none',
         ocr_engine: 'google-vision',
         vision_model: 'gpt-4-vision-preview',
-        llm_model: 'gpt-4',
+        llm_model: 'gpt-4o',
         content_hash: crypto.createHash('md5').update(combinedContent).digest('hex'),
         detected_language: 'en'
       }
@@ -532,9 +532,9 @@ Respond in this exact JSON format:
 `
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o',
       messages: [{ role: 'user', content: prompt }],
-      temperature: 0.3,
+      temperature: 0.7,
       max_tokens: 1000
     })
 
