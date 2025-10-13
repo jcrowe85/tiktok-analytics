@@ -66,9 +66,10 @@ app.get('/api/data', async (_req, res) => {
           visual_scores,
           findings,
           fix_suggestions,
-          processed_at
+          processed_at,
+          updated_at
         FROM video_ai_analysis
-        WHERE status = 'completed'
+        WHERE status IN ('completed', 'pending', 'failed')
       `);
       console.log(`📊 Loaded ${aiAnalyses.length} AI analyses from database`)
     } catch (error) {
@@ -87,7 +88,8 @@ app.get('/api/data', async (_req, res) => {
           ai_visual_scores: analysis.visual_scores,
           ai_findings: analysis.findings,
           ai_fix_suggestions: analysis.fix_suggestions,
-          ai_processed_at: analysis.processed_at
+          ai_processed_at: analysis.processed_at,
+          ai_updated_at: analysis.updated_at
         }
       ])
     );
