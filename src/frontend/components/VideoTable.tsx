@@ -291,8 +291,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                 found: !!updatedVideo,
                 oldProcessedAt: videoToReanalyze.ai_processed_at,
                 newProcessedAt: updatedVideo?.ai_processed_at,
-                hasAIScores: !!updatedVideo?.ai_scores,
-                hasVisualScores: !!updatedVideo?.ai_visual_scores,
+                hasAIScores: !!(updatedVideo?.ai_scores || updatedVideo?.scores),
+                hasVisualScores: !!(updatedVideo?.ai_visual_scores || updatedVideo?.visual_scores),
                 hasFindings: !!updatedVideo?.ai_findings,
                 isAdHoc: isAdHocVideo,
                 totalVideosInResponse: statusData.data?.length || 0,
@@ -311,11 +311,15 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
             }
             
             // Check if analysis completed (must have AI scores AND timestamp changed)
+            // Handle different field names between /api/data and /api/adhoc-analyses
+            const aiScores = updatedVideo?.ai_scores || updatedVideo?.scores
+            const aiVisualScores = updatedVideo?.ai_visual_scores || updatedVideo?.visual_scores
+            
             const hasNewAnalysis = updatedVideo && 
               updatedVideo.ai_processed_at && 
               updatedVideo.ai_processed_at !== videoToReanalyze.ai_processed_at &&
-              updatedVideo.ai_scores && 
-              updatedVideo.ai_visual_scores
+              aiScores && 
+              aiVisualScores
             
             if (hasNewAnalysis) {
               // Analysis complete! Update modal with new data
