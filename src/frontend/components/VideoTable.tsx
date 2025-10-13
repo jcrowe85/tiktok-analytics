@@ -325,7 +325,17 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
               // Analysis complete! Update modal with new data
               console.log('🔄 Re-analysis complete! Updating modal with new data:', updatedVideo)
               setReanalyzing(false)
-              setSelectedVideo(updatedVideo)
+              
+              // Map API response format to VideoMetrics format for modal
+              const mappedVideo = {
+                ...updatedVideo,
+                ai_scores: updatedVideo.ai_scores || updatedVideo.scores,
+                ai_visual_scores: updatedVideo.ai_visual_scores || updatedVideo.visual_scores,
+                ai_findings: updatedVideo.ai_findings || updatedVideo.findings,
+                ai_fix_suggestions: updatedVideo.ai_fix_suggestions || updatedVideo.fix_suggestions
+              }
+              
+              setSelectedVideo(mappedVideo)
               
               // Notify parent component to refresh video list
               if (onVideoUpdate) {
