@@ -185,6 +185,22 @@ print_status "Step 4: Rebuilding and starting services"
 docker-compose up -d --build
 print_success "Services restarted"
 
+# Step 4.5: Fix file permissions for container access
+print_status "Step 4.5: Fixing file permissions for container access"
+# Fix data directory permissions
+if [ -d "data" ]; then
+    sudo chown -R 1000:1000 data/
+    sudo chmod -R 755 data/
+    print_success "Fixed data directory permissions"
+fi
+
+# Fix .env file permissions
+if [ -f ".env" ]; then
+    sudo chown 1000:1000 .env
+    sudo chmod 644 .env
+    print_success "Fixed .env file permissions"
+fi
+
 # Step 5: Wait for database to be ready
 print_status "Step 5: Waiting for database to be ready"
 sleep 10
