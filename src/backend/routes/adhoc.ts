@@ -9,35 +9,6 @@ const router = express.Router()
 /**
  * Get all saved ad-hoc analyses
  */
-router.get('/adhoc-analyses', async (_req, res) => {
-  try {
-    const result = await executeQuery(`
-      SELECT 
-        v.*,
-        vai.scores,
-        vai.visual_scores,
-        vai.findings,
-        vai.fix_suggestions,
-        vai.processed_at as ai_processed_at,
-        vai.status as ai_status
-      FROM videos v
-      LEFT JOIN video_ai_analysis vai ON v.id = vai.video_id
-      WHERE v.is_adhoc = true
-      ORDER BY v.created_at DESC
-    `)
-    
-    res.json({
-      success: true,
-      data: result
-    })
-  } catch (error) {
-    console.error('❌ Error fetching ad-hoc analyses:', error)
-    res.status(500).json({
-      success: false,
-      error: 'Failed to fetch ad-hoc analyses'
-    })
-  }
-})
 
 /**
  * Extract video ID from TikTok URL
@@ -118,13 +89,16 @@ router.get('/adhoc-analyses', async (_req, res) => {
         v.share_url,
         v.cover_image_url,
         v.created_at,
+        v.is_adhoc,
         a.scores,
         a.visual_scores,
         a.findings,
         a.fix_suggestions,
-        a.processed_at as ai_processed_at
+        a.processed_at as ai_processed_at,
+        a.status as ai_status,
+        a.updated_at as ai_updated_at
       FROM videos v
-      LEFT JOIN video_ai_analysis a ON v.id = a.video_id AND a.status = 'completed'
+      LEFT JOIN video_ai_analysis a ON v.id = a.video_id
       WHERE v.is_adhoc = true
       ORDER BY v.created_at DESC
     `)
