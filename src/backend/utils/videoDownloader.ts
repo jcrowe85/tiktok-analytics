@@ -74,9 +74,10 @@ async function downloadVideoFile(videoId: string, videoUrl: string): Promise<Vid
     
     const localPath = path.join(downloadsDir, `${videoId}.mp4`)
     
-    // Download video
+    // Download video with extended timeout for large files
     const response = await axios.get(videoUrl, {
       responseType: 'stream',
+      timeout: 60000, // 60 seconds timeout
       headers: {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Referer': 'https://www.tiktok.com/'
@@ -101,9 +102,24 @@ async function downloadVideoFile(videoId: string, videoUrl: string): Promise<Vid
     
   } catch (error) {
     console.error(`❌ Failed to download video file:`, error)
+    
+    // Provide more specific error messages
+    let errorMessage = 'Download failed'
+    if (error instanceof Error) {
+      if (error.message.includes('timeout')) {
+        errorMessage = 'Video download timed out - try again or use a smaller video'
+      } else if (error.message.includes('ECONNREFUSED')) {
+        errorMessage = 'Connection refused - video URL may be invalid'
+      } else if (error.message.includes('ENOTFOUND')) {
+        errorMessage = 'Video URL not found - may have expired'
+      } else {
+        errorMessage = error.message
+      }
+    }
+    
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Download failed'
+      error: errorMessage
     }
   }
 }
@@ -121,6 +137,7 @@ async function downloadViaRapidAPI(
   try {
     const response = await axios.get('https://tiktok-video-no-watermark2.p.rapidapi.com/', {
       params: { url: shareUrl, hd: '1' },
+      timeout: 30000, // 30 seconds timeout
       headers: {
         'X-RapidAPI-Key': process.env.RAPIDAPI_KEY!,
         'X-RapidAPI-Host': 'tiktok-video-no-watermark2.p.rapidapi.com'
@@ -162,6 +179,7 @@ async function downloadViaFreeAPI(
         url: shareUrl,
         lang: 'en'
       },
+      timeout: 30000, // 30 seconds timeout
       headers: {
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       }
