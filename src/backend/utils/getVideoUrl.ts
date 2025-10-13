@@ -178,7 +178,7 @@ async function tryFreeVideoUrl(shareUrl: string): Promise<string | null> {
       timeout: 10000,
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0'
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       }
     })
     
@@ -201,7 +201,7 @@ export async function isVideoUrlAccessible(videoUrl: string): Promise<boolean> {
     const response = await axios.head(videoUrl, {
       timeout: 5000,
       headers: {
-        'User-Agent': 'Mozilla/5.0',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Referer': 'https://www.tiktok.com/'
       }
     })

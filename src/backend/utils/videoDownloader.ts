@@ -78,7 +78,7 @@ async function downloadVideoFile(videoId: string, videoUrl: string): Promise<Vid
     const response = await axios.get(videoUrl, {
       responseType: 'stream',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
         'Referer': 'https://www.tiktok.com/'
       }
     })
@@ -163,7 +163,7 @@ async function downloadViaFreeAPI(
         lang: 'en'
       },
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1'
       }
     })
     
