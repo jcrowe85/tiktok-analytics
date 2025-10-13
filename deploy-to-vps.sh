@@ -237,11 +237,27 @@ if [ -f "ai_analysis_data.sql" ]; then
         
         # Test database connection first
         if docker exec "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics -c "SELECT 1;" > /dev/null 2>&1; then
-            print_status "Database connection confirmed, importing data..."
-            if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql; then
-                print_success "AI analysis data imported successfully"
+            print_status "Database connection confirmed, checking existing data..."
+            
+            # Check if data already exists to prevent conflicts
+            EXISTING_COUNT=$(docker exec "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics -t -c "SELECT COUNT(*) FROM video_ai_analysis;" 2>/dev/null | tr -d ' ')
+            
+            if [ "$EXISTING_COUNT" -gt 0 ]; then
+                print_warning "Found $EXISTING_COUNT existing AI analysis records"
+                print_warning "Skipping data import to prevent ID conflicts"
+                print_status "To force import, manually delete existing data first"
             else
-                print_warning "AI analysis data import failed - check logs above"
+                print_status "No existing data found, importing AI analysis data..."
+                if docker exec -i "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics < ai_analysis_data.sql; then
+                    print_success "AI analysis data imported successfully"
+                    
+                    # Fix sequence after import to prevent future conflicts
+                    print_status "Fixing sequence to prevent ID conflicts..."
+                    docker exec "$POSTGRES_CONTAINER_ID" psql -U tiktok_user -d tiktok_analytics -c "SELECT setval('video_ai_analysis_id_seq', COALESCE(MAX(id), 1), true) FROM video_ai_analysis;" > /dev/null 2>&1
+                    print_success "Sequence synchronized with imported data"
+                else
+                    print_warning "AI analysis data import failed - check logs above"
+                fi
             fi
         else
             print_warning "Database not ready for import - try running import manually later"
