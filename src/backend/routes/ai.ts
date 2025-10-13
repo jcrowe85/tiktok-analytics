@@ -174,10 +174,15 @@ router.post('/reprocess/:videoId', async (req, res) => {
       return res.status(400).json({ error: 'videoUrl is required' })
     }
     
-    // Update status to pending
+    // Update status to pending (or create record if it doesn't exist)
     await executeQuery(
-      'UPDATE video_ai_analysis SET status = $1, updated_at = CURRENT_TIMESTAMP WHERE video_id = $2',
-      ['pending', videoId]
+      `INSERT INTO video_ai_analysis (video_id, status, updated_at, processed_at, rules_version, asr_engine, ocr_engine, vision_model, llm_model, content_hash, detected_language, scores, visual_scores, classifiers, findings, fix_suggestions, artifacts)
+       VALUES ($1, $2, CURRENT_TIMESTAMP, NULL, 1, 'none', 'none', 'none', 'gpt-4o', '', 'en', '{}', '{}', '{}', '{}', '[]', '{}')
+       ON CONFLICT (video_id) DO UPDATE SET 
+         status = $2, 
+         updated_at = CURRENT_TIMESTAMP,
+         processed_at = NULL`,
+      [videoId, 'pending']
     )
     
     // Add to queue for processing
