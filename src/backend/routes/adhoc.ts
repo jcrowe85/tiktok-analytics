@@ -232,11 +232,27 @@ router.post('/analyze-url', async (req, res) => {
     
     // Analyze the video
     console.log(`🚩 Step 2: Starting AI analysis...`)
-    const analysis = await analyzeVideo(videoId, url)
+    console.log(`   Video ID: ${videoId}`)
+    console.log(`   Video URL: ${url}`)
     
-    if (!analysis || analysis.status !== 'completed') {
+    try {
+      const analysis = await Promise.race([
+        analyzeVideo(videoId, url),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Analysis timeout after 5 minutes')), 300000)
+        )
+      ])
+      
+      if (!analysis || analysis.status !== 'completed') {
+        console.error(`❌ Analysis failed for video ${videoId}:`, analysis)
+        return res.status(500).json({ 
+          error: 'Analysis failed - could not complete AI analysis' 
+        })
+      }
+    } catch (error) {
+      console.error(`❌ Analysis error for video ${videoId}:`, error)
       return res.status(500).json({ 
-        error: 'Analysis failed - could not complete AI analysis' 
+        error: `Analysis failed: ${error.message}` 
       })
     }
     
