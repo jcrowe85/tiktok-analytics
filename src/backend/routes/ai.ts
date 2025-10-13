@@ -177,7 +177,7 @@ router.post('/reprocess/:videoId', async (req, res) => {
     // Update status to pending (or create record if it doesn't exist)
     await executeQuery(
       `INSERT INTO video_ai_analysis (video_id, status, updated_at, processed_at, rules_version, asr_engine, ocr_engine, vision_model, llm_model, content_hash, detected_language, scores, visual_scores, classifiers, findings, fix_suggestions, artifacts)
-       VALUES ($1, $2, CURRENT_TIMESTAMP, NULL, 1, 'none', 'none', 'none', 'gpt-4o', '', 'en', '{}', '{}', '{}', '{}', '[]', '{}')
+       VALUES ($1, $2, CURRENT_TIMESTAMP, NULL, 1, 'none', 'none', 'none', 'gpt-4o', '', 'en', '{}', '{}', '{}', '{}', '{}', '{}')
        ON CONFLICT (video_id) DO UPDATE SET 
          status = $2, 
          updated_at = CURRENT_TIMESTAMP,
