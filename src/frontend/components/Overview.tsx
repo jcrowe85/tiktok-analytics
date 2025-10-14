@@ -6,35 +6,37 @@ interface OverviewProps {
 }
 
 function Overview({ videos }: OverviewProps) {
-  // Calculate 24-hour comparison metrics
+  // Calculate 24-hour comparison metrics with flexible time windows
   const calculate24hComparison = (getValue: (video: VideoMetrics) => number) => {
     const now = Date.now()
-    const yesterday = now - (24 * 60 * 60 * 1000)
-    const dayBefore = yesterday - (24 * 60 * 60 * 1000)
+    const last24h = now - (24 * 60 * 60 * 1000)
+    const last48h = now - (48 * 60 * 60 * 1000)
     
-    // Videos from yesterday (last 24h)
-    const yesterdayVideos = videos.filter(v => {
+    // Videos from last 24h
+    const recentVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= yesterday && videoTime < now
+      return videoTime >= last24h
     })
     
-    // Videos from day before yesterday (24-48h ago)
-    const dayBeforeVideos = videos.filter(v => {
+    // Videos from 24-48h ago (previous day equivalent)
+    const previousVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= dayBefore && videoTime < yesterday
+      return videoTime >= last48h && videoTime < last24h
     })
     
-    const yesterdayTotal = yesterdayVideos.reduce((sum, v) => sum + getValue(v), 0)
-    const dayBeforeTotal = dayBeforeVideos.reduce((sum, v) => sum + getValue(v), 0)
+    const recentTotal = recentVideos.reduce((sum, v) => sum + getValue(v), 0)
+    const previousTotal = previousVideos.reduce((sum, v) => sum + getValue(v), 0)
     
-    if (dayBeforeTotal === 0) {
-      return yesterdayTotal > 0 ? { percentage: 100, isIncrease: true } : { percentage: 0, isIncrease: false }
+    // If no previous data, show "New data" indicator
+    if (previousTotal === 0) {
+      return recentTotal > 0 ? { percentage: 100, isIncrease: true, isNew: true } : { percentage: 0, isIncrease: false, isNew: false }
     }
     
-    const percentage = ((yesterdayTotal - dayBeforeTotal) / dayBeforeTotal) * 100
+    const percentage = ((recentTotal - previousTotal) / previousTotal) * 100
     return {
       percentage: Math.abs(percentage),
-      isIncrease: percentage >= 0
+      isIncrease: percentage >= 0,
+      isNew: false
     }
   }
 
@@ -156,17 +158,21 @@ function Overview({ videos }: OverviewProps) {
               {/* 24h Comparison Indicator */}
               {stat.comparison && (
                 <div className="flex items-center gap-1 mt-2">
-                  {stat.comparison.isIncrease ? (
+                  {stat.comparison.isNew ? (
+                    <FiZap className="w-3 h-3 text-blue-400" />
+                  ) : stat.comparison.isIncrease ? (
                     <FiArrowUp className="w-3 h-3 text-green-400" />
                   ) : (
                     <FiArrowDown className="w-3 h-3 text-red-400" />
                   )}
                   <span 
                     className={`text-xs font-medium ${
+                      stat.comparison.isNew ? 'text-blue-400' :
                       stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
                     }`}
                   >
-                    {stat.comparison.percentage.toFixed(1)}% vs yesterday
+                    {stat.comparison.isNew ? 'New data (vs previous 24h)' : 
+                     `${stat.comparison.percentage.toFixed(1)}% vs previous 24h`}
                   </span>
                 </div>
               )}
