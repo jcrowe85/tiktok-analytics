@@ -438,19 +438,18 @@ function Overview({ videos }: OverviewProps) {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
                   <div className="mt-1">
-                    <p className="text-2xl font-bold text-white relative inline-block">
-                      {stat.value}
+                    <div className="relative">
                       {stat.comparison && (
-                        <span className="absolute -top-1 -right-2 flex items-center gap-1">
+                        <div className="flex items-center gap-1 mb-1">
                           {stat.comparison.isNew ? (
-                            <FiZap className="w-2 h-2 text-blue-400" />
+                            <FiZap className="w-3 h-3 text-blue-400" />
                           ) : stat.comparison.isIncrease ? (
-                            <FiArrowUp className="w-2 h-2 text-green-400" />
+                            <FiArrowUp className="w-3 h-3 text-green-400" />
                           ) : (
-                            <FiArrowDown className="w-2 h-2 text-red-400" />
+                            <FiArrowDown className="w-3 h-3 text-red-400" />
                           )}
                           <span 
-                            className={`text-xs font-medium ${
+                            className={`text-sm font-medium ${
                               stat.comparison.isNew ? 'text-blue-400' :
                               stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
                             }`}
@@ -458,9 +457,10 @@ function Overview({ videos }: OverviewProps) {
                             {stat.comparison.isNew ? 'New' : 
                              `${stat.comparison.percentage.toFixed(0)}%`}
                           </span>
-                        </span>
+                        </div>
                       )}
-                    </p>
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                    </div>
                   </div>
                 </div>
                 <IconComponent className="w-6 h-6 text-white/50" />
