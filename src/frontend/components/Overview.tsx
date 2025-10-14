@@ -70,9 +70,6 @@ function Overview({ videos }: OverviewProps) {
     })
   }
 
-  const getTodayString = () => {
-    return new Date().toISOString().split('T')[0]
-  }
 
   const getDefaultDateRange = () => {
     const now = new Date()
@@ -351,7 +348,6 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period1.start}
                     onChange={(e) => handlePeriod1Change(e.target.value, customDateRange.period1.end)}
-                    min={getTodayString()}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder="Start date"
                   />
@@ -390,7 +386,6 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period2.start}
                     onChange={(e) => handlePeriod2Change(e.target.value, customDateRange.period2.end)}
-                    min={getTodayString()}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                     placeholder="Start date"
                   />
