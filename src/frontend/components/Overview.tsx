@@ -340,7 +340,7 @@ function Overview({ videos }: OverviewProps) {
               </div>
               
               {customDateRange.period1.start && customDateRange.period1.end && (
-                <div className="p-2 bg-blue-500/10 rounded text-xs text-blue-300">
+                <div className="px-3 py-2 bg-blue-500/10 rounded text-xs text-blue-300">
                   {new Date(customDateRange.period1.start).toLocaleDateString()} - {new Date(customDateRange.period1.end).toLocaleDateString()}
                 </div>
               )}
@@ -375,7 +375,7 @@ function Overview({ videos }: OverviewProps) {
               </div>
               
               {customDateRange.period2.start && customDateRange.period2.end && (
-                <div className="p-2 bg-orange-500/10 rounded text-xs text-orange-300">
+                <div className="px-3 py-2 bg-orange-500/10 rounded text-xs text-orange-300">
                   {new Date(customDateRange.period2.start).toLocaleDateString()} - {new Date(customDateRange.period2.end).toLocaleDateString()}
                 </div>
               )}
