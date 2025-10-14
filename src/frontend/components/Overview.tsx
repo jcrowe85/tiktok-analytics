@@ -434,34 +434,34 @@ function Overview({ videos }: OverviewProps) {
               key={stat.label}
               className="glass-card p-4 glass-card-hover transition-all"
             >
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-start justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
-                  <div className="flex items-baseline gap-2 mt-1">
-                    <p className="text-2xl font-bold text-white">{stat.value}</p>
-                    {stat.comparison && (
-                      <div className="flex items-center gap-1">
-                        {stat.comparison.isNew ? (
-                          <FiZap className="w-3 h-3 text-blue-400" />
-                        ) : stat.comparison.isIncrease ? (
-                          <FiArrowUp className="w-3 h-3 text-green-400" />
-                        ) : (
-                          <FiArrowDown className="w-3 h-3 text-red-400" />
-                        )}
-                        <span 
-                          className={`text-sm font-medium ${
-                            stat.comparison.isNew ? 'text-blue-400' :
-                            stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
-                          }`}
-                        >
-                          {stat.comparison.isNew ? 'New' : 
-                           `${stat.comparison.percentage.toFixed(0)}%`}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  <p className="text-2xl font-bold mt-1 text-white">{stat.value}</p>
                 </div>
-                <IconComponent className="w-6 h-6 text-white/50" />
+                <div className="flex flex-col items-end gap-1">
+                  <IconComponent className="w-6 h-6 text-white/50" />
+                  {stat.comparison && (
+                    <div className="flex items-center gap-1">
+                      {stat.comparison.isNew ? (
+                        <FiZap className="w-3 h-3 text-blue-400" />
+                      ) : stat.comparison.isIncrease ? (
+                        <FiArrowUp className="w-3 h-3 text-green-400" />
+                      ) : (
+                        <FiArrowDown className="w-3 h-3 text-red-400" />
+                      )}
+                      <span 
+                        className={`text-sm font-medium ${
+                          stat.comparison.isNew ? 'text-blue-400' :
+                          stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
+                        }`}
+                      >
+                        {stat.comparison.isNew ? 'New' : 
+                         `${stat.comparison.percentage.toFixed(0)}%`}
+                      </span>
+                    </div>
+                  )}
+                </div>
               </div>
               
               {/* Show "No data" for metrics without comparison */}
