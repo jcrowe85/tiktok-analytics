@@ -265,18 +265,42 @@ function Overview({ videos }: OverviewProps) {
         </div>
       </div>
       
-      {/* Custom Date Range Picker */}
+      {/* Custom Date Range Picker Modal */}
       {showCustomPicker && (
-        <div className="mb-6 glass-card p-4 border border-white/10">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <FiCalendar className="w-4 h-4 text-white/70" />
-              <span className="text-sm font-medium text-white/70">Custom Period:</span>
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowCustomPicker(false)
+              setTimePeriod('24h')
+            }
+          }}
+        >
+          <div 
+            className="glass-card p-6 border border-white/10 rounded-lg max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <FiCalendar className="w-5 h-5 text-white/70" />
+                <h3 className="text-lg font-semibold text-white">Custom Date Range</h3>
+              </div>
+              <button
+                onClick={() => {
+                  setShowCustomPicker(false)
+                  setTimePeriod('24h')
+                }}
+                className="text-white/40 hover:text-white/60 transition-colors"
+              >
+                ✕
+              </button>
             </div>
             
-            <div className="flex items-center gap-3">
+            {/* Date Inputs */}
+            <div className="space-y-4 mb-4">
               <div className="flex flex-col">
-                <label className="text-xs text-white/50 mb-1">Start Date</label>
+                <label className="text-sm text-white/70 mb-2">Start Date</label>
                 <input
                   type="date"
                   value={customDateRange.start}
@@ -285,10 +309,8 @@ function Overview({ videos }: OverviewProps) {
                 />
               </div>
               
-              <span className="text-white/40 text-sm">to</span>
-              
               <div className="flex flex-col">
-                <label className="text-xs text-white/50 mb-1">End Date</label>
+                <label className="text-sm text-white/70 mb-2">End Date</label>
                 <input
                   type="date"
                   value={customDateRange.end}
@@ -296,25 +318,38 @@ function Overview({ videos }: OverviewProps) {
                   className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
               </div>
-              
+            </div>
+            
+            {/* Comparison Info */}
+            {timePeriod === 'custom' && customDateRange.start && customDateRange.end && (
+              <div className="mb-4 p-3 bg-black/10 rounded-md">
+                <p className="text-xs text-white/60">
+                  Comparing: <span className="text-white/80">{new Date(customDateRange.start).toLocaleDateString()}</span> - <span className="text-white/80">{new Date(customDateRange.end).toLocaleDateString()}</span>
+                </p>
+                <p className="text-xs text-white/50 mt-1">vs previous period of same duration</p>
+              </div>
+            )}
+            
+            {/* Modal Actions */}
+            <div className="flex justify-end gap-3">
               <button
                 onClick={() => {
                   setShowCustomPicker(false)
                   setTimePeriod('24h')
                 }}
-                className="px-3 py-2 text-xs text-white/60 hover:text-white/80 hover:bg-white/10 rounded-md transition-all"
+                className="px-4 py-2 text-sm text-white/60 hover:text-white/80 hover:bg-white/10 rounded-md transition-all"
               >
                 Cancel
               </button>
+              <button
+                onClick={() => setShowCustomPicker(false)}
+                disabled={!customDateRange.start || !customDateRange.end}
+                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-white/10 disabled:text-white/40 text-white rounded-md transition-all"
+              >
+                Apply
+              </button>
             </div>
           </div>
-          
-          {timePeriod === 'custom' && customDateRange.start && customDateRange.end && (
-            <div className="mt-3 text-xs text-white/50">
-              Comparing: {new Date(customDateRange.start).toLocaleDateString()} - {new Date(customDateRange.end).toLocaleDateString()} 
-              vs previous period of same duration
-            </div>
-          )}
         </div>
       )}
       
@@ -376,4 +411,5 @@ function Overview({ videos }: OverviewProps) {
 }
 
 export default Overview
+
 
