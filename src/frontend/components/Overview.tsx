@@ -6,45 +6,96 @@ interface OverviewProps {
   videos: VideoMetrics[]
 }
 
-type TimePeriod = '24h' | '7d' | '30d'
+type TimePeriod = '24h' | '7d' | '30d' | 'custom'
+
+interface CustomDateRange {
+  start: string
+  end: string
+}
 
 function Overview({ videos }: OverviewProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('24h')
+  const [customDateRange, setCustomDateRange] = useState<CustomDateRange>({
+    start: '',
+    end: ''
+  })
+  const [showCustomPicker, setShowCustomPicker] = useState(false)
+
+  // Helper functions for custom date picker
+  const handleCustomDateChange = (start: string, end: string) => {
+    setCustomDateRange({ start, end })
+    setTimePeriod('custom')
+  }
+
+  const formatDateForInput = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+
+  const getDefaultDateRange = () => {
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+    return {
+      start: formatDateForInput(thirtyDaysAgo),
+      end: formatDateForInput(now)
+    }
+  }
 
   // Calculate period comparison based on selected time frame
   const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number, period: TimePeriod) => {
     const now = Date.now()
-    let periodMs: number
+    let recentStart: number
+    let recentEnd: number
+    let previousStart: number
+    let previousEnd: number
     let periodLabel: string
     
-    switch (period) {
-      case '24h':
-        periodMs = 24 * 60 * 60 * 1000
-        periodLabel = 'vs previous 24h'
-        break
-      case '7d':
-        periodMs = 7 * 24 * 60 * 60 * 1000
-        periodLabel = 'vs previous 7 days'
-        break
-      case '30d':
-        periodMs = 30 * 24 * 60 * 60 * 1000
-        periodLabel = 'vs previous 30 days'
-        break
+    if (period === 'custom' && customDateRange.start && customDateRange.end) {
+      // Custom date range comparison
+      const customStart = new Date(customDateRange.start).getTime()
+      const customEnd = new Date(customDateRange.end).getTime()
+      const customDuration = customEnd - customStart
+      
+      recentStart = customStart
+      recentEnd = customEnd
+      previousStart = customStart - customDuration
+      previousEnd = customStart
+      periodLabel = 'vs previous period'
+    } else {
+      // Standard time periods
+      let periodMs: number
+      switch (period) {
+        case '24h':
+          periodMs = 24 * 60 * 60 * 1000
+          periodLabel = 'vs previous 24h'
+          break
+        case '7d':
+          periodMs = 7 * 24 * 60 * 60 * 1000
+          periodLabel = 'vs previous 7 days'
+          break
+        case '30d':
+          periodMs = 30 * 24 * 60 * 60 * 1000
+          periodLabel = 'vs previous 30 days'
+          break
+        default:
+          return null
+      }
+      
+      recentStart = now - periodMs
+      recentEnd = now
+      previousStart = now - (periodMs * 2)
+      previousEnd = now - periodMs
     }
-    
-    const recentPeriod = now - periodMs
-    const previousPeriod = now - (periodMs * 2)
     
     // Videos from recent period
     const recentVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= recentPeriod
+      return videoTime >= recentStart && videoTime <= recentEnd
     })
     
     // Videos from previous period
     const previousVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= previousPeriod && videoTime < recentPeriod
+      return videoTime >= previousStart && videoTime < previousEnd
     })
     
     const recentTotal = recentVideos.reduce((sum, v) => sum + getValue(v), 0)
@@ -178,7 +229,10 @@ function Overview({ videos }: OverviewProps) {
             {(['24h', '7d', '30d'] as TimePeriod[]).map((period) => (
               <button
                 key={period}
-                onClick={() => setTimePeriod(period)}
+                onClick={() => {
+                  setTimePeriod(period)
+                  setShowCustomPicker(false)
+                }}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
                   timePeriod === period
                     ? 'bg-white/20 text-white'
@@ -188,9 +242,81 @@ function Overview({ videos }: OverviewProps) {
                 {period === '24h' ? '24h' : period === '7d' ? '7d' : '30d'}
               </button>
             ))}
+            
+            {/* Custom Date Range Button */}
+            <button
+              onClick={() => {
+                setShowCustomPicker(!showCustomPicker)
+                if (!showCustomPicker && !customDateRange.start) {
+                  const defaultRange = getDefaultDateRange()
+                  setCustomDateRange(defaultRange)
+                }
+              }}
+              className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
+                timePeriod === 'custom'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/60 hover:text-white/80 hover:bg-white/10'
+              }`}
+              title="Custom date range"
+            >
+              <FiCalendar className="w-3 h-3" />
+            </button>
           </div>
         </div>
       </div>
+      
+      {/* Custom Date Range Picker */}
+      {showCustomPicker && (
+        <div className="mb-6 glass-card p-4 border border-white/10">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <FiCalendar className="w-4 h-4 text-white/70" />
+              <span className="text-sm font-medium text-white/70">Custom Period:</span>
+            </div>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">Start Date</label>
+                <input
+                  type="date"
+                  value={customDateRange.start}
+                  onChange={(e) => handleCustomDateChange(e.target.value, customDateRange.end)}
+                  className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              
+              <span className="text-white/40 text-sm">to</span>
+              
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">End Date</label>
+                <input
+                  type="date"
+                  value={customDateRange.end}
+                  onChange={(e) => handleCustomDateChange(customDateRange.start, e.target.value)}
+                  className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                />
+              </div>
+              
+              <button
+                onClick={() => {
+                  setShowCustomPicker(false)
+                  setTimePeriod('24h')
+                }}
+                className="px-3 py-2 text-xs text-white/60 hover:text-white/80 hover:bg-white/10 rounded-md transition-all"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+          
+          {timePeriod === 'custom' && customDateRange.start && customDateRange.end && (
+            <div className="mt-3 text-xs text-white/50">
+              Comparing: {new Date(customDateRange.start).toLocaleDateString()} - {new Date(customDateRange.end).toLocaleDateString()} 
+              vs previous period of same duration
+            </div>
+          )}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
