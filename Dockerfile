@@ -41,6 +41,9 @@ COPY --from=builder /app/dist ./dist
 # Copy backend source
 COPY src/backend ./src/backend
 
+# Copy database migrations
+COPY database ./database
+
 # Create data and temp directories with proper permissions
 RUN mkdir -p data temp && chown -R nodejs:nodejs data temp
 
