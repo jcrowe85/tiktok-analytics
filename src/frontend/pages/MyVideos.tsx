@@ -272,7 +272,6 @@ export const MyVideos: React.FC = () => {
               <VideoTable
                 videos={data.videos}
                 onVideoUpdate={handleVideoUpdate}
-                showAdHocActions={false}
                 title="Your TikTok Videos"
               />
             ) : (

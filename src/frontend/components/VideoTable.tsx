@@ -13,7 +13,6 @@ interface VideoTableProps {
   selectedVideo?: VideoMetrics | null
   setSelectedVideo?: (video: VideoMetrics | null) => void
   onVideoUpdate?: () => void // Callback to refresh video list when a video is updated
-  showAdHocActions?: boolean
   title?: string
 }
 
@@ -38,7 +37,6 @@ function VideoTable({
   selectedVideo: externalSelectedVideo, 
   setSelectedVideo: externalSetSelectedVideo, 
   onVideoUpdate,
-  showAdHocActions = true,
   title = "Videos"
 }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
