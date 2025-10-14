@@ -26,7 +26,7 @@ export const TikTokConnection: React.FC<TikTokConnectionProps> = ({ onConnection
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         setStatus(null);
         return;
@@ -58,7 +58,7 @@ export const TikTokConnection: React.FC<TikTokConnectionProps> = ({ onConnection
       setConnecting(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -91,7 +91,7 @@ export const TikTokConnection: React.FC<TikTokConnectionProps> = ({ onConnection
     try {
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('No authentication token found');
       }

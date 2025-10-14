@@ -26,7 +26,7 @@ export const MyVideos: React.FC = () => {
       setLoading(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('No authentication token found');
       }
@@ -65,7 +65,7 @@ export const MyVideos: React.FC = () => {
       setAnalyzing(true);
       setError(null);
       
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('auth_token');
       if (!token) {
         throw new Error('No authentication token found');
       }

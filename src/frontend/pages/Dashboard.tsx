@@ -56,7 +56,7 @@ function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const token = localStorage.getItem('token')
+      const token = localStorage.getItem('auth_token')
       if (!token) {
         setVideos([])
         setLoading(false)
