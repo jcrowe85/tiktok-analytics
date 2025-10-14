@@ -1,69 +1,63 @@
-import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity, FiArrowUp, FiArrowDown } from 'react-icons/fi'
+import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity, FiArrowUp, FiArrowDown, FiClock } from 'react-icons/fi'
+import { useState } from 'react'
 import type { VideoMetrics } from '../types'
 
 interface OverviewProps {
   videos: VideoMetrics[]
 }
 
+type TimePeriod = '24h' | '7d' | '30d'
+
 function Overview({ videos }: OverviewProps) {
-  // Calculate period-over-period comparison metrics
-  const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number) => {
-    // Get all videos sorted by date
-    const sortedVideos = [...videos].sort((a, b) => 
-      new Date(a.posted_at_iso).getTime() - new Date(b.posted_at_iso).getTime()
-    )
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('24h')
+
+  // Calculate period comparison based on selected time frame
+  const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number, period: TimePeriod) => {
+    const now = Date.now()
+    let periodMs: number
+    let periodLabel: string
     
-    if (sortedVideos.length < 2) {
-      return null // Not enough data for comparison
+    switch (period) {
+      case '24h':
+        periodMs = 24 * 60 * 60 * 1000
+        periodLabel = 'vs previous 24h'
+        break
+      case '7d':
+        periodMs = 7 * 24 * 60 * 60 * 1000
+        periodLabel = 'vs previous 7 days'
+        break
+      case '30d':
+        periodMs = 30 * 24 * 60 * 60 * 1000
+        periodLabel = 'vs previous 30 days'
+        break
     }
     
-    // Find the most recent video date
-    const latestDate = new Date(sortedVideos[sortedVideos.length - 1].posted_at_iso).getTime()
-    const oneWeekAgo = latestDate - (7 * 24 * 60 * 60 * 1000)
-    const twoWeeksAgo = latestDate - (14 * 24 * 60 * 60 * 1000)
+    const recentPeriod = now - periodMs
+    const previousPeriod = now - (periodMs * 2)
     
-    // Videos from last week
-    const recentVideos = sortedVideos.filter(v => {
+    // Videos from recent period
+    const recentVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= oneWeekAgo
+      return videoTime >= recentPeriod
     })
     
-    // Videos from week before that
-    const previousVideos = sortedVideos.filter(v => {
+    // Videos from previous period
+    const previousVideos = videos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= twoWeeksAgo && videoTime < oneWeekAgo
+      return videoTime >= previousPeriod && videoTime < recentPeriod
     })
     
     const recentTotal = recentVideos.reduce((sum, v) => sum + getValue(v), 0)
     const previousTotal = previousVideos.reduce((sum, v) => sum + getValue(v), 0)
     
-    // If no previous data, try a different time window
-    if (previousTotal === 0 && sortedVideos.length > 4) {
-      // Try comparing first half vs second half of all videos
-      const midpoint = Math.floor(sortedVideos.length / 2)
-      const firstHalf = sortedVideos.slice(0, midpoint)
-      const secondHalf = sortedVideos.slice(midpoint)
-      
-      const firstHalfTotal = firstHalf.reduce((sum, v) => sum + getValue(v), 0)
-      const secondHalfTotal = secondHalf.reduce((sum, v) => sum + getValue(v), 0)
-      
-      if (firstHalfTotal > 0) {
-        const percentage = ((secondHalfTotal - firstHalfTotal) / firstHalfTotal) * 100
-        return {
-          percentage: Math.abs(percentage),
-          isIncrease: percentage >= 0,
-          period: 'later vs earlier videos'
-        }
-      }
-    }
-    
-    // If still no previous data, show "Recent activity"
+    // If no previous data, show "New data" indicator
     if (previousTotal === 0) {
       return recentTotal > 0 ? { 
         percentage: 100, 
         isIncrease: true, 
         isNew: true,
-        period: 'recent activity'
+        period: periodLabel,
+        count: recentVideos.length
       } : null
     }
     
@@ -71,7 +65,9 @@ function Overview({ videos }: OverviewProps) {
     return {
       percentage: Math.abs(percentage),
       isIncrease: percentage >= 0,
-      period: 'last week vs previous week'
+      isNew: false,
+      period: periodLabel,
+      count: recentVideos.length
     }
   }
 
@@ -100,11 +96,11 @@ function Overview({ videos }: OverviewProps) {
   )
   const postsPerDay = recentVideos.length / 30
 
-  // Calculate period comparisons for each metric
-  const viewsComparison = calculatePeriodComparison(v => v.view_count)
-  const likesComparison = calculatePeriodComparison(v => v.like_count)
-  const commentsComparison = calculatePeriodComparison(v => v.comment_count)
-  const sharesComparison = calculatePeriodComparison(v => v.share_count)
+  // Calculate period comparisons for each metric based on selected time period
+  const viewsComparison = calculatePeriodComparison(v => v.view_count, timePeriod)
+  const likesComparison = calculatePeriodComparison(v => v.like_count, timePeriod)
+  const commentsComparison = calculatePeriodComparison(v => v.comment_count, timePeriod)
+  const sharesComparison = calculatePeriodComparison(v => v.share_count, timePeriod)
 
   const stats = [
     {
@@ -167,11 +163,33 @@ function Overview({ videos }: OverviewProps) {
 
   return (
     <div className="mb-8">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-8 h-8 rounded-full flex items-center justify-center glass-card">
-          <FiActivity className="w-4 h-4 text-white" />
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center glass-card">
+            <FiActivity className="w-4 h-4 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Performance Overview</h2>
         </div>
-        <h2 className="text-xl font-bold text-white">Performance Overview</h2>
+        
+        {/* Time Period Selector */}
+        <div className="flex items-center gap-2">
+          <FiClock className="w-4 h-4 text-white/50" />
+          <div className="flex bg-black/20 backdrop-blur-sm rounded-lg p-1 border border-white/10">
+            {(['24h', '7d', '30d'] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={() => setTimePeriod(period)}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  timePeriod === period
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/60 hover:text-white/80 hover:bg-white/10'
+                }`}
+              >
+                {period === '24h' ? '24h' : period === '7d' ? '7d' : '30d'}
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -206,7 +224,7 @@ function Overview({ videos }: OverviewProps) {
                       stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
                     }`}
                   >
-                    {stat.comparison.isNew ? `Recent activity (${stat.comparison.period})` : 
+                    {stat.comparison.isNew ? `New data (${stat.comparison.period})` : 
                      `${stat.comparison.percentage.toFixed(1)}% ${stat.comparison.period}`}
                   </span>
                 </div>
