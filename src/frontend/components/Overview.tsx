@@ -6,37 +6,72 @@ interface OverviewProps {
 }
 
 function Overview({ videos }: OverviewProps) {
-  // Calculate 24-hour comparison metrics with flexible time windows
-  const calculate24hComparison = (getValue: (video: VideoMetrics) => number) => {
-    const now = Date.now()
-    const last24h = now - (24 * 60 * 60 * 1000)
-    const last48h = now - (48 * 60 * 60 * 1000)
+  // Calculate period-over-period comparison metrics
+  const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number) => {
+    // Get all videos sorted by date
+    const sortedVideos = [...videos].sort((a, b) => 
+      new Date(a.posted_at_iso).getTime() - new Date(b.posted_at_iso).getTime()
+    )
     
-    // Videos from last 24h
-    const recentVideos = videos.filter(v => {
+    if (sortedVideos.length < 2) {
+      return null // Not enough data for comparison
+    }
+    
+    // Find the most recent video date
+    const latestDate = new Date(sortedVideos[sortedVideos.length - 1].posted_at_iso).getTime()
+    const oneWeekAgo = latestDate - (7 * 24 * 60 * 60 * 1000)
+    const twoWeeksAgo = latestDate - (14 * 24 * 60 * 60 * 1000)
+    
+    // Videos from last week
+    const recentVideos = sortedVideos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= last24h
+      return videoTime >= oneWeekAgo
     })
     
-    // Videos from 24-48h ago (previous day equivalent)
-    const previousVideos = videos.filter(v => {
+    // Videos from week before that
+    const previousVideos = sortedVideos.filter(v => {
       const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= last48h && videoTime < last24h
+      return videoTime >= twoWeeksAgo && videoTime < oneWeekAgo
     })
     
     const recentTotal = recentVideos.reduce((sum, v) => sum + getValue(v), 0)
     const previousTotal = previousVideos.reduce((sum, v) => sum + getValue(v), 0)
     
-    // If no previous data, show "New data" indicator
+    // If no previous data, try a different time window
+    if (previousTotal === 0 && sortedVideos.length > 4) {
+      // Try comparing first half vs second half of all videos
+      const midpoint = Math.floor(sortedVideos.length / 2)
+      const firstHalf = sortedVideos.slice(0, midpoint)
+      const secondHalf = sortedVideos.slice(midpoint)
+      
+      const firstHalfTotal = firstHalf.reduce((sum, v) => sum + getValue(v), 0)
+      const secondHalfTotal = secondHalf.reduce((sum, v) => sum + getValue(v), 0)
+      
+      if (firstHalfTotal > 0) {
+        const percentage = ((secondHalfTotal - firstHalfTotal) / firstHalfTotal) * 100
+        return {
+          percentage: Math.abs(percentage),
+          isIncrease: percentage >= 0,
+          period: 'later vs earlier videos'
+        }
+      }
+    }
+    
+    // If still no previous data, show "Recent activity"
     if (previousTotal === 0) {
-      return recentTotal > 0 ? { percentage: 100, isIncrease: true, isNew: true } : { percentage: 0, isIncrease: false, isNew: false }
+      return recentTotal > 0 ? { 
+        percentage: 100, 
+        isIncrease: true, 
+        isNew: true,
+        period: 'recent activity'
+      } : null
     }
     
     const percentage = ((recentTotal - previousTotal) / previousTotal) * 100
     return {
       percentage: Math.abs(percentage),
       isIncrease: percentage >= 0,
-      isNew: false
+      period: 'last week vs previous week'
     }
   }
 
@@ -65,11 +100,11 @@ function Overview({ videos }: OverviewProps) {
   )
   const postsPerDay = recentVideos.length / 30
 
-  // Calculate 24h comparisons for each metric
-  const viewsComparison = calculate24hComparison(v => v.view_count)
-  const likesComparison = calculate24hComparison(v => v.like_count)
-  const commentsComparison = calculate24hComparison(v => v.comment_count)
-  const sharesComparison = calculate24hComparison(v => v.share_count)
+  // Calculate period comparisons for each metric
+  const viewsComparison = calculatePeriodComparison(v => v.view_count)
+  const likesComparison = calculatePeriodComparison(v => v.like_count)
+  const commentsComparison = calculatePeriodComparison(v => v.comment_count)
+  const sharesComparison = calculatePeriodComparison(v => v.share_count)
 
   const stats = [
     {
@@ -171,8 +206,8 @@ function Overview({ videos }: OverviewProps) {
                       stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
                     }`}
                   >
-                    {stat.comparison.isNew ? 'New data (vs previous 24h)' : 
-                     `${stat.comparison.percentage.toFixed(1)}% vs previous 24h`}
+                    {stat.comparison.isNew ? `Recent activity (${stat.comparison.period})` : 
+                     `${stat.comparison.percentage.toFixed(1)}% ${stat.comparison.period}`}
                   </span>
                 </div>
               )}
