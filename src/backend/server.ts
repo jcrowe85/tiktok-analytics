@@ -7,6 +7,8 @@ import aiRoutes from './routes/ai.ts';
 import imageRoutes from './routes/images.ts';
 import adhocRoutes from './routes/adhoc.ts';
 import authRoutes from './routes/auth.ts';
+import tiktokAuthRoutes from './routes/tiktokAuth.ts';
+import myVideosRoutes from './routes/myVideos.ts';
 import { testDatabaseConnection } from './database/connection.ts';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -29,6 +31,12 @@ app.use('/api/ai', aiRoutes);
 
 // Authentication routes
 app.use('/api/auth', authRoutes);
+
+// TikTok OAuth routes
+app.use('/api/auth/tiktok', tiktokAuthRoutes);
+
+// User's own videos routes
+app.use('/api/my-videos', myVideosRoutes);
 
 // Image proxy routes
 app.use('/api/images', imageRoutes);

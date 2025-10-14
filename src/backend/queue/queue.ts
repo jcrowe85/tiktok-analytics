@@ -233,7 +233,7 @@ function startWorker() {
 }
 
 // Queue management functions
-export async function addVideoForAnalysis(videoId: string, videoUrl: string): Promise<void> {
+export async function addVideoForAnalysis(videoId: string, userId?: number, videoUrl?: string): Promise<void> {
   if (!redisAvailable || !aiAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping queue addition for video', videoId)
     throw new Error('Redis queue unavailable')
@@ -244,6 +244,7 @@ export async function addVideoForAnalysis(videoId: string, videoUrl: string): Pr
   
   await aiAnalysisQueue.add('analyze-video', {
     videoId,
+    userId,
     videoUrl,
     contentHash,
     rulesVersion,
