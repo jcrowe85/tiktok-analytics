@@ -318,24 +318,23 @@ function Overview({ videos }: OverviewProps) {
                 <h4 className="text-sm font-medium text-white">Period 1</h4>
               </div>
               
-              <div className="space-y-3">
-                <div className="flex flex-col">
-                  <label className="text-xs text-white/50 mb-1">Start Date</label>
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">Date Range</label>
+                <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={customDateRange.period1.start}
                     onChange={(e) => handlePeriod1Change(e.target.value, customDateRange.period1.end)}
-                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Start date"
                   />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-xs text-white/50 mb-1">End Date</label>
+                  <span className="text-white/40 text-sm">to</span>
                   <input
                     type="date"
                     value={customDateRange.period1.end}
                     onChange={(e) => handlePeriod1Change(customDateRange.period1.start, e.target.value)}
-                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="End date"
                   />
                 </div>
               </div>
@@ -354,24 +353,23 @@ function Overview({ videos }: OverviewProps) {
                 <h4 className="text-sm font-medium text-white">Period 2</h4>
               </div>
               
-              <div className="space-y-3">
-                <div className="flex flex-col">
-                  <label className="text-xs text-white/50 mb-1">Start Date</label>
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">Date Range</label>
+                <div className="flex items-center gap-2">
                   <input
                     type="date"
                     value={customDateRange.period2.start}
                     onChange={(e) => handlePeriod2Change(e.target.value, customDateRange.period2.end)}
-                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    placeholder="Start date"
                   />
-                </div>
-                
-                <div className="flex flex-col">
-                  <label className="text-xs text-white/50 mb-1">End Date</label>
+                  <span className="text-white/40 text-sm">to</span>
                   <input
                     type="date"
                     value={customDateRange.period2.end}
                     onChange={(e) => handlePeriod2Change(customDateRange.period2.start, e.target.value)}
-                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    placeholder="End date"
                   />
                 </div>
               </div>
