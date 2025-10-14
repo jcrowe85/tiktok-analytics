@@ -30,8 +30,11 @@ function Overview({ videos }: OverviewProps) {
   // Helper functions for custom date picker
   const handlePeriod1Change = (start: string, end: string) => {
     console.log('🔄 Period 1 change:', { start, end })
-    // If end date is empty or before start date, set end date to start date
-    const newEnd = (!end || end < start) ? start : end
+    // If start date changed and end date is empty or before start date, set end date to start date
+    let newEnd = end
+    if (start && (!end || end < start)) {
+      newEnd = start
+    }
     setCustomDateRange(prev => ({
       ...prev,
       period1: { start, end: newEnd }
@@ -41,8 +44,11 @@ function Overview({ videos }: OverviewProps) {
 
   const handlePeriod2Change = (start: string, end: string) => {
     console.log('🔄 Period 2 change:', { start, end })
-    // If end date is empty or before start date, set end date to start date
-    const newEnd = (!end || end < start) ? start : end
+    // If start date changed and end date is empty or before start date, set end date to start date
+    let newEnd = end
+    if (start && (!end || end < start)) {
+      newEnd = start
+    }
     setCustomDateRange(prev => ({
       ...prev,
       period2: { start, end: newEnd }
@@ -62,6 +68,10 @@ function Overview({ videos }: OverviewProps) {
       month: 'numeric',
       day: 'numeric'
     })
+  }
+
+  const getTodayString = () => {
+    return new Date().toISOString().split('T')[0]
   }
 
   const getDefaultDateRange = () => {
@@ -341,6 +351,7 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period1.start}
                     onChange={(e) => handlePeriod1Change(e.target.value, customDateRange.period1.end)}
+                    min={getTodayString()}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder="Start date"
                   />
@@ -379,6 +390,7 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period2.start}
                     onChange={(e) => handlePeriod2Change(e.target.value, customDateRange.period2.end)}
+                    min={getTodayString()}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                     placeholder="Start date"
                   />
