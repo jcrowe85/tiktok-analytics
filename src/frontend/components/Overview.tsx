@@ -29,6 +29,7 @@ function Overview({ videos }: OverviewProps) {
 
   // Helper functions for custom date picker
   const handlePeriod1Change = (start: string, end: string) => {
+    console.log('🔄 Period 1 change:', { start, end })
     setCustomDateRange(prev => ({
       ...prev,
       period1: { start, end }
@@ -37,6 +38,7 @@ function Overview({ videos }: OverviewProps) {
   }
 
   const handlePeriod2Change = (start: string, end: string) => {
+    console.log('🔄 Period 2 change:', { start, end })
     setCustomDateRange(prev => ({
       ...prev,
       period2: { start, end }
@@ -339,9 +341,11 @@ function Overview({ videos }: OverviewProps) {
                 </div>
               </div>
               
-              {customDateRange.period1.start && customDateRange.period1.end && (
-                <div className="px-3 py-2 bg-blue-500/10 rounded text-xs text-blue-300">
-                  {new Date(customDateRange.period1.start).toLocaleDateString()} - {new Date(customDateRange.period1.end).toLocaleDateString()}
+              {customDateRange.period1.start && customDateRange.period1.end && customDateRange.period1.start.trim() !== '' && customDateRange.period1.end.trim() !== '' && (
+                <div className="py-2 bg-blue-500/10 rounded text-xs text-blue-300">
+                  <div className="px-3">
+                    {new Date(customDateRange.period1.start).toLocaleDateString()} - {new Date(customDateRange.period1.end).toLocaleDateString()}
+                  </div>
                 </div>
               )}
             </div>
@@ -374,9 +378,11 @@ function Overview({ videos }: OverviewProps) {
                 </div>
               </div>
               
-              {customDateRange.period2.start && customDateRange.period2.end && (
-                <div className="px-3 py-2 bg-orange-500/10 rounded text-xs text-orange-300">
-                  {new Date(customDateRange.period2.start).toLocaleDateString()} - {new Date(customDateRange.period2.end).toLocaleDateString()}
+              {customDateRange.period2.start && customDateRange.period2.end && customDateRange.period2.start.trim() !== '' && customDateRange.period2.end.trim() !== '' && (
+                <div className="py-2 bg-orange-500/10 rounded text-xs text-orange-300">
+                  <div className="px-3">
+                    {new Date(customDateRange.period2.start).toLocaleDateString()} - {new Date(customDateRange.period2.end).toLocaleDateString()}
+                  </div>
                 </div>
               )}
             </div>
