@@ -437,32 +437,32 @@ function Overview({ videos }: OverviewProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
-                  <p className="text-2xl font-bold mt-1 text-white">{stat.value}</p>
+                  <div className="flex items-baseline gap-2 mt-1">
+                    <p className="text-2xl font-bold text-white">{stat.value}</p>
+                    {stat.comparison && (
+                      <div className="flex items-center gap-1">
+                        {stat.comparison.isNew ? (
+                          <FiZap className="w-3 h-3 text-blue-400" />
+                        ) : stat.comparison.isIncrease ? (
+                          <FiArrowUp className="w-3 h-3 text-green-400" />
+                        ) : (
+                          <FiArrowDown className="w-3 h-3 text-red-400" />
+                        )}
+                        <span 
+                          className={`text-sm font-medium ${
+                            stat.comparison.isNew ? 'text-blue-400' :
+                            stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
+                          }`}
+                        >
+                          {stat.comparison.isNew ? 'New' : 
+                           `${stat.comparison.percentage.toFixed(0)}%`}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 <IconComponent className="w-6 h-6 text-white/50" />
               </div>
-              
-              {/* 24h Comparison Indicator */}
-              {stat.comparison && (
-                <div className="flex items-center gap-1 mt-2">
-                  {stat.comparison.isNew ? (
-                    <FiZap className="w-3 h-3 text-blue-400" />
-                  ) : stat.comparison.isIncrease ? (
-                    <FiArrowUp className="w-3 h-3 text-green-400" />
-                  ) : (
-                    <FiArrowDown className="w-3 h-3 text-red-400" />
-                  )}
-                  <span 
-                    className={`text-xs font-medium ${
-                      stat.comparison.isNew ? 'text-blue-400' :
-                      stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
-                    }`}
-                  >
-                    {stat.comparison.isNew ? `New data (${stat.comparison.period})` : 
-                     `${stat.comparison.percentage.toFixed(1)}% ${stat.comparison.period}`}
-                  </span>
-                </div>
-              )}
               
               {/* Show "No data" for metrics without comparison */}
               {stat.comparison === null && (
