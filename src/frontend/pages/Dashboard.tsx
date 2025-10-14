@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react'
 import Overview from '../components/Overview'
 import VideoTable from '../components/VideoTable'
 import Filters from '../components/Filters'
+import { TikTokConnection } from '../components/TikTokConnection'
 import type { VideoMetrics, Filters as FilterType } from '../types'
 
 function Dashboard() {
   const [videos, setVideos] = useState<VideoMetrics[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [tiktokConnected, setTiktokConnected] = useState(false)
   const [filters, setFilters] = useState<FilterType>({
     searchText: '',
     dateRange: { start: '', end: '' },
@@ -54,17 +56,39 @@ function Dashboard() {
 
   const fetchData = async () => {
     try {
-      const response = await fetch('/api/data')
-      if (!response.ok) {
+      const token = localStorage.getItem('token')
+      if (!token) {
+        setVideos([])
+        setLoading(false)
+        return
+      }
+
+      // Try to fetch user's videos first
+      const response = await fetch('/api/my-videos', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      })
+      
+      if (response.ok) {
+        const result = await response.json()
+        setTiktokConnected(result.connected || false)
+        if (result.connected && result.videos) {
+          // User has connected TikTok and has videos
+          setVideos(Array.isArray(result.videos) ? result.videos : [])
+        } else {
+          // User not connected or no videos
+          setVideos([])
+        }
+      } else if (response.status === 400) {
+        // User not connected to TikTok
+        setTiktokConnected(false)
+        setVideos([])
+      } else {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      const result = await response.json()
-      // Handle both old array format and new {success, data} format
-      const data = result.data || result
-      // Ensure data is an array
-      setVideos(Array.isArray(data) ? data : [])
     } catch (err) {
-      console.error('Failed to fetch data:', err)
+      console.error('Failed to fetch user data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
       setVideos([]) // Set empty array on error
     } finally {
@@ -202,28 +226,76 @@ function Dashboard() {
       {/* Content */}
       <div className="relative z-10">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12">
-          {/* Overview */}
-          <div className="animate-fade-in-up">
-            <Overview videos={filteredVideos} />
+          {/* TikTok Connection Status */}
+          <div className="animate-fade-in-up mb-8">
+            <TikTokConnection onConnectionChange={setTiktokConnected} />
           </div>
 
-          {/* Filters */}
-          {showFilters && (
-            <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-              <Filters filters={filters} setFilters={setFilters} setShowFilters={setShowFilters} />
+          {!tiktokConnected ? (
+            /* Welcome/Onboarding for users without TikTok connection */
+            <div className="animate-fade-in-up">
+              <div className="glass-card p-8 text-center">
+                <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <span className="text-white font-bold text-2xl">T</span>
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-4">Welcome to TikTok Analytics</h2>
+                <p className="text-white/70 mb-6 max-w-2xl mx-auto">
+                  Connect your TikTok account above to start analyzing your videos with AI insights. 
+                  Get detailed analytics, engagement scores, and optimization suggestions for your content.
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
+                  <div className="glass-card p-4">
+                    <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <span className="text-white font-bold">📊</span>
+                    </div>
+                    <h3 className="font-semibold text-white mb-2">AI Analysis</h3>
+                    <p className="text-white/60 text-sm">Get detailed insights on hook, depth, clarity, and more</p>
+                  </div>
+                  <div className="glass-card p-4">
+                    <div className="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <span className="text-white font-bold">⚡</span>
+                    </div>
+                    <h3 className="font-semibold text-white mb-2">Performance Metrics</h3>
+                    <p className="text-white/60 text-sm">Track engagement rates and velocity trends</p>
+                  </div>
+                  <div className="glass-card p-4">
+                    <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <span className="text-white font-bold">💡</span>
+                    </div>
+                    <h3 className="font-semibold text-white mb-2">Optimization Tips</h3>
+                    <p className="text-white/60 text-sm">Receive actionable suggestions to improve your content</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          )}
+          ) : (
+            /* Main dashboard content for connected users */
+            <>
+              {/* Overview */}
+              <div className="animate-fade-in-up">
+                <Overview videos={filteredVideos} />
+              </div>
 
-          {/* Video Table */}
-          <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            <VideoTable 
-              videos={filteredVideos} 
-              showFilters={showFilters}
-              setShowFilters={setShowFilters}
-              hasActiveFilters={hasActiveFilters}
-              onVideoUpdate={fetchData}
-            />
-          </div>
+              {/* Filters */}
+              {showFilters && (
+                <div className="animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
+                  <Filters filters={filters} setFilters={setFilters} setShowFilters={setShowFilters} />
+                </div>
+              )}
+
+              {/* Video Table */}
+              <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                <VideoTable 
+                  videos={filteredVideos} 
+                  showFilters={showFilters}
+                  setShowFilters={setShowFilters}
+                  hasActiveFilters={hasActiveFilters}
+                  onVideoUpdate={fetchData}
+                  title="Your TikTok Videos"
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
