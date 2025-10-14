@@ -23,8 +23,13 @@ router.post('/connect-url', async (req, res) => {
     }
 
     // Verify JWT token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
 
     // Generate state parameter for security
     const state = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
@@ -126,8 +131,13 @@ router.get('/status', async (req, res) => {
       return res.status(401).json({ error: 'No authentication token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
 
     const result = await executeQuery(`
       SELECT 
@@ -174,8 +184,13 @@ router.post('/disconnect', async (req, res) => {
       return res.status(401).json({ error: 'No authentication token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
 
     await executeQuery(`
       UPDATE users 

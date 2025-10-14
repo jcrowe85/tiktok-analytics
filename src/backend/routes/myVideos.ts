@@ -16,8 +16,13 @@ router.get('/', async (req, res) => {
       return res.status(401).json({ error: 'No authentication token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
 
     // Get user's TikTok connection and plan info
     const userResult = await executeQuery(`
@@ -217,8 +222,13 @@ router.post('/analyze', async (req, res) => {
       return res.status(401).json({ error: 'No authentication token provided' });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
-    const userId = decoded.userId;
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
 
     // Get user's plan info
     const userResult = await executeQuery(`
