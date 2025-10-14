@@ -28,8 +28,19 @@ function AdHocPage() {
 
   const loadAdHocAnalyses = async (): Promise<VideoMetrics[]> => {
     try {
-      // Fetch from database instead of localStorage
-      const response = await fetch('/api/adhoc-analyses')
+      const token = localStorage.getItem('auth_token')
+      if (!token) {
+        console.log('No auth token available')
+        return []
+      }
+
+      // Fetch from database with authentication
+      const response = await fetch('/api/adhoc-analyses', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      })
       if (!response.ok) {
         throw new Error('Failed to fetch ad-hoc analyses')
       }
@@ -92,10 +103,16 @@ function AdHocPage() {
     setIsAnalyzing(true)
 
     try {
+      const token = localStorage.getItem('auth_token')
+      if (!token) {
+        throw new Error('Authentication required')
+      }
+
       const response = await fetch('/api/analyze-url', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify({ url }),
       })
@@ -133,13 +150,15 @@ function AdHocPage() {
   return (
     <>
       <div className="min-h-screen relative">
-        {/* Modern Background Pattern */}
-        <div className="fixed inset-0 opacity-30 pointer-events-none">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-900/20 via-purple-900/20 to-indigo-900/20"></div>
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25% 25%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
-                             radial-gradient(circle at 75% 75%, rgba(147, 51, 234, 0.1) 0%, transparent 50%)`
+        {/* Exciting Background with Blue/Purple Gradient - Matches My Videos */}
+        <div className="fixed inset-0 pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-950 via-slate-950 to-purple-950"></div>
+          <div className="absolute inset-0 opacity-30" style={{
+            backgroundImage: `radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.4) 0%, transparent 35%),
+                             radial-gradient(circle at 90% 80%, rgba(147, 51, 234, 0.4) 0%, transparent 35%),
+                             radial-gradient(circle at 30% 90%, rgba(14, 165, 233, 0.2) 0%, transparent 30%)`
           }}></div>
+          <div className="absolute inset-0 bg-black/30"></div>
         </div>
         
         {/* Content */}

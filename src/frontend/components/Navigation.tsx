@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile, FiLogOut, FiVideo } from 'react-icons/fi';
+import { FiMenu, FiX, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile, FiVideo } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
+import { UserAvatar } from './UserAvatar';
 
 interface NavigationProps {
   sidebarCollapsed: boolean;
@@ -102,14 +103,6 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
       category: 'tertiary',
       enabled: false
     },
-    { 
-      path: '/logout', 
-      label: 'Logout', 
-      icon: FiLogOut,
-      category: 'tertiary',
-      enabled: true,
-      isLogout: true
-    },
   ];
 
   const isActive = (path: string) => {
@@ -117,11 +110,6 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
   };
   
   const handleNavClick = (path: string) => {
-    if (path === '/logout') {
-      logout();
-      setSidebarOpen(false); // Close sidebar on logout
-      return;
-    }
     navigate(path);
     setSidebarOpen(false); // Close sidebar on navigation
   };
@@ -293,6 +281,17 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
               </div>
             )}
           </div>
+
+          {/* User Avatar at Bottom - Mobile */}
+          <div className="p-4 border-t border-white/10">
+            <div className="flex items-center">
+              <UserAvatar 
+                username={user?.email} 
+                displayName={user?.name} 
+                onLogout={logout}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -456,6 +455,17 @@ export function Navigation({ sidebarCollapsed, setSidebarCollapsed }: Navigation
                 </div>
               </div>
             )}
+          </div>
+
+          {/* User Avatar at Bottom - Desktop */}
+          <div className={`p-4 border-t border-white/10 ${sidebarCollapsed ? 'px-2' : ''}`}>
+            <div className={`flex items-center ${sidebarCollapsed ? 'justify-center' : ''}`}>
+              <UserAvatar 
+                username={user?.email} 
+                displayName={user?.name} 
+                onLogout={logout}
+              />
+            </div>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
-import crypto from 'crypto';
+// import crypto from 'crypto'; // Not needed for simplified OAuth flow
 import { executeQuery } from '../database/connection.js';
 // import { refreshAccessToken } from '../oauth.js'; // Will be used for token refresh
 import type { TikTokAuthTokens } from '../types.js';
@@ -13,24 +13,7 @@ const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const SCOPES = ['user.info.basic', 'video.list'];
 
-/**
- * Generate PKCE code verifier and challenge
- */
-function generatePKCE() {
-  // Generate code verifier (43-128 characters, URL-safe)
-  const codeVerifier = crypto.randomBytes(32).toString('base64url');
-  
-  // Generate code challenge (SHA256 hash of verifier, base64url encoded)
-  const codeChallenge = crypto
-    .createHash('sha256')
-    .update(codeVerifier)
-    .digest('base64url');
-    
-  return {
-    codeVerifier,
-    codeChallenge
-  };
-}
+// PKCE functions removed - using simplified OAuth flow like original working implementation
 
 /**
  * Generate TikTok OAuth authorization URL for user
@@ -54,23 +37,25 @@ router.post('/connect-url', async (req, res) => {
     // Generate state parameter for security
     const state = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
     
-    // Generate PKCE parameters
-    const { codeVerifier, codeChallenge } = generatePKCE();
+    // Generate PKCE parameters (not used in this simplified flow)
+    // const { codeVerifier, codeChallenge } = generatePKCE();
 
-    // Build authorization URL with PKCE
+    // Build authorization URL (without PKCE - using same approach as original working flow)
     const authUrl = new URL(TIKTOK_AUTH_URL);
     authUrl.searchParams.append('client_key', process.env.TIKTOK_CLIENT_KEY!);
     authUrl.searchParams.append('scope', SCOPES.join(','));
     authUrl.searchParams.append('response_type', 'code');
-    authUrl.searchParams.append('redirect_uri', `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/auth/tiktok/callback`);
+    authUrl.searchParams.append('redirect_uri', process.env.TIKTOK_REDIRECT_URI!);
     authUrl.searchParams.append('state', state);
-    authUrl.searchParams.append('code_challenge', codeChallenge);
-    authUrl.searchParams.append('code_challenge_method', 'S256');
 
-    // Store state and code verifier in database temporarily (expires in 10 minutes)
+    // Debug: Log the generated URL
+    console.log('🔗 Generated TikTok OAuth URL:', authUrl.toString());
+    console.log('📍 Redirect URI being sent:', process.env.TIKTOK_REDIRECT_URI);
+
+    // Store state in database temporarily (expires in 10 minutes)
     await executeQuery(
       'INSERT INTO user_oauth_states (user_id, state, code_verifier, expires_at) VALUES ($1, $2, $3, $4)',
-      [userId, state, codeVerifier, new Date(Date.now() + 10 * 60 * 1000)]
+      [userId, state, '', new Date(Date.now() + 10 * 60 * 1000)]
     );
 
     res.json({ 
@@ -86,7 +71,7 @@ router.post('/connect-url', async (req, res) => {
 /**
  * Handle TikTok OAuth callback
  */
-router.get('/callback', async (req, res) => {
+export const handleTikTokCallback = async (req: any, res: any) => {
   try {
     const { code, state } = req.query;
 
@@ -94,9 +79,9 @@ router.get('/callback', async (req, res) => {
       return res.status(400).send('Missing authorization code or state');
     }
 
-    // Verify state and get user ID + code verifier
+    // Verify state and get user ID
     const stateResult = await executeQuery(
-      'SELECT user_id, code_verifier FROM user_oauth_states WHERE state = $1 AND expires_at > NOW()',
+      'SELECT user_id FROM user_oauth_states WHERE state = $1 AND expires_at > NOW()',
       [state as string]
     ) as any;
 
@@ -105,13 +90,12 @@ router.get('/callback', async (req, res) => {
     }
 
     const userId = stateResult[0].user_id;
-    const codeVerifier = stateResult[0].code_verifier;
 
     // Clean up state
     await executeQuery('DELETE FROM user_oauth_states WHERE state = $1', [state as string]);
 
-    // Exchange code for tokens with PKCE
-    const tokens = await exchangeCodeForTokens(code as string, codeVerifier);
+    // Exchange code for tokens (without PKCE - using same approach as original working flow)
+    const tokens = await exchangeCodeForTokens(code as string);
 
     // Get user info from TikTok
     const userInfo = await getTikTokUserInfo(tokens.access_token);
@@ -139,13 +123,16 @@ router.get('/callback', async (req, res) => {
     ]);
 
     // Redirect to success page
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tiktok_connected=true`);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/my-videos?tiktok_connected=true`);
 
   } catch (error) {
     console.error('❌ TikTok OAuth callback error:', error);
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard?tiktok_error=true`);
   }
-});
+};
+
+// Also register as route for the router
+router.get('/callback', handleTikTokCallback);
 
 /**
  * Get user's TikTok connection status
@@ -241,36 +228,51 @@ router.post('/disconnect', async (req, res) => {
 /**
  * Exchange authorization code for tokens
  */
-async function exchangeCodeForTokens(code: string, codeVerifier: string): Promise<TikTokAuthTokens> {
-  const response = await axios.post(
-    TIKTOK_TOKEN_URL,
-    new URLSearchParams({
-      client_key: process.env.TIKTOK_CLIENT_KEY!,
-      client_secret: process.env.TIKTOK_CLIENT_SECRET!,
-      code,
-      grant_type: 'authorization_code',
-      redirect_uri: `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/auth/tiktok/callback`,
-      code_verifier: codeVerifier,
-    }),
-    {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+async function exchangeCodeForTokens(code: string): Promise<TikTokAuthTokens> {
+  try {
+    const response = await axios.post(
+      TIKTOK_TOKEN_URL,
+      new URLSearchParams({
+        client_key: process.env.TIKTOK_CLIENT_KEY!,
+        client_secret: process.env.TIKTOK_CLIENT_SECRET!,
+        code,
+        grant_type: 'authorization_code',
+        redirect_uri: process.env.TIKTOK_REDIRECT_URI!,
+      }),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
+
+    if (response.data.error || response.data.error_description) {
+      const errorMsg = response.data.error_description || response.data.error?.message || 'Unknown error';
+      
+      // Special handling for client_key errors
+      if (errorMsg.includes('client_key') || response.data.error?.code === 'invalid_client') {
+        throw new Error('TikTok OAuth Configuration Error: The current app credentials are for Display API (public data access) but user authentication requires TikTok for Developers app credentials. Please contact support to set up proper user authentication credentials.');
+      }
+      
+      throw new Error(`Token exchange failed: ${errorMsg}`);
     }
-  );
 
-  if (response.data.error || response.data.error_description) {
-    const errorMsg = response.data.error_description || response.data.error?.message || 'Unknown error';
-    throw new Error(`Token exchange failed: ${errorMsg}`);
+    const tokens = response.data.data || response.data;
+    
+    if (!tokens.access_token) {
+      throw new Error('No access token in response');
+    }
+
+    return tokens;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      const errorData = error.response?.data;
+      if (errorData?.error?.code === 'invalid_client' || errorData?.error_description?.includes('client_key')) {
+        throw new Error('TikTok OAuth Configuration Error: The current app credentials are for Display API (public data access) but user authentication requires TikTok for Developers app credentials. Please contact support to set up proper user authentication credentials.');
+      }
+    }
+    throw error;
   }
-
-  const tokens = response.data.data || response.data;
-  
-  if (!tokens.access_token) {
-    throw new Error('No access token in response');
-  }
-
-  return tokens;
 }
 
 /**

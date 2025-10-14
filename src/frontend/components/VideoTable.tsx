@@ -14,6 +14,11 @@ interface VideoTableProps {
   setSelectedVideo?: (video: VideoMetrics | null) => void
   onVideoUpdate?: () => void // Callback to refresh video list when a video is updated
   title?: string
+  selectedVideos?: Set<string>
+  onToggleVideo?: (videoId: string) => void
+  onAnalyzeVideo?: (videoId: string) => void
+  analyzingVideoIds?: Set<string>
+  selectMode?: boolean
 }
 
 type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h' | 'ai_overall_score' | 'ai_pass' | 'ai_revise' | 'ai_reshoot'
@@ -37,7 +42,12 @@ function VideoTable({
   selectedVideo: externalSelectedVideo, 
   setSelectedVideo: externalSetSelectedVideo, 
   onVideoUpdate,
-  title = "Videos"
+  title = "Videos",
+  selectedVideos,
+  onToggleVideo,
+  onAnalyzeVideo,
+  analyzingVideoIds,
+  selectMode = false
 }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -190,7 +200,8 @@ function VideoTable({
     }
   }
 
-  const truncate = (text: string, maxLength: number) => {
+  const truncate = (text: string | null | undefined, maxLength: number) => {
+    if (!text) return ''
     if (text.length <= maxLength) return text
     return text.substring(0, maxLength) + '...'
   }
@@ -391,7 +402,7 @@ function VideoTable({
   return (
     <>
       <div className="overflow-hidden">
-        <div className="px-4 sm:px-6 py-4">
+        <div className="py-4">
           {/* Mobile-first responsive header */}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             {/* Title section */}
@@ -460,19 +471,34 @@ function VideoTable({
             {sortedVideos.map((video) => (
               <div 
                 key={video.id}
-                className={`modern-card overflow-hidden group ${
-                  (video as any).is_placeholder ? 'cursor-default opacity-60' : 'cursor-pointer'
+                className={`modern-card overflow-hidden group relative transition-all ${
+                  (video as any).is_placeholder ? 'cursor-default opacity-60' : 
+                  selectMode ? 'cursor-pointer' : 'cursor-pointer'
+                } ${
+                  selectMode && selectedVideos?.has(video.id) 
+                    ? '!bg-blue-600/20' 
+                    : selectMode 
+                      ? 'hover:!bg-blue-600/10' 
+                      : ''
                 }`}
                 onClick={() => {
-                  if (!(video as any).is_placeholder) {
-                    setSelectedVideo(video)
+                  if ((video as any).is_placeholder) {
+                    return;
+                  }
+                  // In select mode and video is unanalyzed, toggle selection
+                  if (selectMode && !video.ai_processed_at && onToggleVideo) {
+                    onToggleVideo(video.id);
+                  } else if (!selectMode) {
+                    // Normal mode, open video detail modal
+                    setSelectedVideo(video);
                   }
                 }}
               >
+
                 {/* Header Section */}
                 <div className="p-4 border-b border-white/5">
                   <div className="flex items-center justify-between">
-                    {/* Left: AI Quality Badge (if available) or Date */}
+                    {/* Left: AI Quality Badge (if available) or Analyze Now button */}
                     <div className="flex flex-col gap-1">
                       {video.ai_scores ? (
                         <div className={`px-2.5 py-1 rounded-full text-xs font-bold ${
@@ -484,14 +510,28 @@ function VideoTable({
                            video.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
                            '❌ Reshoot'}
                         </div>
-                      ) : (
+                      ) : onAnalyzeVideo && !analyzingVideoIds?.has(video.id) && !selectMode ? (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onAnalyzeVideo(video.id);
+                          }}
+                          className="px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-blue-600 to-purple-600 text-white hover:shadow-lg hover:shadow-blue-500/25 transition-all"
+                        >
+                          Analyze Now
+                        </button>
+                      ) : !video.ai_scores && analyzingVideoIds?.has(video.id) ? (
                         <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center gap-1.5">
                           <div className="relative w-3 h-3">
                             <div className="absolute inset-0 w-3 h-3 border-2 border-blue-400/20 rounded-full animate-spin border-t-blue-400"></div>
                           </div>
                           <span>Analyzing</span>
                         </div>
-                      )}
+                      ) : selectMode && !video.ai_processed_at ? (
+                        <div className="px-2.5 py-1 rounded-full text-xs font-bold bg-white/10 text-white/60 border border-white/20">
+                          Click to select
+                        </div>
+                      ) : null}
                       
                       {/* Analysis timestamp */}
                       {video.ai_processed_at && (
@@ -508,12 +548,19 @@ function VideoTable({
                           <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                             <div 
                               className="h-full bg-white transition-all duration-300"
-                              style={{ width: `${Math.min(video.engagement_rate * 100, 100)}%` }}
+                              style={{ width: `${Math.min((video.engagement_rate || 0) * 100, 100)}%` }}
                             />
                           </div>
                         </div>
-                        <span className="text-xs text-white/70 font-bold">
-                          {(video.engagement_rate * 100).toFixed(1)}%
+                        <span className="text-sm text-white font-black">
+                          {(() => {
+                            console.log('🔍 VideoTable engagement:', { 
+                              id: video.id, 
+                              engagement_rate: video.engagement_rate,
+                              calculated: ((video.engagement_rate || 0) * 100).toFixed(1) + '%'
+                            });
+                            return ((video.engagement_rate || 0) * 100).toFixed(1) + '%';
+                          })()}
                         </span>
                       </div>
                       <span className="text-[10px] text-white/40 uppercase tracking-wide font-medium">
@@ -539,24 +586,34 @@ function VideoTable({
                         </div>
                       </div>
                     ) : (video.share_url || video.embed_link || video.username) ? (
-                      <a
-                        href={
-                          video.share_url || 
-                          video.embed_link ||
-                          (video.username ? `https://www.tiktok.com/@${video.username}/video/${video.id}` : '#')
-                        }
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className="block w-full h-full"
-                        title="Open video on TikTok"
-                      >
-                        <VideoThumbnail 
-                          coverImageUrl={video.cover_image_url} 
-                          shareUrl={video.share_url}
-                          videoId={video.id}
-                        />
-                      </a>
+                      selectMode ? (
+                        <div className="block w-full h-full">
+                          <VideoThumbnail 
+                            coverImageUrl={video.cover_image_url} 
+                            shareUrl={video.share_url}
+                            videoId={video.id}
+                          />
+                        </div>
+                      ) : (
+                        <a
+                          href={
+                            video.share_url || 
+                            video.embed_link ||
+                            (video.username ? `https://www.tiktok.com/@${video.username}/video/${video.id}` : '#')
+                          }
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="block w-full h-full"
+                          title="Open video on TikTok"
+                        >
+                          <VideoThumbnail 
+                            coverImageUrl={video.cover_image_url} 
+                            shareUrl={video.share_url}
+                            videoId={video.id}
+                          />
+                        </a>
+                      )
                     ) : (
                       <>
                         <VideoThumbnail 
@@ -600,7 +657,7 @@ function VideoTable({
                     <>
                       {/* Caption */}
                       <p className="text-sm text-white/90 line-clamp-2 leading-relaxed">
-                        {truncate(video.caption, 80)}
+                        {truncate(video.video_description, 80)}
                       </p>
                     </>
                   ) : (
@@ -612,7 +669,7 @@ function VideoTable({
                   {!(video as any).is_placeholder && (
                     <>
                       {/* Hashtags */}
-                      {video.hashtags.length > 0 && (
+                      {video.hashtags && video.hashtags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {video.hashtags.slice(0, 2).map((tag, i) => (
                         <span 
@@ -622,7 +679,7 @@ function VideoTable({
                           #{tag}
                         </span>
                       ))}
-                      {video.hashtags.length > 2 && (
+                      {video.hashtags && video.hashtags.length > 2 && (
                         <span className="text-[11px] text-white/40 font-medium">
                           +{video.hashtags.length - 2}
                         </span>
@@ -861,7 +918,7 @@ function VideoTable({
                                 #{tag}
                               </span>
                             ))}
-                            {selectedVideo.hashtags.length > 4 && (
+                            {selectedVideo.hashtags && selectedVideo.hashtags.length > 4 && (
                               <span className="text-[11px] text-white/40 font-medium">
                                 +{selectedVideo.hashtags.length - 4}
                               </span>
@@ -920,7 +977,7 @@ function VideoTable({
                         <div className="flex justify-between items-center">
                           <span className="text-white/60 text-sm">Engagement</span>
                           <span className="text-white font-bold text-lg">
-                            {(selectedVideo.engagement_rate * 100).toFixed(2)}%
+                            {((selectedVideo.engagement_rate || 0) * 100).toFixed(2)}%
                           </span>
                         </div>
                       </div>

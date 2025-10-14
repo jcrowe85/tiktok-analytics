@@ -88,85 +88,111 @@ function Overview({ videos }: OverviewProps) {
   }
 
   // Calculate period comparison based on selected time frame
+  // Compares videos posted in current period vs previous equivalent period
   const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number, period: TimePeriod) => {
     const now = Date.now()
-    let recentStart: number
-    let recentEnd: number
-    let previousStart: number
-    let previousEnd: number
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+    const startOfTodayMs = startOfToday.getTime()
+    
+    let currentPeriodStart: number
+    let currentPeriodEnd: number
+    let previousPeriodStart: number
+    let previousPeriodEnd: number
     let periodLabel: string
     
     if (period === 'custom' && customDateRange.period1.start && customDateRange.period1.end && customDateRange.period2.start && customDateRange.period2.end) {
       // Custom dual period comparison
-      const period1Start = new Date(customDateRange.period1.start).getTime()
-      const period1End = new Date(customDateRange.period1.end).getTime()
-      const period2Start = new Date(customDateRange.period2.start).getTime()
-      const period2End = new Date(customDateRange.period2.end).getTime()
-      
-      recentStart = period1Start
-      recentEnd = period1End
-      previousStart = period2Start
-      previousEnd = period2End
+      currentPeriodStart = new Date(customDateRange.period1.start + 'T00:00:00').getTime()
+      currentPeriodEnd = new Date(customDateRange.period1.end + 'T23:59:59').getTime()
+      previousPeriodStart = new Date(customDateRange.period2.start + 'T00:00:00').getTime()
+      previousPeriodEnd = new Date(customDateRange.period2.end + 'T23:59:59').getTime()
       periodLabel = 'vs selected period'
     } else {
-      // Standard time periods
-      let periodMs: number
+      // Standard time periods - rolling comparison
       switch (period) {
         case '24h':
-          periodMs = 24 * 60 * 60 * 1000
-          periodLabel = 'vs previous 24h'
+          // Compare videos posted today vs yesterday
+          currentPeriodStart = startOfTodayMs
+          currentPeriodEnd = now
+          previousPeriodStart = startOfTodayMs - (24 * 60 * 60 * 1000)
+          previousPeriodEnd = startOfTodayMs
+          periodLabel = 'vs yesterday'
           break
         case '7d':
-          periodMs = 7 * 24 * 60 * 60 * 1000
-          periodLabel = 'vs previous 7 days'
+          // Compare this week so far vs last week same days
+          const currentDayOfWeek = startOfToday.getDay()
+          const daysFromStartOfWeek = currentDayOfWeek // 0 = Sunday
+          const startOfThisWeek = startOfTodayMs - (daysFromStartOfWeek * 24 * 60 * 60 * 1000)
+          
+          currentPeriodStart = startOfThisWeek
+          currentPeriodEnd = now
+          previousPeriodStart = startOfThisWeek - (7 * 24 * 60 * 60 * 1000)
+          previousPeriodEnd = previousPeriodStart + (now - currentPeriodStart) // Same duration as current period
+          periodLabel = 'vs last week'
           break
         case '30d':
-          periodMs = 30 * 24 * 60 * 60 * 1000
-          periodLabel = 'vs previous 30 days'
+          // Compare this month so far vs last month same days
+          const startOfThisMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1).getTime()
+          
+          currentPeriodStart = startOfThisMonth
+          currentPeriodEnd = now
+          
+          // Previous month, same number of days from start
+          const startOfLastMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() - 1, 1).getTime()
+          previousPeriodStart = startOfLastMonth
+          previousPeriodEnd = startOfLastMonth + (now - startOfThisMonth)
+          periodLabel = 'vs last month'
           break
         default:
           return null
       }
-      
-      recentStart = now - periodMs
-      recentEnd = now
-      previousStart = now - (periodMs * 2)
-      previousEnd = now - periodMs
     }
     
-    // Videos from recent period
-    const recentVideos = videos.filter(v => {
-      const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= recentStart && videoTime <= recentEnd
+    // Filter videos posted during current period
+    const currentVideos = videos.filter(v => {
+      // Use create_time (actual TikTok posting date in seconds) if available, otherwise posted_at_iso
+      // create_time is in seconds, so convert to milliseconds
+      const videoTime = v.create_time ? v.create_time * 1000 : new Date(v.posted_at_iso).getTime()
+      return videoTime >= currentPeriodStart && videoTime <= currentPeriodEnd
     })
     
-    // Videos from previous period
+    // Filter videos posted during previous period  
     const previousVideos = videos.filter(v => {
-      const videoTime = new Date(v.posted_at_iso).getTime()
-      return videoTime >= previousStart && videoTime < previousEnd
+      // Use create_time (actual TikTok posting date in seconds) if available, otherwise posted_at_iso
+      // create_time is in seconds, so convert to milliseconds
+      const videoTime = v.create_time ? v.create_time * 1000 : new Date(v.posted_at_iso).getTime()
+      return videoTime >= previousPeriodStart && videoTime <= previousPeriodEnd
     })
     
-    const recentTotal = recentVideos.reduce((sum, v) => sum + getValue(v), 0)
+    // Sum metrics from videos in each period
+    const currentTotal = currentVideos.reduce((sum, v) => sum + getValue(v), 0)
     const previousTotal = previousVideos.reduce((sum, v) => sum + getValue(v), 0)
     
-    // If no previous data, show "New data" indicator
-    if (previousTotal === 0) {
-      return recentTotal > 0 ? { 
+    // If no previous data, show as new
+    if (previousTotal === 0 && currentTotal > 0) {
+      return { 
         percentage: 100, 
         isIncrease: true, 
         isNew: true,
         period: periodLabel,
-        count: recentVideos.length
-      } : null
+        count: currentVideos.length
+      }
     }
     
-    const percentage = ((recentTotal - previousTotal) / previousTotal) * 100
+    // If no data in either period, return null
+    if (previousTotal === 0 && currentTotal === 0) {
+      return null
+    }
+    
+    const percentage = ((currentTotal - previousTotal) / previousTotal) * 100
+    
     return {
       percentage: Math.abs(percentage),
       isIncrease: percentage >= 0,
       isNew: false,
       period: periodLabel,
-      count: recentVideos.length
+      count: currentVideos.length
     }
   }
 

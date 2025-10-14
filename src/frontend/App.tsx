@@ -1,9 +1,8 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { useState } from 'react'
 import { AuthProvider } from './contexts/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Navigation } from './components/Navigation'
-import Dashboard from './pages/Dashboard'
 import AdHocPage from './pages/AdHocPage'
 import { MyVideos } from './pages/MyVideos'
 
@@ -21,7 +20,7 @@ function App() {
               ml-0
             `}>
               <Routes>
-                <Route path="/" element={<Dashboard />} />
+                <Route path="/" element={<Navigate to="/my-videos" replace />} />
                 <Route path="/my-videos" element={<MyVideos />} />
                 <Route path="/ad-hoc" element={<AdHocPage />} />
               </Routes>

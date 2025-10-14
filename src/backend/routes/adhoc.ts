@@ -1,4 +1,5 @@
 import express from 'express'
+import jwt from 'jsonwebtoken'
 import { analyzeVideo } from '../ai/pipeline.ts'
 import { getVideoData } from '../utils/getVideoUrl.ts'
 import { executeQuery } from '../database/connection.ts'
@@ -67,12 +68,27 @@ async function getVideoMetadata(url: string) {
 }
 
 /**
- * Get all ad-hoc analyses from database
+ * Get all ad-hoc analyses from database for authenticated user
  * GET /api/adhoc-analyses
  */
-router.get('/adhoc-analyses', async (_req, res) => {
+router.get('/adhoc-analyses', async (req, res) => {
   try {
-    // Fetch ad-hoc videos with their AI analysis
+    // Verify JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No authentication token provided' });
+    }
+
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+      console.log(`📊 /adhoc-analyses GET request from user ID: ${userId}`);
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
+
+    // Fetch ad-hoc videos with their AI analysis for this user only
     const result = await executeQuery(`
       SELECT 
         v.id,
@@ -99,9 +115,11 @@ router.get('/adhoc-analyses', async (_req, res) => {
         a.updated_at as ai_updated_at
       FROM videos v
       LEFT JOIN video_ai_analysis a ON v.id = a.video_id
-      WHERE v.is_adhoc = true
+      WHERE v.is_adhoc = true AND v.user_id = $1
       ORDER BY v.created_at DESC
-    `)
+    `, [userId])
+    
+    console.log(`📊 Found ${result.length} ad-hoc videos for user ID: ${userId}`);
     
     res.json({
       success: true,
@@ -115,12 +133,26 @@ router.get('/adhoc-analyses', async (_req, res) => {
 })
 
 /**
- * Analyze any TikTok video by URL
+ * Analyze any TikTok video by URL for authenticated user
  * POST /api/analyze-url
  * Body: { url: string }
  */
 router.post('/analyze-url', async (req, res) => {
   try {
+    // Verify JWT token
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    if (!token) {
+      return res.status(401).json({ error: 'No authentication token provided' });
+    }
+
+    let userId;
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any;
+      userId = decoded.userId;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
+    }
+
     const { url } = req.body
     
     if (!url || typeof url !== 'string') {
@@ -153,15 +185,15 @@ router.post('/analyze-url', async (req, res) => {
     const duration = videoData.staticData?.duration || 0
     const coverImageUrl = videoData.staticData?.coverImageUrl || oembedData.thumbnailUrl || ''
     
-    // Save video data to database first (mark as ad-hoc)
-    console.log(`🚩 Step 1: Saving video data to database...`)
+    // Save video data to database first (mark as ad-hoc and associate with user)
+    console.log(`🚩 Step 1: Saving video data to database for user ${userId}...`)
     await executeQuery(`
       INSERT INTO videos (
         id, posted_at_iso, caption, duration, view_count, like_count, 
         comment_count, share_count, engagement_rate, hashtags, share_url, 
         cover_image_url, video_title, author_username, author_nickname, 
-        author_avatar_url, music_title, music_artist, is_adhoc
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        author_avatar_url, music_title, music_artist, is_adhoc, user_id
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       ON CONFLICT (id) DO UPDATE SET
         posted_at_iso = EXCLUDED.posted_at_iso,
         caption = EXCLUDED.caption,
@@ -181,6 +213,7 @@ router.post('/analyze-url', async (req, res) => {
         music_title = EXCLUDED.music_title,
         music_artist = EXCLUDED.music_artist,
         is_adhoc = EXCLUDED.is_adhoc,
+        user_id = EXCLUDED.user_id,
         updated_at = CURRENT_TIMESTAMP
     `, [
       videoId,
@@ -201,7 +234,8 @@ router.post('/analyze-url', async (req, res) => {
       videoData.staticData?.authorAvatarUrl || '',
       videoData.staticData?.musicTitle || '',
       videoData.staticData?.musicArtist || '',
-      true // is_adhoc
+      true, // is_adhoc
+      userId // user_id
     ])
     
     // Analyze the video

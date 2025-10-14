@@ -34,14 +34,19 @@ export function VideoThumbnail({
     if (extractedVideoId) {
       // Use backend proxy endpoint
       const proxyUrl = `/api/images/thumbnail/${extractedVideoId}`
-      setCurrentImageUrl(proxyUrl)
-      setImageError(false)
-      setImageLoaded(false)
-    } else {
+      // Only reset state if URL actually changed
+      if (proxyUrl !== currentImageUrl) {
+        setCurrentImageUrl(proxyUrl)
+        setImageError(false)
+        setImageLoaded(false)
+      }
+    } else if (coverImageUrl && coverImageUrl !== currentImageUrl) {
       // No video ID available, use original cover image URL
       setCurrentImageUrl(coverImageUrl)
+      setImageError(false)
+      setImageLoaded(false)
     }
-  }, [coverImageUrl, shareUrl, videoId])
+  }, [coverImageUrl, shareUrl, videoId, currentImageUrl])
 
   // Fallback to original URL if proxy fails
   useEffect(() => {
