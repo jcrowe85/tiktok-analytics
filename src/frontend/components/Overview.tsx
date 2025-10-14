@@ -112,11 +112,11 @@ function Overview({ videos }: OverviewProps) {
       // Standard time periods - rolling comparison
       switch (period) {
         case '24h':
-          // Compare videos posted today vs yesterday
+          // Compare today so far vs yesterday same time
           currentPeriodStart = startOfTodayMs
           currentPeriodEnd = now
           previousPeriodStart = startOfTodayMs - (24 * 60 * 60 * 1000)
-          previousPeriodEnd = startOfTodayMs
+          previousPeriodEnd = previousPeriodStart + (now - currentPeriodStart) // Same duration as current period
           periodLabel = 'vs yesterday'
           break
         case '7d':
