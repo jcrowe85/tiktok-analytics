@@ -68,6 +68,7 @@ export interface JobData {
 
 // AI Analysis Queue (created after Redis connection is ready)
 export let aiAnalysisQueue: Queue<JobData> | null = null
+export let staticAnalysisQueue: Queue<JobData> | null = null
 
 // Initialize queues after Redis is ready
 function initializeQueues() {
@@ -86,8 +87,21 @@ function initializeQueues() {
         },
       },
     });
+
+    staticAnalysisQueue = new Queue<JobData>('static-analysis', {
+      connection: redis,
+      defaultJobOptions: {
+        removeOnComplete: 10,
+        removeOnFail: 5,
+        attempts: 3,
+        backoff: {
+          type: 'exponential',
+          delay: 2000,
+        },
+      },
+    });
     
-    console.log('✅ AI analysis queue initialized');
+    console.log('✅ AI analysis queues initialized');
     
     // Start worker
     startWorker();
@@ -204,7 +218,7 @@ function startWorker() {
     );
     
     staticAnalysisWorker = new Worker<JobData>(
-      'ai-analysis',
+      'static-analysis',
       processStaticAnalysis,
       {
         connection: redis,
@@ -224,6 +238,20 @@ function startWorker() {
 
       aiAnalysisWorker.on('failed', (job: Job | undefined, error: Error) => {
         console.error(`❌ Job ${job?.id} failed:`, error)
+      })
+    }
+
+    if (staticAnalysisWorker) {
+      staticAnalysisWorker.on('error', (error: Error) => {
+        console.error('❌ Static Analysis Worker Error:', error)
+      })
+
+      staticAnalysisWorker.on('completed', (job: Job) => {
+        console.log(`✅ Static Job ${job.id} completed successfully`)
+      })
+
+      staticAnalysisWorker.on('failed', (job: Job | undefined, error: Error) => {
+        console.error(`❌ Static Job ${job?.id} failed:`, error)
       })
     }
     
@@ -258,7 +286,7 @@ export async function addVideoForAnalysis(videoId: string, userId?: number, vide
 }
 
 export async function addStaticContentForAnalysis(videoId: string, caption: string, coverImageUrl?: string): Promise<void> {
-  if (!redisAvailable || !aiAnalysisQueue) {
+  if (!redisAvailable || !staticAnalysisQueue) {
     console.log('⚠️  Redis unavailable, skipping static content queue addition for video', videoId)
     throw new Error('Redis queue unavailable')
   }
@@ -266,7 +294,7 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
   const contentHash = `hash_${videoId}_${Date.now()}`
   const rulesVersion = 1
   
-  await aiAnalysisQueue.add('analyze-static', {
+  await staticAnalysisQueue.add('analyze-static', {
     videoId,
     videoUrl: '', // Empty for static content
     caption,
@@ -278,7 +306,7 @@ export async function addStaticContentForAnalysis(videoId: string, caption: stri
     priority: 1,
   })
   
-  console.log(`📝 Added static content ${videoId} to AI analysis queue`)
+  console.log(`📝 Added static content ${videoId} to static analysis queue`)
 }
 
 export async function getQueueStats() {
