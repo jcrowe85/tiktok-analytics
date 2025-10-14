@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { Navigation } from './components/Navigation'
 import Dashboard from './pages/Dashboard'
 import AdHocPage from './pages/AdHocPage'
+import { MyVideos } from './pages/MyVideos'
 
 function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
@@ -21,6 +22,7 @@ function App() {
             `}>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
+                <Route path="/my-videos" element={<MyVideos />} />
                 <Route path="/ad-hoc" element={<AdHocPage />} />
               </Routes>
             </main>

@@ -448,9 +448,13 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
             {sortedVideos.map((video) => (
               <div 
                 key={video.id}
-                className="modern-card overflow-hidden cursor-pointer group"
+                className={`modern-card overflow-hidden group ${
+                  (video as any).is_placeholder ? 'cursor-default opacity-60' : 'cursor-pointer'
+                }`}
                 onClick={() => {
-                  setSelectedVideo(video)
+                  if (!(video as any).is_placeholder) {
+                    setSelectedVideo(video)
+                  }
                 }}
               >
                 {/* Header Section */}
@@ -510,7 +514,19 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                 {/* Video Thumbnail */}
                 <div className="px-4 pt-4">
                   <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg">
-                    {(video.share_url || video.embed_link || video.username) ? (
+                    {(video as any).is_placeholder ? (
+                      <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative">
+                        <div className="text-center p-6">
+                          <div className="w-16 h-16 bg-gradient-to-br from-yellow-500 to-orange-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                            <FiTrendingUp className="w-8 h-8 text-white" />
+                          </div>
+                          <p className="text-white font-medium mb-2">Upgrade Required</p>
+                          <p className="text-white/60 text-sm">
+                            {(video as any).placeholder_message || 'Upgrade to analyze this video'}
+                          </p>
+                        </div>
+                      </div>
+                    ) : (video.share_url || video.embed_link || video.username) ? (
                       <a
                         href={
                           video.share_url || 
@@ -541,37 +557,50 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                     
 
                     {/* Views Badge - Top Left */}
-                    <div className="absolute top-2.5 left-2.5">
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
-                        <FiEye className="w-3 h-3" />
-                        {video.view_count > 1000000 
-                          ? `${(video.view_count / 1000000).toFixed(1)}M`
-                          : video.view_count > 1000 
-                          ? `${(video.view_count / 1000).toFixed(1)}K`
-                          : video.view_count.toLocaleString()
-                        }
-                      </span>
-                    </div>
+                    {!(video as any).is_placeholder && (
+                      <div className="absolute top-2.5 left-2.5">
+                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
+                          <FiEye className="w-3 h-3" />
+                          {video.view_count > 1000000 
+                            ? `${(video.view_count / 1000000).toFixed(1)}M`
+                            : video.view_count > 1000 
+                            ? `${(video.view_count / 1000).toFixed(1)}K`
+                            : video.view_count.toLocaleString()
+                          }
+                        </span>
+                      </div>
+                    )}
 
                     {/* Duration Badge */}
-                    <div className="absolute bottom-2.5 right-2.5">
-                      <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
-                        {video.duration}s
-                      </span>
-                    </div>
+                    {!(video as any).is_placeholder && (
+                      <div className="absolute bottom-2.5 right-2.5">
+                        <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-black/70 text-white backdrop-blur-md shadow-lg">
+                          {video.duration}s
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Card Content */}
                 <div className="px-4 pt-4 pb-5 space-y-4">
+                  {!(video as any).is_placeholder ? (
+                    <>
+                      {/* Caption */}
+                      <p className="text-sm text-white/90 line-clamp-2 leading-relaxed">
+                        {truncate(video.caption, 80)}
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-sm text-white/60 line-clamp-2 leading-relaxed">
+                      Connect your TikTok account to see video details and AI analysis
+                    </p>
+                  )}
 
-                  {/* Caption */}
-                  <p className="text-sm text-white/90 line-clamp-2 leading-relaxed">
-                    {truncate(video.caption, 80)}
-                  </p>
-
-                  {/* Hashtags */}
-                  {video.hashtags.length > 0 && (
+                  {!(video as any).is_placeholder && (
+                    <>
+                      {/* Hashtags */}
+                      {video.hashtags.length > 0 && (
                     <div className="flex flex-wrap gap-1.5">
                       {video.hashtags.slice(0, 2).map((tag, i) => (
                         <span 
@@ -698,6 +727,8 @@ function VideoTable({ videos, showFilters, setShowFilters, hasActiveFilters, sel
                       </div>
                     </div>
                   </div>
+                    </>
+                  )}
                 </div>
               </div>
             ))}
