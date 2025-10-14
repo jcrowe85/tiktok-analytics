@@ -30,24 +30,38 @@ function Overview({ videos }: OverviewProps) {
   // Helper functions for custom date picker
   const handlePeriod1Change = (start: string, end: string) => {
     console.log('🔄 Period 1 change:', { start, end })
+    // If end date is empty or before start date, set end date to start date
+    const newEnd = (!end || end < start) ? start : end
     setCustomDateRange(prev => ({
       ...prev,
-      period1: { start, end }
+      period1: { start, end: newEnd }
     }))
     setTimePeriod('custom')
   }
 
   const handlePeriod2Change = (start: string, end: string) => {
     console.log('🔄 Period 2 change:', { start, end })
+    // If end date is empty or before start date, set end date to start date
+    const newEnd = (!end || end < start) ? start : end
     setCustomDateRange(prev => ({
       ...prev,
-      period2: { start, end }
+      period2: { start, end: newEnd }
     }))
     setTimePeriod('custom')
   }
 
   const formatDateForInput = (date: Date) => {
     return date.toISOString().split('T')[0]
+  }
+
+  const formatDateForDisplay = (dateString: string) => {
+    // Parse the date string and format it correctly to avoid timezone issues
+    const date = new Date(dateString + 'T00:00:00') // Add time to avoid timezone shift
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    })
   }
 
   const getDefaultDateRange = () => {
@@ -335,6 +349,7 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period1.end}
                     onChange={(e) => handlePeriod1Change(customDateRange.period1.start, e.target.value)}
+                    min={customDateRange.period1.start || undefined}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                     placeholder="End date"
                   />
@@ -344,7 +359,7 @@ function Overview({ videos }: OverviewProps) {
               {customDateRange.period1.start && customDateRange.period1.end && customDateRange.period1.start.trim() !== '' && customDateRange.period1.end.trim() !== '' && (
                 <div className="py-2 bg-blue-500/10 rounded text-xs text-blue-300">
                   <div className="px-3">
-                    {new Date(customDateRange.period1.start).toLocaleDateString()} - {new Date(customDateRange.period1.end).toLocaleDateString()}
+                    {formatDateForDisplay(customDateRange.period1.start)} - {formatDateForDisplay(customDateRange.period1.end)}
                   </div>
                 </div>
               )}
@@ -372,6 +387,7 @@ function Overview({ videos }: OverviewProps) {
                     type="date"
                     value={customDateRange.period2.end}
                     onChange={(e) => handlePeriod2Change(customDateRange.period2.start, e.target.value)}
+                    min={customDateRange.period2.start || undefined}
                     className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
                     placeholder="End date"
                   />
@@ -381,7 +397,7 @@ function Overview({ videos }: OverviewProps) {
               {customDateRange.period2.start && customDateRange.period2.end && customDateRange.period2.start.trim() !== '' && customDateRange.period2.end.trim() !== '' && (
                 <div className="py-2 bg-orange-500/10 rounded text-xs text-orange-300">
                   <div className="px-3">
-                    {new Date(customDateRange.period2.start).toLocaleDateString()} - {new Date(customDateRange.period2.end).toLocaleDateString()}
+                    {formatDateForDisplay(customDateRange.period2.start)} - {formatDateForDisplay(customDateRange.period2.end)}
                   </div>
                 </div>
               )}
