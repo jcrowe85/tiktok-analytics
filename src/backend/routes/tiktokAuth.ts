@@ -1,6 +1,7 @@
 import express from 'express';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { executeQuery } from '../database/connection.js';
 // import { refreshAccessToken } from '../oauth.js'; // Will be used for token refresh
 import type { TikTokAuthTokens } from '../types.js';
@@ -11,6 +12,25 @@ const router = express.Router();
 const TIKTOK_AUTH_URL = 'https://www.tiktok.com/v2/auth/authorize/';
 const TIKTOK_TOKEN_URL = 'https://open.tiktokapis.com/v2/oauth/token/';
 const SCOPES = ['user.info.basic', 'video.list'];
+
+/**
+ * Generate PKCE code verifier and challenge
+ */
+function generatePKCE() {
+  // Generate code verifier (43-128 characters, URL-safe)
+  const codeVerifier = crypto.randomBytes(32).toString('base64url');
+  
+  // Generate code challenge (SHA256 hash of verifier, base64url encoded)
+  const codeChallenge = crypto
+    .createHash('sha256')
+    .update(codeVerifier)
+    .digest('base64url');
+    
+  return {
+    codeVerifier,
+    codeChallenge
+  };
+}
 
 /**
  * Generate TikTok OAuth authorization URL for user
@@ -33,19 +53,24 @@ router.post('/connect-url', async (req, res) => {
 
     // Generate state parameter for security
     const state = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+    
+    // Generate PKCE parameters
+    const { codeVerifier, codeChallenge } = generatePKCE();
 
-    // Build authorization URL
+    // Build authorization URL with PKCE
     const authUrl = new URL(TIKTOK_AUTH_URL);
     authUrl.searchParams.append('client_key', process.env.TIKTOK_CLIENT_KEY!);
     authUrl.searchParams.append('scope', SCOPES.join(','));
     authUrl.searchParams.append('response_type', 'code');
     authUrl.searchParams.append('redirect_uri', `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/auth/tiktok/callback`);
     authUrl.searchParams.append('state', state);
+    authUrl.searchParams.append('code_challenge', codeChallenge);
+    authUrl.searchParams.append('code_challenge_method', 'S256');
 
-    // Store state in database temporarily (expires in 10 minutes)
+    // Store state and code verifier in database temporarily (expires in 10 minutes)
     await executeQuery(
-      'INSERT INTO user_oauth_states (user_id, state, expires_at) VALUES ($1, $2, $3)',
-      [userId, state, new Date(Date.now() + 10 * 60 * 1000)]
+      'INSERT INTO user_oauth_states (user_id, state, code_verifier, expires_at) VALUES ($1, $2, $3, $4)',
+      [userId, state, codeVerifier, new Date(Date.now() + 10 * 60 * 1000)]
     );
 
     res.json({ 
@@ -69,9 +94,9 @@ router.get('/callback', async (req, res) => {
       return res.status(400).send('Missing authorization code or state');
     }
 
-    // Verify state and get user ID
+    // Verify state and get user ID + code verifier
     const stateResult = await executeQuery(
-      'SELECT user_id FROM user_oauth_states WHERE state = $1 AND expires_at > NOW()',
+      'SELECT user_id, code_verifier FROM user_oauth_states WHERE state = $1 AND expires_at > NOW()',
       [state as string]
     ) as any;
 
@@ -80,12 +105,13 @@ router.get('/callback', async (req, res) => {
     }
 
     const userId = stateResult[0].user_id;
+    const codeVerifier = stateResult[0].code_verifier;
 
     // Clean up state
     await executeQuery('DELETE FROM user_oauth_states WHERE state = $1', [state as string]);
 
-    // Exchange code for tokens
-    const tokens = await exchangeCodeForTokens(code as string);
+    // Exchange code for tokens with PKCE
+    const tokens = await exchangeCodeForTokens(code as string, codeVerifier);
 
     // Get user info from TikTok
     const userInfo = await getTikTokUserInfo(tokens.access_token);
@@ -215,7 +241,7 @@ router.post('/disconnect', async (req, res) => {
 /**
  * Exchange authorization code for tokens
  */
-async function exchangeCodeForTokens(code: string): Promise<TikTokAuthTokens> {
+async function exchangeCodeForTokens(code: string, codeVerifier: string): Promise<TikTokAuthTokens> {
   const response = await axios.post(
     TIKTOK_TOKEN_URL,
     new URLSearchParams({
@@ -224,6 +250,7 @@ async function exchangeCodeForTokens(code: string): Promise<TikTokAuthTokens> {
       code,
       grant_type: 'authorization_code',
       redirect_uri: `${process.env.API_BASE_URL || 'http://localhost:3000'}/api/auth/tiktok/callback`,
+      code_verifier: codeVerifier,
     }),
     {
       headers: {
