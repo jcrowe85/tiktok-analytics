@@ -437,19 +437,19 @@ function Overview({ videos }: OverviewProps) {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
-                  <div className="flex items-baseline gap-3 mt-1">
+                  <div className="relative mt-1">
                     <p className="text-2xl font-bold text-white">{stat.value}</p>
                     {stat.comparison && (
-                      <div className="flex items-center gap-1">
+                      <div className="absolute -top-1 -right-1 flex items-center gap-1">
                         {stat.comparison.isNew ? (
-                          <FiZap className="w-3 h-3 text-blue-400" />
+                          <FiZap className="w-2 h-2 text-blue-400" />
                         ) : stat.comparison.isIncrease ? (
-                          <FiArrowUp className="w-3 h-3 text-green-400" />
+                          <FiArrowUp className="w-2 h-2 text-green-400" />
                         ) : (
-                          <FiArrowDown className="w-3 h-3 text-red-400" />
+                          <FiArrowDown className="w-2 h-2 text-red-400" />
                         )}
                         <span 
-                          className={`text-lg font-semibold ${
+                          className={`text-xs font-medium ${
                             stat.comparison.isNew ? 'text-blue-400' :
                             stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
                           }`}
