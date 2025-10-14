@@ -1,4 +1,4 @@
-import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity } from 'react-icons/fi'
+import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity, FiArrowUp, FiArrowDown } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
 
 interface OverviewProps {
@@ -6,6 +6,38 @@ interface OverviewProps {
 }
 
 function Overview({ videos }: OverviewProps) {
+  // Calculate 24-hour comparison metrics
+  const calculate24hComparison = (getValue: (video: VideoMetrics) => number) => {
+    const now = Date.now()
+    const yesterday = now - (24 * 60 * 60 * 1000)
+    const dayBefore = yesterday - (24 * 60 * 60 * 1000)
+    
+    // Videos from yesterday (last 24h)
+    const yesterdayVideos = videos.filter(v => {
+      const videoTime = new Date(v.posted_at_iso).getTime()
+      return videoTime >= yesterday && videoTime < now
+    })
+    
+    // Videos from day before yesterday (24-48h ago)
+    const dayBeforeVideos = videos.filter(v => {
+      const videoTime = new Date(v.posted_at_iso).getTime()
+      return videoTime >= dayBefore && videoTime < yesterday
+    })
+    
+    const yesterdayTotal = yesterdayVideos.reduce((sum, v) => sum + getValue(v), 0)
+    const dayBeforeTotal = dayBeforeVideos.reduce((sum, v) => sum + getValue(v), 0)
+    
+    if (dayBeforeTotal === 0) {
+      return yesterdayTotal > 0 ? { percentage: 100, isIncrease: true } : { percentage: 0, isIncrease: false }
+    }
+    
+    const percentage = ((yesterdayTotal - dayBeforeTotal) / dayBeforeTotal) * 100
+    return {
+      percentage: Math.abs(percentage),
+      isIncrease: percentage >= 0
+    }
+  }
+
   const totalViews = videos.reduce((sum, v) => sum + v.view_count, 0)
   const totalLikes = videos.reduce((sum, v) => sum + v.like_count, 0)
   const totalComments = videos.reduce((sum, v) => sum + v.comment_count, 0)
@@ -31,54 +63,68 @@ function Overview({ videos }: OverviewProps) {
   )
   const postsPerDay = recentVideos.length / 30
 
+  // Calculate 24h comparisons for each metric
+  const viewsComparison = calculate24hComparison(v => v.view_count)
+  const likesComparison = calculate24hComparison(v => v.like_count)
+  const commentsComparison = calculate24hComparison(v => v.comment_count)
+  const sharesComparison = calculate24hComparison(v => v.share_count)
+
   const stats = [
     {
       label: 'Total Views',
       value: totalViews.toLocaleString(),
       icon: FiEye,
       color: 'blue',
+      comparison: viewsComparison,
     },
     {
       label: 'Total Likes',
       value: totalLikes.toLocaleString(),
       icon: FiHeart,
       color: 'red',
+      comparison: likesComparison,
     },
     {
       label: 'Total Comments',
       value: totalComments.toLocaleString(),
       icon: FiMessageCircle,
       color: 'green',
+      comparison: commentsComparison,
     },
     {
       label: 'Total Shares',
       value: totalShares.toLocaleString(),
       icon: FiShare2,
       color: 'purple',
+      comparison: sharesComparison,
     },
     {
       label: 'Median Engagement',
       value: `${(medianER * 100).toFixed(2)}%`,
       icon: FiTrendingUp,
       color: 'indigo',
+      comparison: null, // Not applicable for median
     },
     {
       label: 'Avg Velocity (24h)',
       value: avgVelocity > 0 ? `${avgVelocity.toFixed(0)} views/hr` : 'N/A',
       icon: FiZap,
       color: 'yellow',
+      comparison: null, // Already a 24h metric
     },
     {
       label: 'Posts/Day (30d)',
       value: postsPerDay.toFixed(1),
       icon: FiCalendar,
       color: 'pink',
+      comparison: null, // 30-day average
     },
     {
       label: 'Total Videos',
       value: videos.length.toString(),
       icon: FiVideo,
       color: 'gray',
+      comparison: null, // Total count
     },
   ]
 
@@ -99,13 +145,43 @@ function Overview({ videos }: OverviewProps) {
               key={stat.label}
               className="glass-card p-4 glass-card-hover transition-all"
             >
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
                   <p className="text-2xl font-bold mt-1 text-white">{stat.value}</p>
                 </div>
                 <IconComponent className="w-6 h-6 text-white/50" />
               </div>
+              
+              {/* 24h Comparison Indicator */}
+              {stat.comparison && (
+                <div className="flex items-center gap-1 mt-2">
+                  {stat.comparison.isIncrease ? (
+                    <FiArrowUp className="w-3 h-3 text-green-400" />
+                  ) : (
+                    <FiArrowDown className="w-3 h-3 text-red-400" />
+                  )}
+                  <span 
+                    className={`text-xs font-medium ${
+                      stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
+                    }`}
+                  >
+                    {stat.comparison.percentage.toFixed(1)}% vs yesterday
+                  </span>
+                </div>
+              )}
+              
+              {/* Show "No data" for metrics without comparison */}
+              {stat.comparison === null && (
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-xs text-white/40">
+                    {stat.label.includes('Engagement') && '30-day median'}
+                    {stat.label.includes('Velocity') && 'Real-time metric'}
+                    {stat.label.includes('Posts/Day') && '30-day average'}
+                    {stat.label.includes('Total Videos') && 'All-time total'}
+                  </span>
+                </div>
+              )}
             </div>
           )
         })}
