@@ -9,21 +9,38 @@ interface OverviewProps {
 type TimePeriod = '24h' | '7d' | '30d' | 'custom'
 
 interface CustomDateRange {
-  start: string
-  end: string
+  period1: {
+    start: string
+    end: string
+  }
+  period2: {
+    start: string
+    end: string
+  }
 }
 
 function Overview({ videos }: OverviewProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('24h')
   const [customDateRange, setCustomDateRange] = useState<CustomDateRange>({
-    start: '',
-    end: ''
+    period1: { start: '', end: '' },
+    period2: { start: '', end: '' }
   })
   const [showCustomPicker, setShowCustomPicker] = useState(false)
 
   // Helper functions for custom date picker
-  const handleCustomDateChange = (start: string, end: string) => {
-    setCustomDateRange({ start, end })
+  const handlePeriod1Change = (start: string, end: string) => {
+    setCustomDateRange(prev => ({
+      ...prev,
+      period1: { start, end }
+    }))
+    setTimePeriod('custom')
+  }
+
+  const handlePeriod2Change = (start: string, end: string) => {
+    setCustomDateRange(prev => ({
+      ...prev,
+      period2: { start, end }
+    }))
     setTimePeriod('custom')
   }
 
@@ -34,9 +51,16 @@ function Overview({ videos }: OverviewProps) {
   const getDefaultDateRange = () => {
     const now = new Date()
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+    const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000))
     return {
-      start: formatDateForInput(thirtyDaysAgo),
-      end: formatDateForInput(now)
+      period1: {
+        start: formatDateForInput(thirtyDaysAgo),
+        end: formatDateForInput(now)
+      },
+      period2: {
+        start: formatDateForInput(sixtyDaysAgo),
+        end: formatDateForInput(thirtyDaysAgo)
+      }
     }
   }
 
@@ -49,17 +73,18 @@ function Overview({ videos }: OverviewProps) {
     let previousEnd: number
     let periodLabel: string
     
-    if (period === 'custom' && customDateRange.start && customDateRange.end) {
-      // Custom date range comparison
-      const customStart = new Date(customDateRange.start).getTime()
-      const customEnd = new Date(customDateRange.end).getTime()
-      const customDuration = customEnd - customStart
+    if (period === 'custom' && customDateRange.period1.start && customDateRange.period1.end && customDateRange.period2.start && customDateRange.period2.end) {
+      // Custom dual period comparison
+      const period1Start = new Date(customDateRange.period1.start).getTime()
+      const period1End = new Date(customDateRange.period1.end).getTime()
+      const period2Start = new Date(customDateRange.period2.start).getTime()
+      const period2End = new Date(customDateRange.period2.end).getTime()
       
-      recentStart = customStart
-      recentEnd = customEnd
-      previousStart = customStart - customDuration
-      previousEnd = customStart
-      periodLabel = 'vs previous period'
+      recentStart = period1Start
+      recentEnd = period1End
+      previousStart = period2Start
+      previousEnd = period2End
+      periodLabel = 'vs selected period'
     } else {
       // Standard time periods
       let periodMs: number
@@ -247,7 +272,7 @@ function Overview({ videos }: OverviewProps) {
             <button
               onClick={() => {
                 setShowCustomPicker(!showCustomPicker)
-                if (!showCustomPicker && !customDateRange.start) {
+                if (!showCustomPicker && (!customDateRange.period1.start || !customDateRange.period2.start)) {
                   const defaultRange = getDefaultDateRange()
                   setCustomDateRange(defaultRange)
                 }
@@ -265,91 +290,112 @@ function Overview({ videos }: OverviewProps) {
         </div>
       </div>
       
-      {/* Custom Date Range Picker Modal */}
+      {/* Custom Date Range Picker Container */}
       {showCustomPicker && (
-        <div 
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) {
-              setShowCustomPicker(false)
-              setTimePeriod('24h')
-            }
-          }}
-        >
-          <div 
-            className="glass-card p-6 border border-white/10 rounded-lg max-w-md w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Modal Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <FiCalendar className="w-5 h-5 text-white/70" />
-                <h3 className="text-lg font-semibold text-white">Custom Date Range</h3>
-              </div>
-              <button
-                onClick={() => {
-                  setShowCustomPicker(false)
-                  setTimePeriod('24h')
-                }}
-                className="text-white/40 hover:text-white/60 transition-colors"
-              >
-                ✕
-              </button>
+        <div className="mb-6 glass-card p-6 border border-white/10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <FiCalendar className="w-5 h-5 text-white/70" />
+              <h3 className="text-lg font-semibold text-white">Custom Period Comparison</h3>
             </div>
-            
-            {/* Date Inputs */}
-            <div className="space-y-4 mb-4">
-              <div className="flex flex-col">
-                <label className="text-sm text-white/70 mb-2">Start Date</label>
-                <input
-                  type="date"
-                  value={customDateRange.start}
-                  onChange={(e) => handleCustomDateChange(e.target.value, customDateRange.end)}
-                  className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
+            <button
+              onClick={() => {
+                setShowCustomPicker(false)
+                setTimePeriod('24h')
+              }}
+              className="text-white/40 hover:text-white/60 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Dual Calendar Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Period 1 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <h4 className="text-sm font-medium text-white">Period 1</h4>
               </div>
               
-              <div className="flex flex-col">
-                <label className="text-sm text-white/70 mb-2">End Date</label>
-                <input
-                  type="date"
-                  value={customDateRange.end}
-                  onChange={(e) => handleCustomDateChange(customDateRange.start, e.target.value)}
-                  className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                />
+              <div className="space-y-3">
+                <div className="flex flex-col">
+                  <label className="text-xs text-white/50 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.period1.start}
+                    onChange={(e) => handlePeriod1Change(e.target.value, customDateRange.period1.end)}
+                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-xs text-white/50 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.period1.end}
+                    onChange={(e) => handlePeriod1Change(customDateRange.period1.start, e.target.value)}
+                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  />
+                </div>
               </div>
+              
+              {customDateRange.period1.start && customDateRange.period1.end && (
+                <div className="p-2 bg-blue-500/10 rounded text-xs text-blue-300">
+                  {new Date(customDateRange.period1.start).toLocaleDateString()} - {new Date(customDateRange.period1.end).toLocaleDateString()}
+                </div>
+              )}
             </div>
             
-            {/* Comparison Info */}
-            {timePeriod === 'custom' && customDateRange.start && customDateRange.end && (
-              <div className="mb-4 p-3 bg-black/10 rounded-md">
-                <p className="text-xs text-white/60">
-                  Comparing: <span className="text-white/80">{new Date(customDateRange.start).toLocaleDateString()}</span> - <span className="text-white/80">{new Date(customDateRange.end).toLocaleDateString()}</span>
-                </p>
-                <p className="text-xs text-white/50 mt-1">vs previous period of same duration</p>
+            {/* Period 2 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <h4 className="text-sm font-medium text-white">Period 2</h4>
               </div>
-            )}
-            
-            {/* Modal Actions */}
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => {
-                  setShowCustomPicker(false)
-                  setTimePeriod('24h')
-                }}
-                className="px-4 py-2 text-sm text-white/60 hover:text-white/80 hover:bg-white/10 rounded-md transition-all"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => setShowCustomPicker(false)}
-                disabled={!customDateRange.start || !customDateRange.end}
-                className="px-4 py-2 text-sm bg-blue-600 hover:bg-blue-700 disabled:bg-white/10 disabled:text-white/40 text-white rounded-md transition-all"
-              >
-                Apply
-              </button>
+              
+              <div className="space-y-3">
+                <div className="flex flex-col">
+                  <label className="text-xs text-white/50 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.period2.start}
+                    onChange={(e) => handlePeriod2Change(e.target.value, customDateRange.period2.end)}
+                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  />
+                </div>
+                
+                <div className="flex flex-col">
+                  <label className="text-xs text-white/50 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    value={customDateRange.period2.end}
+                    onChange={(e) => handlePeriod2Change(customDateRange.period2.start, e.target.value)}
+                    className="px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                  />
+                </div>
+              </div>
+              
+              {customDateRange.period2.start && customDateRange.period2.end && (
+                <div className="p-2 bg-orange-500/10 rounded text-xs text-orange-300">
+                  {new Date(customDateRange.period2.start).toLocaleDateString()} - {new Date(customDateRange.period2.end).toLocaleDateString()}
+                </div>
+              )}
             </div>
           </div>
+          
+          {/* Comparison Info */}
+          {timePeriod === 'custom' && customDateRange.period1.start && customDateRange.period1.end && customDateRange.period2.start && customDateRange.period2.end && (
+            <div className="mt-6 p-4 bg-black/10 rounded-lg border border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <FiTrendingUp className="w-4 h-4 text-white/60" />
+                <span className="text-sm font-medium text-white/80">Comparison Active</span>
+              </div>
+              <p className="text-xs text-white/60">
+                Period 1 vs Period 2 comparison is now active. Metrics will show percentage changes between these two selected periods.
+              </p>
+            </div>
+          )}
         </div>
       )}
       
