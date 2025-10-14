@@ -38,11 +38,11 @@ router.get('/', async (req, res) => {
       WHERE id = $1
     `, [userId]) as any;
 
-    if (userResult.rows.length === 0) {
+    if (!userResult || userResult.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = userResult.rows[0];
+    const user = userResult[0];
 
     // Check if TikTok is connected
     if (!user.tiktok_access_token) {
@@ -237,11 +237,11 @@ router.post('/analyze', async (req, res) => {
       WHERE id = $1
     `, [userId]) as any;
 
-    if (userResult.rows.length === 0) {
+    if (!userResult || userResult.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const videosAllowed = userResult.rows[0].videos_allowed || 10;
+    const videosAllowed = userResult[0].videos_allowed || 10;
 
     // Count how many videos user has already analyzed
     const analyzedCountResult = await executeQuery(`
@@ -250,7 +250,7 @@ router.post('/analyze', async (req, res) => {
       WHERE user_id = $1
     `, [userId]) as any;
 
-    const analyzedCount = parseInt(analyzedCountResult.rows[0].count);
+    const analyzedCount = parseInt(analyzedCountResult[0].count);
 
     if (analyzedCount >= videosAllowed) {
       return res.status(402).json({ 
@@ -258,7 +258,7 @@ router.post('/analyze', async (req, res) => {
         message: `You can analyze up to ${videosAllowed} videos with your current plan. Upgrade to analyze more videos.`,
         analyzedCount,
         videosAllowed,
-        planType: userResult.rows[0].plan_type
+        planType: userResult[0].plan_type
       });
     }
 
@@ -269,13 +269,13 @@ router.post('/analyze', async (req, res) => {
       WHERE id = $1
     `, [userId]) as any;
 
-    if (tiktokResult.rows.length === 0 || !tiktokResult.rows[0].tiktok_access_token) {
+    if (!tiktokResult || tiktokResult.length === 0 || !tiktokResult[0].tiktok_access_token) {
       return res.status(400).json({ error: 'TikTok account not connected' });
     }
 
     const tiktokClient = new TikTokClient(
-      tiktokResult.rows[0].tiktok_access_token,
-      tiktokResult.rows[0].tiktok_refresh_token
+      tiktokResult[0].tiktok_access_token,
+      tiktokResult[0].tiktok_refresh_token
     );
 
     // Fetch videos and start analysis for the remaining allowed videos
@@ -306,7 +306,7 @@ router.post('/analyze', async (req, res) => {
       `, [
         video.id,
         userId,
-        video.username || tiktokResult.rows[0].tiktok_username,
+        video.username || tiktokResult[0].tiktok_username,
         video.view_count,
         video.like_count,
         video.comment_count,

@@ -129,7 +129,12 @@ router.get('/verify', async (req, res) => {
     const token = authHeader.substring(7);
 
     // Verify JWT token
-    const decoded = jwt.verify(token, JWT_SECRET) as any;
+    let decoded;
+    try {
+      decoded = jwt.verify(token, JWT_SECRET) as any;
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
 
     // Get user data
     const result = await executeQuery(

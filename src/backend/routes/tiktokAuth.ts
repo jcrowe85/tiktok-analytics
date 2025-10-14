@@ -75,11 +75,11 @@ router.get('/callback', async (req, res) => {
       [state as string]
     ) as any;
 
-    if (stateResult.rows.length === 0) {
+    if (!stateResult || stateResult.length === 0) {
       return res.status(400).send('Invalid or expired state parameter');
     }
 
-    const userId = stateResult.rows[0].user_id;
+    const userId = stateResult[0].user_id;
 
     // Clean up state
     await executeQuery('DELETE FROM user_oauth_states WHERE state = $1', [state as string]);
@@ -151,11 +151,11 @@ router.get('/status', async (req, res) => {
       WHERE id = $1
     `, [userId]) as any;
 
-    if (result.rows.length === 0) {
+    if (!result || result.length === 0) {
       return res.status(404).json({ error: 'User not found' });
     }
 
-    const user = result.rows[0];
+    const user = result[0];
     const isConnected = !!user.tiktok_username;
     const tokenExpired = user.tiktok_token_expires_at && new Date(user.tiktok_token_expires_at) < new Date();
 
