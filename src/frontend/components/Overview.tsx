@@ -438,7 +438,7 @@ function Overview({ videos }: OverviewProps) {
                 <div className="flex-1">
                   <p className="text-sm font-medium text-white/70">{stat.label}</p>
                   <div className="mt-1">
-                    <div className="relative inline-block">
+                    <div className="relative inline-block p-0 flex justify-start">
                       <p className="text-2xl font-bold text-white">{stat.value}</p>
                       {stat.comparison && (
                         <div className="absolute -top-2 -right-2 flex items-center gap-1">
