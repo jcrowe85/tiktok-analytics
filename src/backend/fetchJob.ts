@@ -118,7 +118,7 @@ async function runFetchJob(): Promise<void> {
           queuedCount++;
         } else if (video.share_url) {
           // Queue for regular video analysis
-          await addVideoForAnalysis(video.id, video.share_url);
+          await addVideoForAnalysis(video.id, undefined, video.share_url);
           console.log(`   🎥 Queued video ${video.id} for analysis`);
           queuedCount++;
         } else {

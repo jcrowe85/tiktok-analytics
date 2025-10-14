@@ -31,7 +31,7 @@ router.get('/', async (req, res) => {
         videos_allowed
       FROM users 
       WHERE id = $1
-    `, [userId]);
+    `, [userId]) as any;
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -119,44 +119,44 @@ router.get('/', async (req, res) => {
       // Combine real videos with placeholders
       const allVideosWithPlaceholders = [...videosToShow, ...placeholderVideos];
 
-      // Get existing analytics for videos that have been analyzed
-      const analyzedVideoIds = videosToShow.map(v => v.id);
-      let existingAnalytics: any[] = [];
+        // Get existing analytics for videos that have been analyzed
+        const analyzedVideoIds = videosToShow.map(v => v.id);
+        let existingAnalytics: any[] = [];
 
-      if (analyzedVideoIds.length > 0) {
-        const analyticsResult = await executeQuery(`
-          SELECT 
-            v.id,
-            v.view_count,
-            v.like_count,
-            v.comment_count,
-            v.share_count,
-            v.duration,
-            v.video_description,
-            v.cover_image_url,
-            v.share_url,
-            v.created_at,
-            v.updated_at,
-            ai.ai_status,
-            ai.ai_updated_at,
-            ai.engagement_score,
-            ai.viral_potential,
-            ai.content_quality,
-            ai.audience_analysis,
-            ai.optimization_suggestions,
-            ai.fix_suggestions,
-            ai.artifacts
-          FROM videos v
-          LEFT JOIN video_ai_analysis ai ON v.id = ai.video_id
-          WHERE v.id = ANY($1) AND v.user_id = $2
-          ORDER BY v.created_at DESC
-        `, [analyzedVideoIds, userId]);
+        if (analyzedVideoIds.length > 0) {
+          const analyticsResult = await executeQuery(`
+            SELECT 
+              v.id,
+              v.view_count,
+              v.like_count,
+              v.comment_count,
+              v.share_count,
+              v.duration,
+              v.video_description,
+              v.cover_image_url,
+              v.share_url,
+              v.created_at,
+              v.updated_at,
+              ai.ai_status,
+              ai.ai_updated_at,
+              ai.engagement_score,
+              ai.viral_potential,
+              ai.content_quality,
+              ai.audience_analysis,
+              ai.optimization_suggestions,
+              ai.fix_suggestions,
+              ai.artifacts
+            FROM videos v
+            LEFT JOIN video_ai_analysis ai ON v.id = ai.video_id
+            WHERE v.id = ANY($1) AND v.user_id = $2
+            ORDER BY v.created_at DESC
+          `, [analyzedVideoIds, userId]) as any;
 
-        existingAnalytics = analyticsResult.rows;
-      }
+          existingAnalytics = analyticsResult.rows;
+        }
 
       // Merge TikTok data with existing analytics
-      const mergedVideos = allVideosWithPlaceholders.map(video => {
+      const mergedVideos = allVideosWithPlaceholders.map((video: any) => {
         if (video.is_placeholder) {
           return video;
         }
@@ -225,7 +225,7 @@ router.post('/analyze', async (req, res) => {
       SELECT videos_allowed, plan_type
       FROM users 
       WHERE id = $1
-    `, [userId]);
+    `, [userId]) as any;
 
     if (userResult.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -238,7 +238,7 @@ router.post('/analyze', async (req, res) => {
       SELECT COUNT(*) as count
       FROM videos 
       WHERE user_id = $1
-    `, [userId]);
+    `, [userId]) as any;
 
     const analyzedCount = parseInt(analyzedCountResult.rows[0].count);
 
@@ -257,7 +257,7 @@ router.post('/analyze', async (req, res) => {
       SELECT tiktok_access_token, tiktok_refresh_token, tiktok_username
       FROM users 
       WHERE id = $1
-    `, [userId]);
+    `, [userId]) as any;
 
     if (tiktokResult.rows.length === 0 || !tiktokResult.rows[0].tiktok_access_token) {
       return res.status(400).json({ error: 'TikTok account not connected' });

@@ -57,6 +57,7 @@ try {
 // Queue configuration
 export interface JobData {
   videoId: string
+  userId?: number // User ID for user-specific videos
   videoUrl?: string // Optional for static content
   contentHash: string
   rulesVersion: number

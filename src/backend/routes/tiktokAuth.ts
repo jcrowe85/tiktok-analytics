@@ -2,7 +2,7 @@ import express from 'express';
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import { executeQuery } from '../database/connection.js';
-import { refreshAccessToken } from '../oauth.js';
+// import { refreshAccessToken } from '../oauth.js'; // Will be used for token refresh
 import type { TikTokAuthTokens } from '../types.js';
 
 const router = express.Router();
@@ -68,7 +68,7 @@ router.get('/callback', async (req, res) => {
     const stateResult = await executeQuery(
       'SELECT user_id FROM user_oauth_states WHERE state = $1 AND expires_at > NOW()',
       [state as string]
-    );
+    ) as any;
 
     if (stateResult.rows.length === 0) {
       return res.status(400).send('Invalid or expired state parameter');
@@ -139,7 +139,7 @@ router.get('/status', async (req, res) => {
         videos_allowed
       FROM users 
       WHERE id = $1
-    `, [userId]);
+    `, [userId]) as any;
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
