@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { FiMenu, FiX, FiBarChart, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile, FiLogOut, FiVideo } from 'react-icons/fi';
+import { FiMenu, FiX, FiSearch, FiSettings, FiUser, FiTrendingUp, FiFile, FiLogOut, FiVideo } from 'react-icons/fi';
 import { useAuth } from '../contexts/AuthContext';
 
 interface NavigationProps {
