@@ -2,6 +2,7 @@ import { Queue, Worker, Job } from 'bullmq'
 import { Redis } from 'ioredis'
 import dotenv from 'dotenv'
 
+console.log('🔧 Queue module loading...')
 dotenv.config()
 
 // Redis connection with error handling
@@ -24,6 +25,7 @@ try {
     
     // Initialize queues now that Redis is ready
     if (!aiAnalysisQueue) {
+      console.log('🚀 Initializing queues...');
       initializeQueues();
     }
   });

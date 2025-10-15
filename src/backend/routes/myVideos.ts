@@ -2,6 +2,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { executeQuery } from '../database/connection.js';
 import { TikTokClient } from '../tiktokClient.js';
+import { Queue } from 'bullmq';
 import { refreshAccessToken } from '../oauth.js';
 
 const router = express.Router();
@@ -530,7 +531,7 @@ router.post('/analyze-single', async (req, res) => {
     console.log(`📊 Video found: ${video.id}, share_url: ${video.share_url}`);
 
     // Queue the analysis job
-    const analysisQueue = new BullMQ.Queue('ai-analysis', {
+    const analysisQueue = new Queue('ai-analysis', {
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),
@@ -591,7 +592,7 @@ router.post('/analyze-bulk', async (req, res) => {
     console.log(`📊 Found ${videoResult.length} videos to analyze`);
 
     // Queue the analysis jobs
-    const analysisQueue = new BullMQ.Queue('ai-analysis', {
+    const analysisQueue = new Queue('ai-analysis', {
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
         port: parseInt(process.env.REDIS_PORT || '6379'),

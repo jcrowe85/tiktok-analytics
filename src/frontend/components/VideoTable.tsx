@@ -19,6 +19,10 @@ interface VideoTableProps {
   onAnalyzeVideo?: (videoId: string) => void
   analyzingVideoIds?: Set<string>
   selectMode?: boolean
+  setSelectMode?: (mode: boolean) => void
+  onToggleAll?: () => void
+  onAnalyzeSelected?: () => void
+  analyzing?: boolean
 }
 
 type SortKey = 'posted_at_iso' | 'view_count' | 'engagement_rate' | 'velocity_24h' | 'ai_overall_score' | 'ai_pass' | 'ai_revise' | 'ai_reshoot'
@@ -36,8 +40,6 @@ const scoreTooltips: Record<string, string> = {
 
 function VideoTable({ 
   videos, 
-  showFilters = false, 
-  setShowFilters = () => {}, 
   hasActiveFilters = () => false, 
   selectedVideo: externalSelectedVideo, 
   setSelectedVideo: externalSetSelectedVideo, 
@@ -47,11 +49,23 @@ function VideoTable({
   onToggleVideo,
   onAnalyzeVideo,
   analyzingVideoIds,
-  selectMode = false
+  selectMode = false,
+  setSelectMode,
+  onToggleAll,
+  onAnalyzeSelected,
+  analyzing = false
 }: VideoTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>('posted_at_iso')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [internalSelectedVideo, setInternalSelectedVideo] = useState<VideoMetrics | null>(null)
+  const [showFilterContainer, setShowFilterContainer] = useState(false)
+  
+  // Filter states
+  const [dateRange, setDateRange] = useState<{start: string, end: string}>({start: '', end: ''})
+  const [viewRange, setViewRange] = useState<{min: string, max: string}>({min: '', max: ''})
+  const [engagementRange, setEngagementRange] = useState<{min: string, max: string}>({min: '', max: ''})
+  const [aiScoreRange, setAiScoreRange] = useState<{min: string, max: string}>({min: '', max: ''})
+  const [analysisStatus, setAnalysisStatus] = useState<string>('all') // 'all', 'analyzed', 'not_analyzed'
   
   // Use external state if provided, otherwise use internal state
   const selectedVideo = externalSelectedVideo !== undefined ? externalSelectedVideo : internalSelectedVideo
@@ -86,8 +100,9 @@ function VideoTable({
   // }
 
 
-  // First filter videos based on AI quality selection
+  // Apply all filters
   const filteredVideos = videos.filter((video) => {
+    // AI quality filter (from sort selection)
     if (sortKey === 'ai_pass') {
       if (!video.ai_scores?.overall_100) return false
       return video.ai_scores.overall_100 >= 80
@@ -99,7 +114,46 @@ function VideoTable({
       if (!video.ai_scores?.overall_100) return false
       return video.ai_scores.overall_100 < 60
     }
-    return true // Show all videos for other sort options
+
+    // Date range filter
+    if (dateRange.start || dateRange.end) {
+      const videoDate = new Date(video.posted_at_iso)
+      if (dateRange.start) {
+        const startDate = new Date(dateRange.start)
+        if (videoDate < startDate) return false
+      }
+      if (dateRange.end) {
+        const endDate = new Date(dateRange.end)
+        if (videoDate > endDate) return false
+      }
+    }
+
+    // View count range filter
+    if (viewRange.min || viewRange.max) {
+      if (viewRange.min && video.view_count < parseInt(viewRange.min)) return false
+      if (viewRange.max && video.view_count > parseInt(viewRange.max)) return false
+    }
+
+    // Engagement rate range filter
+    if (engagementRange.min || engagementRange.max) {
+      const engagementPercent = video.engagement_rate * 100
+      if (engagementRange.min && engagementPercent < parseFloat(engagementRange.min)) return false
+      if (engagementRange.max && engagementPercent > parseFloat(engagementRange.max)) return false
+    }
+
+    // AI score range filter
+    if (aiScoreRange.min || aiScoreRange.max) {
+      const aiScore = video.ai_scores?.overall_100
+      if (!aiScore) return false
+      if (aiScoreRange.min && aiScore < parseInt(aiScoreRange.min)) return false
+      if (aiScoreRange.max && aiScore > parseInt(aiScoreRange.max)) return false
+    }
+
+    // Analysis status filter
+    if (analysisStatus === 'analyzed' && !video.ai_processed_at) return false
+    if (analysisStatus === 'not_analyzed' && video.ai_processed_at) return false
+
+    return true
   })
 
   // Then sort the filtered videos
@@ -417,31 +471,213 @@ function VideoTable({
             
             {/* Controls section - responsive layout */}
             <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-3">
-              {/* Filters button - only show if showFilters is true */}
-              {showFilters && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {/* Filter button - always show */}
                 <button
-                  onClick={() => setShowFilters(!showFilters)}
-                  className={`px-3 py-2 rounded-lg border transition-all flex items-center justify-center gap-2 w-full sm:w-auto ${
-                    showFilters || hasActiveFilters() 
-                      ? 'bg-blue-500/20 border-blue-500/30 text-blue-400' 
-                      : 'bg-white/5 hover:bg-white/10 border-white/10 text-white/80'
+                  onClick={() => setShowFilterContainer(!showFilterContainer)}
+                  className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-all ${
+                    showFilterContainer || hasActiveFilters() 
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' 
+                      : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                 >
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
-                  <span className="text-sm font-medium">
-                    Filters
-                  </span>
-                  {hasActiveFilters() && (
-                    <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+                  <span>Filters</span>
+                  {(hasActiveFilters() || dateRange.start || dateRange.end || viewRange.min || viewRange.max || engagementRange.min || engagementRange.max || aiScoreRange.min || aiScoreRange.max || analysisStatus !== 'all') && (
+                    <div className="w-2 h-2 bg-white rounded-full ml-1"></div>
                   )}
                 </button>
-              )}
-              
-              {/* Sort section */}
-              <div className="flex items-center gap-2 sm:gap-3">
-                <span className="text-sm text-white/70 whitespace-nowrap">Sort by:</span>
+
+                {/* Active Filter Badges */}
+                {dateRange.start && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs">
+                    <span>From: {new Date(dateRange.start).toLocaleDateString()}</span>
+                    <button
+                      onClick={() => setDateRange(prev => ({...prev, start: ''}))}
+                      className="hover:bg-blue-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {dateRange.end && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-blue-400 text-xs">
+                    <span>To: {new Date(dateRange.end).toLocaleDateString()}</span>
+                    <button
+                      onClick={() => setDateRange(prev => ({...prev, end: ''}))}
+                      className="hover:bg-blue-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {viewRange.min && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-xs">
+                    <span>Views ≥ {parseInt(viewRange.min).toLocaleString()}</span>
+                    <button
+                      onClick={() => setViewRange(prev => ({...prev, min: ''}))}
+                      className="hover:bg-green-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {viewRange.max && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-green-500/20 border border-green-500/30 rounded-lg text-green-400 text-xs">
+                    <span>Views ≤ {parseInt(viewRange.max).toLocaleString()}</span>
+                    <button
+                      onClick={() => setViewRange(prev => ({...prev, max: ''}))}
+                      className="hover:bg-green-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {engagementRange.min && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-xs">
+                    <span>Engagement ≥ {engagementRange.min}%</span>
+                    <button
+                      onClick={() => setEngagementRange(prev => ({...prev, min: ''}))}
+                      className="hover:bg-purple-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {engagementRange.max && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-purple-500/20 border border-purple-500/30 rounded-lg text-purple-400 text-xs">
+                    <span>Engagement ≤ {engagementRange.max}%</span>
+                    <button
+                      onClick={() => setEngagementRange(prev => ({...prev, max: ''}))}
+                      className="hover:bg-purple-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {aiScoreRange.min && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-xs">
+                    <span>AI Score ≥ {aiScoreRange.min}</span>
+                    <button
+                      onClick={() => setAiScoreRange(prev => ({...prev, min: ''}))}
+                      className="hover:bg-orange-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {aiScoreRange.max && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-orange-500/20 border border-orange-500/30 rounded-lg text-orange-400 text-xs">
+                    <span>AI Score ≤ {aiScoreRange.max}</span>
+                    <button
+                      onClick={() => setAiScoreRange(prev => ({...prev, max: ''}))}
+                      className="hover:bg-orange-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {analysisStatus !== 'all' && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-pink-500/20 border border-pink-500/30 rounded-lg text-pink-400 text-xs">
+                    <span>{analysisStatus === 'analyzed' ? 'Analyzed Only' : 'Not Analyzed'}</span>
+                    <button
+                      onClick={() => setAnalysisStatus('all')}
+                      className="hover:bg-pink-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+                {(sortKey !== 'posted_at_iso' || sortDirection !== 'desc') && (
+                  <div className="flex items-center gap-1 px-2 py-1 bg-indigo-500/20 border border-indigo-500/30 rounded-lg text-indigo-400 text-xs">
+                    <span>
+                      {sortKey === 'view_count' ? 'Most Views' :
+                       sortKey === 'engagement_rate' ? 'Best Engagement' :
+                       sortKey === 'velocity_24h' ? 'Highest Velocity' :
+                       sortKey === 'ai_overall_score' ? 'AI Score (High to Low)' :
+                       sortKey === 'ai_pass' ? '✅ Pass (80+)' :
+                       sortKey === 'ai_revise' ? '⚠️ Revise (60-79)' :
+                       sortKey === 'ai_reshoot' ? '❌ Reshoot (<60)' :
+                       'Latest First'}
+                    </span>
+                    <button
+                      onClick={() => {
+                        setSortKey('posted_at_iso')
+                        setSortDirection('desc')
+                      }}
+                      className="hover:bg-indigo-500/30 rounded-full p-0.5"
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Selection controls - only show if we have unanalyzed videos */}
+                {videos.filter(v => !v.ai_processed_at).length > 0 && (
+                  <button
+                    onClick={() => setSelectMode?.(!selectMode)}
+                    className={`flex items-center gap-1 px-3 py-1.5 text-sm rounded-lg transition-all ${
+                      selectMode 
+                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' 
+                        : 'bg-white/10 text-white hover:bg-white/20'
+                    }`}
+                  >
+                    {selectMode ? 'Exit Select' : 'Select Videos'}
+                  </button>
+                )}
+
+                {/* Selection action buttons when in select mode */}
+                {selectMode && (
+                  <>
+                    <button
+                      onClick={onToggleAll}
+                      className="flex items-center gap-1 px-2 py-1.5 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20 transition-colors"
+                    >
+                      {selectedVideos?.size === videos.filter(v => !v.ai_processed_at).length ? 'Deselect All' : 'Select All'}
+                    </button>
+                    <button
+                      onClick={onAnalyzeSelected}
+                      disabled={analyzing || selectedVideos?.size === 0}
+                      className="flex items-center gap-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-sm rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {analyzing ? 'Analyzing...' : `Analyze (${selectedVideos?.size || 0})`}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Container */}
+        {showFilterContainer && (
+          <div className="glass-card p-6 mb-4 border border-white/10">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Sort by */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">Sort by:</label>
                 <select 
                   value={`${sortKey}-${sortDirection}`}
                   onChange={(e) => {
@@ -449,7 +685,7 @@ function VideoTable({
                     setSortKey(key as SortKey)
                     setSortDirection(dir as SortDirection)
                   }}
-                  className="bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white w-full sm:w-auto min-w-[140px]"
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
                 >
                   <option value="posted_at_iso-desc">Latest First</option>
                   <option value="view_count-desc">Most Views</option>
@@ -462,9 +698,149 @@ function VideoTable({
                   <option value="ai_reshoot-desc">❌ Reshoot (&lt;60)</option>
                 </select>
               </div>
+
+              {/* Date Range */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">Date Range:</label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={dateRange.start}
+                    onChange={(e) => setDateRange(prev => ({...prev, start: e.target.value}))}
+                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
+                    placeholder="Start"
+                  />
+                  <input
+                    type="date"
+                    value={dateRange.end}
+                    onChange={(e) => setDateRange(prev => ({...prev, end: e.target.value}))}
+                    className="flex-1 bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
+                    placeholder="End"
+                  />
+                </div>
+              </div>
+
+              {/* View Count Range Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-white/70">View Count:</label>
+                  <span className="text-xs text-white/50">
+                    {viewRange.min ? parseInt(viewRange.min).toLocaleString() : '0'} - {viewRange.max ? parseInt(viewRange.max).toLocaleString() : '∞'}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000000"
+                    step="10000"
+                    value={viewRange.min || '0'}
+                    onChange={(e) => setViewRange(prev => ({...prev, min: e.target.value === '0' ? '' : e.target.value}))}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-green-500"
+                    style={{
+                      background: `linear-gradient(to right, #22c55e 0%, #22c55e ${(parseInt(viewRange.min || '0') / 10000000) * 100}%, rgba(255,255,255,0.1) ${(parseInt(viewRange.min || '0') / 10000000) * 100}%, rgba(255,255,255,0.1) 100%)`
+                    }}
+                  />
+                  <div className="flex items-center justify-between text-xs text-white/40">
+                    <span>Min: 0</span>
+                    <span>Max: 10M</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Engagement Rate Range Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-white/70">Engagement Rate:</label>
+                  <span className="text-xs text-white/50">
+                    {engagementRange.min || '0'}% - {engagementRange.max || '100'}%
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="0.5"
+                    value={engagementRange.min || '0'}
+                    onChange={(e) => setEngagementRange(prev => ({...prev, min: e.target.value === '0' ? '' : e.target.value}))}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    style={{
+                      background: `linear-gradient(to right, #a855f7 0%, #a855f7 ${parseFloat(engagementRange.min || '0')}%, rgba(255,255,255,0.1) ${parseFloat(engagementRange.min || '0')}%, rgba(255,255,255,0.1) 100%)`
+                    }}
+                  />
+                  <div className="flex items-center justify-between text-xs text-white/40">
+                    <span>Min: 0%</span>
+                    <span>Max: 100%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* AI Score Range Slider */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-white/70">AI Score:</label>
+                  <span className="text-xs text-white/50">
+                    {aiScoreRange.min || '0'} - {aiScoreRange.max || '100'}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={aiScoreRange.min || '0'}
+                    onChange={(e) => setAiScoreRange(prev => ({...prev, min: e.target.value === '0' ? '' : e.target.value}))}
+                    className="w-full h-2 bg-white/10 rounded-lg appearance-none cursor-pointer accent-orange-500"
+                    style={{
+                      background: `linear-gradient(to right, #f97316 0%, #f97316 ${parseInt(aiScoreRange.min || '0')}%, rgba(255,255,255,0.1) ${parseInt(aiScoreRange.min || '0')}%, rgba(255,255,255,0.1) 100%)`
+                    }}
+                  />
+                  <div className="flex items-center justify-between text-xs text-white/40">
+                    <span>Min: 0</span>
+                    <span>Max: 100</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Analysis Status */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-white/70">Analysis Status:</label>
+                <select
+                  value={analysisStatus}
+                  onChange={(e) => setAnalysisStatus(e.target.value)}
+                  className="w-full bg-white/10 border border-white/20 rounded-lg px-3 py-2 text-sm text-white"
+                >
+                  <option value="all">All Videos</option>
+                  <option value="analyzed">Analyzed Only</option>
+                  <option value="not_analyzed">Not Analyzed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Filter Summary */}
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+              <div className="text-sm text-white/60">
+                {sortedVideos.length} of {videos.length} videos
+              </div>
+              <button
+                onClick={() => {
+                  setDateRange({start: '', end: ''})
+                  setViewRange({min: '', max: ''})
+                  setEngagementRange({min: '', max: ''})
+                  setAiScoreRange({min: '', max: ''})
+                  setAnalysisStatus('all')
+                  setSortKey('posted_at_iso')
+                  setSortDirection('desc')
+                }}
+                className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 text-white/80 rounded-lg transition-colors"
+              >
+                Clear All Filters
+              </button>
             </div>
           </div>
-        </div>
+        )}
 
         <div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
@@ -553,14 +929,7 @@ function VideoTable({
                           </div>
                         </div>
                         <span className="text-sm text-white font-black">
-                          {(() => {
-                            console.log('🔍 VideoTable engagement:', { 
-                              id: video.id, 
-                              engagement_rate: video.engagement_rate,
-                              calculated: ((video.engagement_rate || 0) * 100).toFixed(1) + '%'
-                            });
-                            return ((video.engagement_rate || 0) * 100).toFixed(1) + '%';
-                          })()}
+                          {((video.engagement_rate || 0) * 100).toFixed(1)}%
                         </span>
                       </div>
                       <span className="text-[10px] text-white/40 uppercase tracking-wide font-medium">

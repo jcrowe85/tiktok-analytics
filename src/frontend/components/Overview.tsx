@@ -1,5 +1,5 @@
 import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity, FiArrowUp, FiArrowDown, FiClock } from 'react-icons/fi'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import type { VideoMetrics } from '../types'
 
 interface OverviewProps {
@@ -19,6 +19,37 @@ interface CustomDateRange {
   }
 }
 
+interface GrowthData {
+  views: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  likes: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  comments: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  shares: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+}
+
 function Overview({ videos }: OverviewProps) {
   const [timePeriod, setTimePeriod] = useState<TimePeriod>('24h')
   const [customDateRange, setCustomDateRange] = useState<CustomDateRange>({
@@ -26,6 +57,42 @@ function Overview({ videos }: OverviewProps) {
     period2: { start: '', end: '' }
   })
   const [showCustomPicker, setShowCustomPicker] = useState(false)
+  const [growthData, setGrowthData] = useState<GrowthData | null>(null)
+
+  // Fetch growth data from snapshot system
+  useEffect(() => {
+    const fetchGrowthData = async () => {
+      if (timePeriod === 'custom') return; // Skip for custom periods
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const periodMap = { '24h': 1, '7d': 7, '30d': 30 };
+        const days = periodMap[timePeriod];
+        
+        const response = await fetch(`/api/growth/${days}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`📊 Fetched ${timePeriod} growth data:`, data.growth);
+          setGrowthData(data.growth);
+        } else {
+          console.warn(`⚠️ Failed to fetch ${timePeriod} growth data:`, response.status);
+          setGrowthData(null);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching growth data:', error);
+        setGrowthData(null);
+      }
+    };
+
+    fetchGrowthData();
+  }, [timePeriod]);
 
   // Helper functions for custom date picker
   const handlePeriod1Change = (start: string, end: string) => {
@@ -87,114 +154,6 @@ function Overview({ videos }: OverviewProps) {
     }
   }
 
-  // Calculate period comparison based on selected time frame
-  // Compares videos posted in current period vs previous equivalent period
-  const calculatePeriodComparison = (getValue: (video: VideoMetrics) => number, period: TimePeriod) => {
-    const now = Date.now()
-    const startOfToday = new Date()
-    startOfToday.setHours(0, 0, 0, 0)
-    const startOfTodayMs = startOfToday.getTime()
-    
-    let currentPeriodStart: number
-    let currentPeriodEnd: number
-    let previousPeriodStart: number
-    let previousPeriodEnd: number
-    let periodLabel: string
-    
-    if (period === 'custom' && customDateRange.period1.start && customDateRange.period1.end && customDateRange.period2.start && customDateRange.period2.end) {
-      // Custom dual period comparison
-      currentPeriodStart = new Date(customDateRange.period1.start + 'T00:00:00').getTime()
-      currentPeriodEnd = new Date(customDateRange.period1.end + 'T23:59:59').getTime()
-      previousPeriodStart = new Date(customDateRange.period2.start + 'T00:00:00').getTime()
-      previousPeriodEnd = new Date(customDateRange.period2.end + 'T23:59:59').getTime()
-      periodLabel = 'vs selected period'
-    } else {
-      // Standard time periods - rolling comparison
-      switch (period) {
-        case '24h':
-          // Compare today so far vs yesterday same time
-          currentPeriodStart = startOfTodayMs
-          currentPeriodEnd = now
-          previousPeriodStart = startOfTodayMs - (24 * 60 * 60 * 1000)
-          previousPeriodEnd = previousPeriodStart + (now - currentPeriodStart) // Same duration as current period
-          periodLabel = 'vs yesterday'
-          break
-        case '7d':
-          // Compare this week so far vs last week same days
-          const currentDayOfWeek = startOfToday.getDay()
-          const daysFromStartOfWeek = currentDayOfWeek // 0 = Sunday
-          const startOfThisWeek = startOfTodayMs - (daysFromStartOfWeek * 24 * 60 * 60 * 1000)
-          
-          currentPeriodStart = startOfThisWeek
-          currentPeriodEnd = now
-          previousPeriodStart = startOfThisWeek - (7 * 24 * 60 * 60 * 1000)
-          previousPeriodEnd = previousPeriodStart + (now - currentPeriodStart) // Same duration as current period
-          periodLabel = 'vs last week'
-          break
-        case '30d':
-          // Compare this month so far vs last month same days
-          const startOfThisMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth(), 1).getTime()
-          
-          currentPeriodStart = startOfThisMonth
-          currentPeriodEnd = now
-          
-          // Previous month, same number of days from start
-          const startOfLastMonth = new Date(startOfToday.getFullYear(), startOfToday.getMonth() - 1, 1).getTime()
-          previousPeriodStart = startOfLastMonth
-          previousPeriodEnd = startOfLastMonth + (now - startOfThisMonth)
-          periodLabel = 'vs last month'
-          break
-        default:
-          return null
-      }
-    }
-    
-    // Filter videos posted during current period
-    const currentVideos = videos.filter(v => {
-      // Use create_time (actual TikTok posting date in seconds) if available, otherwise posted_at_iso
-      // create_time is in seconds, so convert to milliseconds
-      const videoTime = v.create_time ? v.create_time * 1000 : new Date(v.posted_at_iso).getTime()
-      return videoTime >= currentPeriodStart && videoTime <= currentPeriodEnd
-    })
-    
-    // Filter videos posted during previous period  
-    const previousVideos = videos.filter(v => {
-      // Use create_time (actual TikTok posting date in seconds) if available, otherwise posted_at_iso
-      // create_time is in seconds, so convert to milliseconds
-      const videoTime = v.create_time ? v.create_time * 1000 : new Date(v.posted_at_iso).getTime()
-      return videoTime >= previousPeriodStart && videoTime <= previousPeriodEnd
-    })
-    
-    // Sum metrics from videos in each period
-    const currentTotal = currentVideos.reduce((sum, v) => sum + getValue(v), 0)
-    const previousTotal = previousVideos.reduce((sum, v) => sum + getValue(v), 0)
-    
-    // If no previous data, show as new
-    if (previousTotal === 0 && currentTotal > 0) {
-      return { 
-        percentage: 100, 
-        isIncrease: true, 
-        isNew: true,
-        period: periodLabel,
-        count: currentVideos.length
-      }
-    }
-    
-    // If no data in either period, return null
-    if (previousTotal === 0 && currentTotal === 0) {
-      return null
-    }
-    
-    const percentage = ((currentTotal - previousTotal) / previousTotal) * 100
-    
-    return {
-      percentage: Math.abs(percentage),
-      isIncrease: percentage >= 0,
-      isNew: false,
-      period: periodLabel,
-      count: currentVideos.length
-    }
-  }
 
   const totalViews = videos.reduce((sum, v) => sum + v.view_count, 0)
   const totalLikes = videos.reduce((sum, v) => sum + v.like_count, 0)
@@ -221,11 +180,38 @@ function Overview({ videos }: OverviewProps) {
   )
   const postsPerDay = recentVideos.length / 30
 
-  // Calculate period comparisons for each metric based on selected time period
-  const viewsComparison = calculatePeriodComparison(v => v.view_count, timePeriod)
-  const likesComparison = calculatePeriodComparison(v => v.like_count, timePeriod)
-  const commentsComparison = calculatePeriodComparison(v => v.comment_count, timePeriod)
-  const sharesComparison = calculatePeriodComparison(v => v.share_count, timePeriod)
+  // Use snapshot-based growth data for accurate comparisons
+  const viewsComparison = growthData?.views ? {
+    percentage: growthData.views.percentage,
+    isIncrease: growthData.views.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const likesComparison = growthData?.likes ? {
+    percentage: growthData.likes.percentage,
+    isIncrease: growthData.likes.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const commentsComparison = growthData?.comments ? {
+    percentage: growthData.comments.percentage,
+    isIncrease: growthData.comments.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const sharesComparison = growthData?.shares ? {
+    percentage: growthData.shares.percentage,
+    isIncrease: growthData.shares.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
 
   const stats = [
     {

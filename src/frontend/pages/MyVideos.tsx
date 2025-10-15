@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import VideoTable from '../components/VideoTable';
 import Overview from '../components/Overview';
 import { TikTokConnection } from '../components/TikTokConnection';
-import { FiRefreshCw, FiAlertCircle, FiZap, FiX } from 'react-icons/fi';
+import { FiRefreshCw, FiAlertCircle, FiX } from 'react-icons/fi';
 import type { VideoMetrics } from '../types';
 
 interface MyVideosData {
@@ -29,20 +29,9 @@ const convertToVideoMetrics = (video: any): VideoMetrics => ({
   like_count: video.like_count || 0,
   comment_count: video.comment_count || 0,
   share_count: video.share_count || 0,
-  engagement_rate: (() => {
-    const total = (video.like_count || 0) + (video.comment_count || 0) + (video.share_count || 0);
-    const rate = video.view_count > 0 ? total / video.view_count : 0;
-    console.log('🔍 Engagement calc:', { 
-      id: video.id, 
-      view_count: video.view_count, 
-      like_count: video.like_count, 
-      comment_count: video.comment_count, 
-      share_count: video.share_count, 
-      total, 
-      rate: (rate * 100).toFixed(2) + '%' 
-    });
-    return rate;
-  })(),
+  engagement_rate: video.view_count > 0 
+    ? ((video.like_count || 0) + (video.comment_count || 0) + (video.share_count || 0)) / video.view_count 
+    : 0,
   like_rate: video.view_count > 0 ? video.like_count / video.view_count : 0,
   comment_rate: video.view_count > 0 ? video.comment_count / video.view_count : 0,
   share_rate: video.view_count > 0 ? video.share_count / video.view_count : 0,
@@ -341,7 +330,7 @@ export const MyVideos: React.FC = () => {
                 <h1 className="text-3xl font-bold text-white mb-2">My Videos</h1>
                 <p className="text-white/60 text-sm">
                   {data?.connected ? (
-                    `Connected as @${data.username} • Analyze your TikTok videos with AI insights`
+                    `Connected as @${data.username} • Get AI insights`
                   ) : (
                     'Connect your TikTok account to analyze your videos'
                   )}
@@ -402,69 +391,23 @@ export const MyVideos: React.FC = () => {
                   </div>
                 )}
 
-                {/* Action Buttons - Only show if there are videos */}
-                {data && data.videos && data.videos.length > 0 && data.videos.filter(v => !v.ai_processed_at).length > 0 && (
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-4">
-                      <button
-                        onClick={() => {
-                          setSelectMode(!selectMode);
-                          if (!selectMode) {
-                            setSelectedVideos(new Set());
-                          }
-                        }}
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                          selectMode 
-                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25' 
-                            : 'bg-white/10 text-white hover:bg-white/20'
-                        }`}
-                      >
-                        {selectMode ? 'Exit Select Mode' : 'Select Videos'}
-                      </button>
-
-                      {selectMode && (
-                        <>
-                          <button
-                            onClick={handleToggleAll}
-                            className="flex items-center gap-2 px-4 py-2 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors"
-                          >
-                            {selectedVideos.size === data.videos.filter(v => !v.ai_processed_at).length ? 'Deselect All' : 'Select All'}
-                          </button>
-
-                          <button
-                            onClick={handleAnalyzeSelected}
-                            disabled={analyzing || selectedVideos.size === 0}
-                            className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:shadow-lg hover:shadow-blue-500/25 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                          >
-                            {analyzing ? (
-                              <FiRefreshCw className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <FiZap className="w-4 h-4" />
-                            )}
-                            {analyzing ? 'Analyzing...' : `Analyze Selected (${selectedVideos.size})`}
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    <div className="text-sm text-white/60">
-                      {data.videos.filter(v => v.ai_processed_at).length} of {data.videos.length} analyzed
-                    </div>
-                  </div>
-                )}
 
                 {/* Videos Table or No Videos Found */}
                 {data && data.videos && data.videos.length > 0 ? (
-                  <VideoTable
-                    videos={data.videos.map(convertToVideoMetrics)}
-                    onVideoUpdate={handleVideoUpdate}
-                    title="Your TikTok Videos"
-                    selectedVideos={selectedVideos}
-                    onToggleVideo={handleToggleVideo}
-                    onAnalyzeVideo={handleAnalyzeVideo}
-                    analyzingVideoIds={analyzingVideoIds}
-                    selectMode={selectMode}
-                  />
+                <VideoTable
+                  videos={data.videos.map(convertToVideoMetrics)}
+                  onVideoUpdate={handleVideoUpdate}
+                  title="Your TikTok Videos"
+                  selectedVideos={selectedVideos}
+                  onToggleVideo={handleToggleVideo}
+                  onAnalyzeVideo={handleAnalyzeVideo}
+                  analyzingVideoIds={analyzingVideoIds}
+                  selectMode={selectMode}
+                  setSelectMode={setSelectMode}
+                  onToggleAll={handleToggleAll}
+                  onAnalyzeSelected={handleAnalyzeSelected}
+                  analyzing={analyzing}
+                />
                 ) : (
                   <div className="glass-card p-8 text-center">
                     <div className="w-16 h-16 bg-gradient-to-br from-pink-500 to-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">

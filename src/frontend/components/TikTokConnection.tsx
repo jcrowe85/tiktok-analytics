@@ -177,7 +177,7 @@ export const TikTokConnection: React.FC<TikTokConnectionProps> = ({ onConnection
             </div>
             <div>
               <p className="text-white font-medium">Connect Your TikTok Account</p>
-              <p className="text-white/60 text-sm">Analyze your own videos with AI insights</p>
+              <p className="text-white/60 text-sm">Get AI insights</p>
             </div>
           </div>
           <button

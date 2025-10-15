@@ -9,7 +9,13 @@ import adhocRoutes from './routes/adhoc.ts';
 import authRoutes from './routes/auth.ts';
 import tiktokAuthRoutes from './routes/tiktokAuth.ts';
 import myVideosRoutes from './routes/myVideos.ts';
+import growthRoutes from './routes/growth.ts';
 import { testDatabaseConnection, executeQuery } from './database/connection.ts';
+// Start the workers manually
+console.log('🔧 Starting AI analysis worker...');
+import('./queue/queue.js').catch(err => {
+  console.error('❌ Failed to load queue workers:', err);
+});
 import axios from 'axios';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -198,6 +204,9 @@ app.get('/callback', async (req, res) => {
 // User's own videos routes
 app.use('/api/my-videos', myVideosRoutes);
 
+// Growth metrics routes
+app.use('/api/growth', growthRoutes);
+
 // Image proxy routes
 app.use('/api/images', imageRoutes);
 
@@ -302,14 +311,34 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-// Serve static files from dist directory (after all API routes and /callback)
-app.use(express.static(path.join(__dirname, '../../dist')));
+// Serve static files from dist directory with aggressive cache busting
+app.use(express.static(path.join(__dirname, '../../dist'), {
+  etag: false, // Disable ETags
+  lastModified: false, // Disable Last-Modified
+  setHeaders: (res, filePath) => {
+    // Force no-cache for HTML files
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
+    }
+    // Force revalidation for JS/CSS but allow caching with version check
+    else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
+      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+    }
+  }
+}));
 
 /**
  * Serve React SPA for all non-API routes
  * This ensures client-side routing works on refresh
  */
 app.get('*', (_req, res) => {
+  // Force no-cache on HTML responses
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, '../../dist/index.html'));
 });
 

@@ -167,8 +167,9 @@ function AdHocPage() {
             {/* Page Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
+                <h1 className="text-3xl font-bold text-white mb-2">Analyze URL</h1>
                 <p className="text-white/60 text-sm">
-                  Analyze competitors and external videos
+                  Analyze competitors and external videos with AI insights
                 </p>
               </div>
               <div className="px-3 py-1.5 sm:px-4 sm:py-2 bg-white/5 rounded-xl border border-white/10">
