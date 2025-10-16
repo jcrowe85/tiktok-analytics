@@ -2,7 +2,7 @@ import dotenv from 'dotenv';
 import { TikTokClient } from './tiktokClient.js';
 import { enrichVideoWithKPIs, createSnapshot } from './kpis.js';
 import { writeCSV, writeJSON, loadSnapshots, appendSnapshots } from './persist.js';
-import { addVideoForAnalysis, addStaticContentForAnalysis } from './queue/queue.js';
+// AI analysis imports removed - now manual user selection
 import { executeQuery, upsertVideo } from './database/connection.js';
 
 dotenv.config();
@@ -14,18 +14,40 @@ async function runFetchJob(): Promise<void> {
   console.log('\n🎯 TikTok Analytics Fetch Job\n');
   console.log('════════════════════════════════════════\n');
 
-  const accessToken = process.env.TIKTOK_ACCESS_TOKEN;
-  const refreshToken = process.env.TIKTOK_REFRESH_TOKEN;
-
-  if (!accessToken || !refreshToken) {
-    console.error('❌ Error: Missing access tokens');
-    console.error('   Run "npm run auth" first to authenticate with TikTok');
-    process.exit(1);
-  }
-
   try {
-    // Initialize client
-    const client = new TikTokClient(accessToken, refreshToken);
+    // Get the most recent TikTok connection from database
+    const users = await executeQuery(`
+      SELECT id, tiktok_access_token, tiktok_refresh_token, tiktok_username, tiktok_token_expires_at
+      FROM users 
+      WHERE tiktok_access_token IS NOT NULL 
+      ORDER BY tiktok_connected_at DESC 
+      LIMIT 1
+    `);
+
+    if (!users || users.length === 0) {
+      console.error('❌ Error: No TikTok connections found in database');
+      console.error('   Please authenticate through the web interface first');
+      process.exit(1);
+    }
+
+    const user = users[0];
+    console.log(`🔗 Using TikTok connection for user: ${user.tiktok_username} (ID: ${user.id})`);
+
+    // Check if token is expired
+    const tokenExpired = user.tiktok_token_expires_at && new Date(user.tiktok_token_expires_at) < new Date();
+    let accessToken = user.tiktok_access_token;
+    let refreshToken = user.tiktok_refresh_token;
+
+    if (tokenExpired) {
+      console.log('🔄 Token expired, refreshing...');
+      const { refreshAccessToken } = await import('./oauth.js');
+      const tokens = await refreshAccessToken(refreshToken, user.id);
+      accessToken = tokens.access_token;
+      refreshToken = tokens.refresh_token;
+    }
+
+    // Initialize client with userId for proper token refresh
+    const client = new TikTokClient(accessToken, refreshToken, user.id);
 
     // Get user info (username)
     console.log('🚩 Step 3: Fetch user info');
@@ -60,6 +82,7 @@ async function runFetchJob(): Promise<void> {
     for (const video of enrichedVideos) {
       await upsertVideo({
         id: video.id,
+        user_id: user.id, // Associate videos with the user
         username: video.username,
         caption: video.caption,
         video_description: video.video_description,
@@ -89,55 +112,10 @@ async function runFetchJob(): Promise<void> {
     writeJSON(enrichedVideos);
     appendSnapshots(newSnapshots);
 
-    // Queue new videos for AI analysis
-    console.log('🚩 Step 8: Queue videos for AI analysis');
-    let queuedCount = 0;
-    let skippedCount = 0;
-    let alreadyAnalyzedCount = 0;
-    
-    // Get list of videos that already have AI analysis
-    const existingAnalyses = await executeQuery(
-      'SELECT video_id FROM video_ai_analysis WHERE status = $1',
-      ['completed']
-    );
-    const analyzedVideoIds = new Set(existingAnalyses.map(row => row.video_id));
-    
-    for (const video of enrichedVideos) {
-      // Skip if already analyzed
-      if (analyzedVideoIds.has(video.id)) {
-        alreadyAnalyzedCount++;
-        continue;
-      }
-      
-      try {
-        // Check if this is static content or carousel (duration = 0)
-        if (video.duration === 0 || !video.duration) {
-          // Queue for static content analysis
-          await addStaticContentForAnalysis(video.id, video.caption, video.cover_image_url);
-          console.log(`   📸 Queued static content ${video.id} for analysis`);
-          queuedCount++;
-        } else if (video.share_url) {
-          // Queue for regular video analysis
-          await addVideoForAnalysis(video.id, undefined, video.share_url);
-          console.log(`   🎥 Queued video ${video.id} for analysis`);
-          queuedCount++;
-        } else {
-          console.log(`   ⚠️  Skipping video ${video.id}: No share_url available`);
-          skippedCount++;
-        }
-      } catch (error) {
-        console.log(`   ⚠️  Failed to queue video ${video.id}: ${error instanceof Error ? error.message : 'Unknown error'}`);
-        skippedCount++;
-      }
-    }
-    
-    console.log(`   ✅ Queued ${queuedCount} new videos for AI analysis`);
-    if (alreadyAnalyzedCount > 0) {
-      console.log(`   ℹ️  Skipped ${alreadyAnalyzedCount} videos (already analyzed)`);
-    }
-    if (skippedCount > 0) {
-      console.log(`   ⚠️  Skipped ${skippedCount} videos (missing share_url or queue errors)`);
-    }
+    // AI analysis is now manual - users select videos to analyze
+    console.log('🚩 Step 8: Data fetch complete - AI analysis available on demand');
+    console.log(`   📊 Fetched ${enrichedVideos.length} videos with latest metrics`);
+    console.log(`   🤖 AI analysis available via user selection in the dashboard`);
 
     // Summary stats
     console.log('\n📊 Summary Statistics');
@@ -157,11 +135,11 @@ async function runFetchJob(): Promise<void> {
     console.log(`   Total Comments: ${totalComments.toLocaleString()}`);
     console.log(`   Total Shares: ${totalShares.toLocaleString()}`);
     console.log(`   Median Engagement Rate: ${(medianER * 100).toFixed(2)}%`);
-    console.log(`   AI Analysis Queued: ${queuedCount} videos`);
+    console.log(`   AI Analysis: Available on demand via dashboard`);
 
     console.log('\n✅ Fetch job complete!');
-    console.log('   📊 Data saved to data/data.json and data/videos.csv');
-    console.log('   🤖 AI analysis jobs queued and processing in background');
+    console.log('   📊 Data saved to database with latest TikTok metrics');
+    console.log('   🤖 AI analysis available via user selection in dashboard');
     console.log('   🌐 Run "npm run dev" to view the dashboard\n');
 
   } catch (error) {

@@ -80,6 +80,7 @@ export async function executeTransaction<T>(
 // Insert or update video
 export async function upsertVideo(videoData: {
   id: string
+  user_id?: number
   username?: string
   caption: string
   video_description?: string
@@ -110,14 +111,15 @@ export async function upsertVideo(videoData: {
 }) {
   const query = `
     INSERT INTO videos (
-      id, username, caption, video_description, hashtags, posted_at_iso, create_time,
+      id, user_id, username, caption, video_description, hashtags, posted_at_iso, create_time,
       duration, view_count, like_count, comment_count, share_count,
       engagement_rate, like_rate, comment_rate, share_rate,
       views_24h, velocity_24h, share_url, embed_link, cover_image_url,
       video_title, author_username, author_nickname, author_avatar_url, music_title, music_artist
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28)
     ON CONFLICT (id) 
     DO UPDATE SET
+      user_id = EXCLUDED.user_id,
       username = EXCLUDED.username,
       caption = EXCLUDED.caption,
       video_description = EXCLUDED.video_description,
@@ -150,6 +152,7 @@ export async function upsertVideo(videoData: {
   
   const values = [
     videoData.id,
+    videoData.user_id || null,
     videoData.username || null,
     videoData.caption,
     videoData.video_description || videoData.caption, // Fallback to caption

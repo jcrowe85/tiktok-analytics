@@ -1,0 +1,502 @@
+import { FiEye, FiHeart, FiMessageCircle, FiShare2, FiTrendingUp, FiZap, FiCalendar, FiVideo, FiActivity, FiArrowUp, FiArrowDown, FiClock } from 'react-icons/fi'
+import { useState, useEffect } from 'react'
+import type { VideoMetrics } from '../types'
+
+interface OverviewProps {
+  videos: VideoMetrics[]
+}
+
+type TimePeriod = '24h' | '7d' | '30d' | 'custom'
+
+interface CustomDateRange {
+  period1: {
+    start: string
+    end: string
+  }
+  period2: {
+    start: string
+    end: string
+  }
+}
+
+interface GrowthData {
+  views: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  likes: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  comments: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+  shares: {
+    current: number;
+    previous: number;
+    growth: number;
+    percentage: number;
+    isIncrease: boolean;
+  } | null;
+}
+
+function Overview({ videos }: OverviewProps) {
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('24h')
+  const [customDateRange, setCustomDateRange] = useState<CustomDateRange>({
+    period1: { start: '', end: '' },
+    period2: { start: '', end: '' }
+  })
+  const [showCustomPicker, setShowCustomPicker] = useState(false)
+  const [growthData, setGrowthData] = useState<GrowthData | null>(null)
+
+  // Fetch growth data from snapshot system
+  useEffect(() => {
+    const fetchGrowthData = async () => {
+      if (timePeriod === 'custom') return; // Skip for custom periods
+      
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const periodMap = { '24h': 1, '7d': 7, '30d': 30 };
+        const days = periodMap[timePeriod];
+        
+        const response = await fetch(`/api/growth/${days}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`📊 Fetched ${timePeriod} growth data:`, data.growth);
+          setGrowthData(data.growth);
+        } else {
+          console.warn(`⚠️ Failed to fetch ${timePeriod} growth data:`, response.status);
+          setGrowthData(null);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching growth data:', error);
+        setGrowthData(null);
+      }
+    };
+
+    fetchGrowthData();
+  }, [timePeriod]);
+
+  // Helper functions for custom date picker
+  const handlePeriod1Change = (start: string, end: string) => {
+    console.log('🔄 Period 1 change:', { start, end })
+    // If start date changed and end date is empty or before start date, set end date to start date
+    let newEnd = end
+    if (start && (!end || end < start)) {
+      newEnd = start
+    }
+    setCustomDateRange(prev => ({
+      ...prev,
+      period1: { start, end: newEnd }
+    }))
+    setTimePeriod('custom')
+  }
+
+  const handlePeriod2Change = (start: string, end: string) => {
+    console.log('🔄 Period 2 change:', { start, end })
+    // If start date changed and end date is empty or before start date, set end date to start date
+    let newEnd = end
+    if (start && (!end || end < start)) {
+      newEnd = start
+    }
+    setCustomDateRange(prev => ({
+      ...prev,
+      period2: { start, end: newEnd }
+    }))
+    setTimePeriod('custom')
+  }
+
+  const formatDateForInput = (date: Date) => {
+    return date.toISOString().split('T')[0]
+  }
+
+  const formatDateForDisplay = (dateString: string) => {
+    // Parse the date string and format it correctly to avoid timezone issues
+    const date = new Date(dateString + 'T00:00:00') // Add time to avoid timezone shift
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    })
+  }
+
+
+  const getDefaultDateRange = () => {
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000))
+    const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000))
+    return {
+      period1: {
+        start: formatDateForInput(thirtyDaysAgo),
+        end: formatDateForInput(now)
+      },
+      period2: {
+        start: formatDateForInput(sixtyDaysAgo),
+        end: formatDateForInput(thirtyDaysAgo)
+      }
+    }
+  }
+
+
+  const totalViews = videos.reduce((sum, v) => sum + v.view_count, 0)
+  const totalLikes = videos.reduce((sum, v) => sum + v.like_count, 0)
+  const totalComments = videos.reduce((sum, v) => sum + v.comment_count, 0)
+  const totalShares = videos.reduce((sum, v) => sum + v.share_count, 0)
+
+  // Calculate median engagement rate
+  const engagementRates = videos.map(v => v.engagement_rate).sort((a, b) => a - b)
+  const medianER = engagementRates[Math.floor(engagementRates.length / 2)] || 0
+
+  // Calculate average 24h velocity
+  const velocities = videos
+    .filter(v => v.velocity_24h !== undefined && v.velocity_24h > 0)
+    .map(v => v.velocity_24h!)
+  const avgVelocity = velocities.length > 0
+    ? velocities.reduce((sum, v) => sum + v, 0) / velocities.length
+    : 0
+
+  // Calculate posts per day (last 30 days)
+  const now = Date.now()
+  const thirtyDaysAgo = now - (30 * 24 * 60 * 60 * 1000)
+  const recentVideos = videos.filter(v => 
+    new Date(v.posted_at_iso).getTime() >= thirtyDaysAgo
+  )
+  const postsPerDay = recentVideos.length / 30
+
+  // Use snapshot-based growth data for accurate comparisons
+  const viewsComparison = growthData?.views ? {
+    percentage: growthData.views.percentage,
+    isIncrease: growthData.views.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const likesComparison = growthData?.likes ? {
+    percentage: growthData.likes.percentage,
+    isIncrease: growthData.likes.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const commentsComparison = growthData?.comments ? {
+    percentage: growthData.comments.percentage,
+    isIncrease: growthData.comments.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+  
+  const sharesComparison = growthData?.shares ? {
+    percentage: growthData.shares.percentage,
+    isIncrease: growthData.shares.isIncrease,
+    isNew: false,
+    period: timePeriod === '24h' ? 'vs yesterday' : timePeriod === '7d' ? 'vs last week' : 'vs last month',
+    count: videos.length
+  } : null;
+
+  const stats = [
+    {
+      label: 'Total Views',
+      value: totalViews.toLocaleString(),
+      icon: FiEye,
+      color: 'blue',
+      comparison: viewsComparison,
+    },
+    {
+      label: 'Total Likes',
+      value: totalLikes.toLocaleString(),
+      icon: FiHeart,
+      color: 'red',
+      comparison: likesComparison,
+    },
+    {
+      label: 'Total Comments',
+      value: totalComments.toLocaleString(),
+      icon: FiMessageCircle,
+      color: 'green',
+      comparison: commentsComparison,
+    },
+    {
+      label: 'Total Shares',
+      value: totalShares.toLocaleString(),
+      icon: FiShare2,
+      color: 'purple',
+      comparison: sharesComparison,
+    },
+    {
+      label: 'Median Engagement',
+      value: `${(medianER * 100).toFixed(2)}%`,
+      icon: FiTrendingUp,
+      color: 'indigo',
+      comparison: null, // Not applicable for median
+    },
+    {
+      label: 'Avg Velocity (24h)',
+      value: avgVelocity > 0 ? `${avgVelocity.toFixed(0)} views/hr` : 'N/A',
+      icon: FiZap,
+      color: 'yellow',
+      comparison: null, // Already a 24h metric
+    },
+    {
+      label: 'Posts/Day (30d)',
+      value: postsPerDay.toFixed(1),
+      icon: FiCalendar,
+      color: 'pink',
+      comparison: null, // 30-day average
+    },
+    {
+      label: 'Total Videos',
+      value: videos.length.toString(),
+      icon: FiVideo,
+      color: 'gray',
+      comparison: null, // Total count
+    },
+  ]
+
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full flex items-center justify-center glass-card">
+            <FiActivity className="w-4 h-4 text-white" />
+          </div>
+          <h2 className="text-xl font-bold text-white">Performance Overview</h2>
+        </div>
+        
+        {/* Time Period Selector */}
+        <div className="flex items-center gap-2">
+          <FiClock className="w-4 h-4 text-white/50" />
+          <div className="flex bg-black/20 backdrop-blur-sm rounded-lg p-1 border border-white/10">
+            {(['24h', '7d', '30d'] as TimePeriod[]).map((period) => (
+              <button
+                key={period}
+                onClick={() => {
+                  setTimePeriod(period)
+                  setShowCustomPicker(false)
+                }}
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${
+                  timePeriod === period
+                    ? 'bg-white/20 text-white'
+                    : 'text-white/60 hover:text-white/80 hover:bg-white/10'
+                }`}
+              >
+                {period === '24h' ? '24h' : period === '7d' ? '7d' : '30d'}
+              </button>
+            ))}
+            
+            {/* Custom Date Range Button */}
+            <button
+              onClick={() => {
+                setShowCustomPicker(!showCustomPicker)
+                if (!showCustomPicker && (!customDateRange.period1.start || !customDateRange.period2.start)) {
+                  const defaultRange = getDefaultDateRange()
+                  setCustomDateRange(defaultRange)
+                }
+              }}
+              className={`px-2 py-1 text-xs font-medium rounded-md transition-all ${
+                timePeriod === 'custom'
+                  ? 'bg-white/20 text-white'
+                  : 'text-white/60 hover:text-white/80 hover:bg-white/10'
+              }`}
+              title="Custom date range"
+            >
+              <FiCalendar className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      {/* Custom Date Range Picker Container */}
+      {showCustomPicker && (
+        <div className="mb-6 glass-card p-6 border border-white/10">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-2">
+              <FiCalendar className="w-5 h-5 text-white/70" />
+              <h3 className="text-lg font-semibold text-white">Custom Period Comparison</h3>
+            </div>
+            <button
+              onClick={() => {
+                setShowCustomPicker(false)
+                setTimePeriod('24h')
+              }}
+              className="text-white/40 hover:text-white/60 transition-colors"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {/* Dual Calendar Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Period 1 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                <h4 className="text-sm font-medium text-white">Period 1</h4>
+              </div>
+              
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">Date Range</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={customDateRange.period1.start}
+                    onChange={(e) => handlePeriod1Change(e.target.value, customDateRange.period1.end)}
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="Start date"
+                  />
+                  <span className="text-white/40 text-sm">to</span>
+                  <input
+                    type="date"
+                    value={customDateRange.period1.end}
+                    onChange={(e) => handlePeriod1Change(customDateRange.period1.start, e.target.value)}
+                    min={customDateRange.period1.start || undefined}
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
+              
+              {customDateRange.period1.start && customDateRange.period1.end && customDateRange.period1.start.trim() !== '' && customDateRange.period1.end.trim() !== '' && (
+                <div className="py-2 bg-blue-500/10 rounded text-xs text-blue-300">
+                  <div className="px-3">
+                    {formatDateForDisplay(customDateRange.period1.start)} - {formatDateForDisplay(customDateRange.period1.end)}
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            {/* Period 2 */}
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-orange-500 rounded-full"></div>
+                <h4 className="text-sm font-medium text-white">Period 2</h4>
+              </div>
+              
+              <div className="flex flex-col">
+                <label className="text-xs text-white/50 mb-1">Date Range</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="date"
+                    value={customDateRange.period2.start}
+                    onChange={(e) => handlePeriod2Change(e.target.value, customDateRange.period2.end)}
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    placeholder="Start date"
+                  />
+                  <span className="text-white/40 text-sm">to</span>
+                  <input
+                    type="date"
+                    value={customDateRange.period2.end}
+                    onChange={(e) => handlePeriod2Change(customDateRange.period2.start, e.target.value)}
+                    min={customDateRange.period2.start || undefined}
+                    className="flex-1 px-3 py-2 bg-black/20 border border-white/10 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/50"
+                    placeholder="End date"
+                  />
+                </div>
+              </div>
+              
+              {customDateRange.period2.start && customDateRange.period2.end && customDateRange.period2.start.trim() !== '' && customDateRange.period2.end.trim() !== '' && (
+                <div className="py-2 bg-orange-500/10 rounded text-xs text-orange-300">
+                  <div className="px-3">
+                    {formatDateForDisplay(customDateRange.period2.start)} - {formatDateForDisplay(customDateRange.period2.end)}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Comparison Info */}
+          {timePeriod === 'custom' && customDateRange.period1.start && customDateRange.period1.end && customDateRange.period2.start && customDateRange.period2.end && (
+            <div className="mt-6 p-4 bg-black/10 rounded-lg border border-white/5">
+              <div className="flex items-center gap-2 mb-2">
+                <FiTrendingUp className="w-4 h-4 text-white/60" />
+                <span className="text-sm font-medium text-white/80">Comparison Active</span>
+              </div>
+              <p className="text-xs text-white/60">
+                Period 1 vs Period 2 comparison is now active. Metrics will show percentage changes between these two selected periods.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map((stat) => {
+          const IconComponent = stat.icon
+          return (
+            <div
+              key={stat.label}
+              className="glass-card p-4 glass-card-hover transition-all"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-white/70">{stat.label}</p>
+                  <div className="mt-1">
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-2xl font-bold text-white">{stat.value}</p>
+                      {stat.comparison && (
+                        <div className="flex items-center gap-1">
+                          {stat.comparison.isNew ? (
+                            <FiZap className="w-3 h-3 text-blue-400" />
+                          ) : stat.comparison.isIncrease ? (
+                            <FiArrowUp className="w-3 h-3 text-green-400" />
+                          ) : (
+                            <FiArrowDown className="w-3 h-3 text-red-400" />
+                          )}
+                          <span 
+                            className={`text-sm font-medium ${
+                              stat.comparison.isNew ? 'text-blue-400' :
+                              stat.comparison.isIncrease ? 'text-green-400' : 'text-red-400'
+                            }`}
+                          >
+                            {stat.comparison.isNew ? 'New' : 
+                             `${stat.comparison.percentage.toFixed(0)}%`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <IconComponent className="w-6 h-6 text-white/50" />
+              </div>
+              
+              {/* Show "No data" for metrics without comparison */}
+              {stat.comparison === null && (
+                <div className="flex items-center gap-1 mt-2">
+                  <span className="text-xs text-white/40">
+                    {stat.label.includes('Engagement') && '30-day median'}
+                    {stat.label.includes('Velocity') && 'Real-time metric'}
+                    {stat.label.includes('Posts/Day') && '30-day average'}
+                    {stat.label.includes('Total Videos') && 'All-time total'}
+                  </span>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default Overview
+
+

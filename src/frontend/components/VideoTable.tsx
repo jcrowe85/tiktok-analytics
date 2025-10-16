@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { FiVideo, FiX, FiHeart, FiMessageCircle, FiShare2, FiEye, FiTrendingUp, FiInfo, FiAlertTriangle } from 'react-icons/fi'
 import type { VideoMetrics } from '../types'
-import { VideoThumbnail } from './VideoThumbnail'
+import { VideoPlayer } from './VideoPlayer'
 // import fleurLogo from '../../assets/logo.jpg' // Unused for now
 
 interface VideoTableProps {
@@ -89,6 +89,21 @@ function VideoTable({
       document.body.style.overflow = 'unset'
     }
   }, [selectedVideo, showDeleteConfirm])
+
+  // Handle URL updates when modal opens/closes
+  useEffect(() => {
+    if (selectedVideo) {
+      // Add video ID to URL when modal opens
+      const url = new URL(window.location.href)
+      url.searchParams.set('video', selectedVideo.id)
+      window.history.pushState({}, '', url.toString())
+    } else {
+      // Remove video ID from URL when modal closes
+      const url = new URL(window.location.href)
+      url.searchParams.delete('video')
+      window.history.pushState({}, '', url.toString())
+    }
+  }, [selectedVideo])
 
   // const formatNumber = (num: number) => { // Unused
   //   if (num >= 1000000) {
@@ -857,7 +872,8 @@ function VideoTable({
                       ? 'hover:!bg-blue-600/10' 
                       : ''
                 }`}
-                onClick={() => {
+                onClick={(e) => {
+                  console.log('🃏 Card clicked, target:', e.target, 'currentTarget:', e.currentTarget)
                   if ((video as any).is_placeholder) {
                     return;
                   }
@@ -866,6 +882,7 @@ function VideoTable({
                     onToggleVideo(video.id);
                   } else if (!selectMode) {
                     // Normal mode, open video detail modal
+                    console.log('📊 Opening modal for video:', video.id)
                     setSelectedVideo(video);
                   }
                 }}
@@ -941,7 +958,7 @@ function VideoTable({
 
                 {/* Video Thumbnail */}
                 <div className="px-4 pt-4">
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg shadow-lg">
+                  <div className="relative aspect-[9/16] overflow-hidden rounded-lg shadow-lg">
                     {(video as any).is_placeholder ? (
                       <div className="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center relative">
                         <div className="text-center p-6">
@@ -957,35 +974,22 @@ function VideoTable({
                     ) : (video.share_url || video.embed_link || video.username) ? (
                       selectMode ? (
                         <div className="block w-full h-full">
-                          <VideoThumbnail 
+                          <VideoPlayer 
                             coverImageUrl={video.cover_image_url} 
                             shareUrl={video.share_url}
                             videoId={video.id}
                           />
                         </div>
                       ) : (
-                        <a
-                          href={
-                            video.share_url || 
-                            video.embed_link ||
-                            (video.username ? `https://www.tiktok.com/@${video.username}/video/${video.id}` : '#')
-                          }
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          className="block w-full h-full"
-                          title="Open video on TikTok"
-                        >
-                          <VideoThumbnail 
-                            coverImageUrl={video.cover_image_url} 
-                            shareUrl={video.share_url}
-                            videoId={video.id}
-                          />
-                        </a>
+                        <VideoPlayer 
+                          coverImageUrl={video.cover_image_url} 
+                          shareUrl={video.share_url}
+                          videoId={video.id}
+                        />
                       )
                     ) : (
                       <>
-                        <VideoThumbnail 
+                        <VideoPlayer 
                           coverImageUrl={video.cover_image_url} 
                           shareUrl={video.share_url}
                           videoId={video.id}
@@ -1241,8 +1245,8 @@ function VideoTable({
                   {/* Video Player/Thumbnail */}
                   {selectedVideo.cover_image_url && (
                     <div className="bg-gray-800/80 backdrop-blur-sm border border-white/15 rounded-xl overflow-hidden">
-                      <div className="w-full h-[250px] lg:h-[300px] relative">
-                        <VideoThumbnail 
+                      <div className="w-full max-w-sm mx-auto aspect-[9/16] relative">
+                        <VideoPlayer 
                           coverImageUrl={selectedVideo.cover_image_url} 
                           shareUrl={selectedVideo.share_url}
                           videoId={selectedVideo.id}
@@ -1381,34 +1385,34 @@ function VideoTable({
                 {/* Right Column - AI Analysis */}
                 <div className="xl:col-span-2 space-y-4 lg:space-y-6">
                   {/* AI Analysis Section */}
-                  {selectedVideo.ai_scores && (
+                  {selectedVideo.ai_processed_at ? (
                     <div className="space-y-6">
                       {/* Overall Score Card with Content Scores */}
                       <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                           <h3 className="text-xl font-bold text-white">Overall Score</h3>
                           <div className={`px-4 py-2 rounded-full text-sm font-bold border ${
-                            selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500/20 text-green-400 border-green-500/30' :
-                            selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
+                            (selectedVideo.ai_scores?.overall_100 || 0) >= 80 ? 'bg-green-500/20 text-green-400 border-green-500/30' :
+                            (selectedVideo.ai_scores?.overall_100 || 0) >= 60 ? 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30' :
                             'bg-red-500/20 text-red-400 border-red-500/30'
                           }`}>
-                            {selectedVideo.ai_scores.overall_100 >= 80 ? '✅ Pass' :
-                             selectedVideo.ai_scores.overall_100 >= 60 ? '⚠️ Revise' :
+                            {(selectedVideo.ai_scores?.overall_100 || 0) >= 80 ? '✅ Pass' :
+                             (selectedVideo.ai_scores?.overall_100 || 0) >= 60 ? '⚠️ Revise' :
                              '❌ Reshoot'}
                           </div>
                         </div>
                         <div className="text-6xl font-bold text-white mb-4">
-                          {selectedVideo.ai_scores.overall_100}
+                          {selectedVideo.ai_scores?.overall_100 || 0}
                           <span className="text-2xl text-white/40">/100</span>
                         </div>
                         <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden mb-6">
                           <div
                             className={`h-full transition-all ${
-                              selectedVideo.ai_scores.overall_100 >= 80 ? 'bg-green-500' :
-                              selectedVideo.ai_scores.overall_100 >= 60 ? 'bg-yellow-500' :
+                              (selectedVideo.ai_scores?.overall_100 || 0) >= 80 ? 'bg-green-500' :
+                              (selectedVideo.ai_scores?.overall_100 || 0) >= 60 ? 'bg-yellow-500' :
                               'bg-red-500'
                             }`}
-                            style={{ width: `${selectedVideo.ai_scores.overall_100}%` }}
+                            style={{ width: `${selectedVideo.ai_scores?.overall_100 || 0}%` }}
                           />
                         </div>
 
@@ -1417,12 +1421,12 @@ function VideoTable({
                           <h4 className="text-sm font-bold text-white/80 mb-3">Content Breakdown</h4>
                           <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 lg:gap-3">
                             {Object.entries({
-                              'Hook': selectedVideo.ai_scores.hook_strength,
-                              'Depth': selectedVideo.ai_scores.depth,
-                              'Clarity': selectedVideo.ai_scores.clarity,
-                              'Pacing': selectedVideo.ai_scores.pacing,
-                              'CTA': selectedVideo.ai_scores.cta,
-                              'Brand Fit': selectedVideo.ai_scores.brand_fit,
+                              'Hook': selectedVideo.ai_scores?.hook_strength || 0,
+                              'Depth': selectedVideo.ai_scores?.depth || 0,
+                              'Clarity': selectedVideo.ai_scores?.clarity || 0,
+                              'Pacing': selectedVideo.ai_scores?.pacing || 0,
+                              'CTA': selectedVideo.ai_scores?.cta || 0,
+                              'Brand Fit': selectedVideo.ai_scores?.brand_fit || 0,
                             }).map(([label, score]) => (
                               <div key={label} className="bg-slate-900/50 rounded-lg p-3">
                                 <div className="text-white/60 text-xs md:text-sm mb-1">{label}</div>
@@ -1450,19 +1454,19 @@ function VideoTable({
                         <div className="bg-slate-800/50 border border-white/10 rounded-xl p-6">
                           <h3 className="text-lg font-bold text-white mb-4">Key Findings</h3>
                           <div className="space-y-3">
-                            {selectedVideo.ai_findings.hook_strength && (
+                            {selectedVideo.ai_findings?.hook_strength && (
                               <div>
                                 <span className="text-white/60 text-sm font-medium">Hook Analysis:</span>
                                 <p className="text-white/90 mt-1">{selectedVideo.ai_findings.hook_strength}</p>
                               </div>
                             )}
-                            {selectedVideo.ai_findings.depth && (
+                            {selectedVideo.ai_findings?.depth && (
                               <div>
                                 <span className="text-white/60 text-sm font-medium">Depth Analysis:</span>
                                 <p className="text-white/90 mt-1">{selectedVideo.ai_findings.depth}</p>
                               </div>
                             )}
-                            {selectedVideo.ai_findings.cta && (
+                            {selectedVideo.ai_findings?.cta && (
                               <div>
                                 <span className="text-white/60 text-sm font-medium">CTA Analysis:</span>
                                 <p className="text-white/90 mt-1">{selectedVideo.ai_findings.cta}</p>
@@ -1493,18 +1497,18 @@ function VideoTable({
                           <h3 className="text-lg font-bold text-white mb-4">Visual Analysis</h3>
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                             {Object.entries({
-                              'Thumbstop': selectedVideo.ai_visual_scores.thumbstop_prob,
-                              'First Frame': selectedVideo.ai_visual_scores.first_frame_strength,
-                              'Silent Comp.': selectedVideo.ai_visual_scores.silent_comprehension,
-                              'Aesthetics': selectedVideo.ai_visual_scores.visual_aesthetics,
-                              'Composition': selectedVideo.ai_visual_scores.composition,
-                              'Motion': selectedVideo.ai_visual_scores.motion_dynamics,
-                              'Pattern Int.': selectedVideo.ai_visual_scores.pattern_interrupt,
-                              'Text Legibility': selectedVideo.ai_visual_scores.text_legibility,
-                              'Emotion': selectedVideo.ai_visual_scores.emotion_score,
-                              'Save Trigger': selectedVideo.ai_visual_scores.save_share_trigger,
-                              'Loopability': selectedVideo.ai_visual_scores.loopability,
-                              'Trend Align': selectedVideo.ai_visual_scores.trend_alignment,
+                              'Thumbstop': selectedVideo.ai_visual_scores?.thumbstop_prob || 0,
+                              'First Frame': selectedVideo.ai_visual_scores?.first_frame_strength || 0,
+                              'Silent Comp.': selectedVideo.ai_visual_scores?.silent_comprehension || 0,
+                              'Aesthetics': selectedVideo.ai_visual_scores?.visual_aesthetics || 0,
+                              'Composition': selectedVideo.ai_visual_scores?.composition || 0,
+                              'Motion': selectedVideo.ai_visual_scores?.motion_dynamics || 0,
+                              'Pattern Int.': selectedVideo.ai_visual_scores?.pattern_interrupt || 0,
+                              'Text Legibility': selectedVideo.ai_visual_scores?.text_legibility || 0,
+                              'Emotion': selectedVideo.ai_visual_scores?.emotion_score || 0,
+                              'Save Trigger': selectedVideo.ai_visual_scores?.save_share_trigger || 0,
+                              'Loopability': selectedVideo.ai_visual_scores?.loopability || 0,
+                              'Trend Align': selectedVideo.ai_visual_scores?.trend_alignment || 0,
                             }).map(([label, score]) => (
                               <div key={label} className="bg-slate-900/50 rounded-lg p-3">
                                 <div className="text-white/60 text-xs md:text-sm mb-1">{label}</div>
@@ -1537,6 +1541,132 @@ function VideoTable({
                         >
                           Delete Video
                         </button>
+                      </div>
+                    </div>
+                  ) : selectedVideo.ai_status === 'failed' ? (
+                    /* Error Fallback - AI Analysis Actually Failed */
+                    <div className="space-y-6">
+                      <div className="bg-slate-800/50 border border-red-500/30 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                          <div className="w-12 h-12 bg-red-500/20 rounded-full flex items-center justify-center">
+                            <FiAlertTriangle className="w-6 h-6 text-red-400" />
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white">AI Analysis Failed</h3>
+                            <p className="text-white/60 text-sm">This video could not be analyzed</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-4">
+                            <p className="text-red-400 text-sm font-medium mb-2">Possible reasons:</p>
+                            <ul className="text-red-400/80 text-sm space-y-1 ml-4 list-disc">
+                              <li>Video processing failed during analysis</li>
+                              <li>Corrupted or invalid video data</li>
+                              <li>AI service temporarily unavailable</li>
+                              <li>Video format not supported</li>
+                            </ul>
+                          </div>
+                          
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => handleReanalyze(selectedVideo)}
+                              className="flex-1 px-4 py-2.5 bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 rounded-lg transition-all backdrop-blur-sm text-blue-400 text-sm font-medium"
+                            >
+                              Retry Analysis
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(true)}
+                              className="flex-1 px-4 py-2.5 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-all backdrop-blur-sm text-red-400 text-sm font-medium"
+                            >
+                              Delete Video
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    /* Not Analyzed Yet - Show Benefits and Analyze Button */
+                    <div className="space-y-6">
+                      <div className="bg-slate-800/50 border border-blue-500/30 rounded-xl p-6">
+                        <div className="flex items-center gap-3 mb-6">
+                          <div className="w-12 h-12 bg-blue-500/20 rounded-full flex items-center justify-center">
+                            <svg className="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-xl font-bold text-white">AI Analysis Available</h3>
+                            <p className="text-white/60 text-sm">Get detailed insights about this video</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-6">
+                          {/* Benefits Section */}
+                          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-4">
+                            <h4 className="text-blue-400 text-sm font-bold mb-3">What you'll get:</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-0.5">📊</span>
+                                <div>
+                                  <p className="text-blue-400/90 text-sm font-medium">Content Scores</p>
+                                  <p className="text-blue-400/70 text-xs">Hook strength, depth, clarity, pacing, CTA, brand fit</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-0.5">🎯</span>
+                                <div>
+                                  <p className="text-blue-400/90 text-sm font-medium">Visual Analysis</p>
+                                  <p className="text-blue-400/70 text-xs">Thumbstop, aesthetics, composition, motion dynamics</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-0.5">💡</span>
+                                <div>
+                                  <p className="text-blue-400/90 text-sm font-medium">Key Findings</p>
+                                  <p className="text-blue-400/70 text-xs">Detailed analysis of what works and what doesn't</p>
+                                </div>
+                              </div>
+                              <div className="flex items-start gap-2">
+                                <span className="text-blue-400 mt-0.5">🚀</span>
+                                <div>
+                                  <p className="text-blue-400/90 text-sm font-medium">Improvement Tips</p>
+                                  <p className="text-blue-400/70 text-xs">Actionable suggestions to boost performance</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Analyze Button */}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={() => {
+                                if (onAnalyzeVideo) {
+                                  onAnalyzeVideo(selectedVideo.id);
+                                  setSelectedVideo(null); // Close modal after starting analysis
+                                }
+                              }}
+                              className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-medium rounded-lg transition-all shadow-lg hover:shadow-blue-500/25 flex items-center justify-center gap-2"
+                            >
+                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                              </svg>
+                              Analyze Video
+                            </button>
+                            <button
+                              onClick={() => setShowDeleteConfirm(true)}
+                              className="px-4 py-3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 rounded-lg transition-all backdrop-blur-sm text-red-400 text-sm font-medium"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                          
+                          <div className="text-center">
+                            <p className="text-white/50 text-xs">
+                              ⏱️ Analysis takes 30-60 seconds • 🤖 Powered by GPT-4o
+                            </p>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}

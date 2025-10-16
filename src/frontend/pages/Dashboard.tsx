@@ -57,38 +57,43 @@ function Dashboard() {
   const fetchData = async () => {
     try {
       const token = localStorage.getItem('auth_token')
-      if (!token) {
-        setVideos([])
-        setLoading(false)
-        return
-      }
-
-      // Try to fetch user's videos first
-      const response = await fetch('/api/my-videos', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      })
       
-      if (response.ok) {
-        const result = await response.json()
-        setTiktokConnected(result.connected || false)
-        if (result.connected && result.videos) {
-          // User has connected TikTok and has videos
-          setVideos(Array.isArray(result.videos) ? result.videos : [])
+      if (token) {
+        // Try to fetch user's videos first
+        const response = await fetch('/api/my-videos', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+          },
+        })
+        
+        if (response.ok) {
+          const result = await response.json()
+          setTiktokConnected(result.connected || false)
+          if (result.connected && result.videos) {
+            // User has connected TikTok and has videos
+            setVideos(Array.isArray(result.videos) ? result.videos : [])
+            return
+          }
+        } else if (response.status === 400) {
+          // User not connected to TikTok, fall back to public data
+          setTiktokConnected(false)
         } else {
-          // User not connected or no videos
-          setVideos([])
+          // Other error, fall back to public data
+          console.warn('Auth failed, falling back to public data:', response.status)
         }
-      } else if (response.status === 400) {
-        // User not connected to TikTok
-        setTiktokConnected(false)
-        setVideos([])
+      }
+      
+      // Fallback: fetch public data (no authentication required)
+      const publicResponse = await fetch('/api/data')
+      if (publicResponse.ok) {
+        const publicResult = await publicResponse.json()
+        setVideos(Array.isArray(publicResult.data) ? publicResult.data : [])
+        setTiktokConnected(false) // User is not connected
       } else {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
+        throw new Error(`Failed to fetch public data: ${publicResponse.status}`)
       }
     } catch (err) {
-      console.error('Failed to fetch user data:', err)
+      console.error('Failed to fetch data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
       setVideos([]) // Set empty array on error
     } finally {

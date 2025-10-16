@@ -1,7 +1,109 @@
 import express from 'express'
 import axios from 'axios'
+import fs from 'fs'
+import path from 'path'
 
 const router = express.Router()
+
+// Video storage directory
+const VIDEO_STORAGE_DIR = path.join(process.cwd(), 'temp', 'videos')
+
+// Ensure video storage directory exists
+if (!fs.existsSync(VIDEO_STORAGE_DIR)) {
+  fs.mkdirSync(VIDEO_STORAGE_DIR, { recursive: true })
+}
+
+// Helper function to get video file path
+const getVideoPath = (videoId: string) => path.join(VIDEO_STORAGE_DIR, `${videoId}.mp4`)
+
+// Helper function to check if video exists in storage
+const videoExists = (videoId: string) => {
+  const videoPath = getVideoPath(videoId)
+  return fs.existsSync(videoPath)
+}
+
+// Helper function to serve video from storage
+const serveVideoFromStorage = (videoId: string, res: express.Response) => {
+  const videoPath = getVideoPath(videoId)
+  
+  if (!fs.existsSync(videoPath)) {
+    return false
+  }
+
+  const stat = fs.statSync(videoPath)
+  const fileSize = stat.size
+  const range = res.req.headers.range
+
+  if (range) {
+    // Handle range requests for video seeking
+    const parts = range.replace(/bytes=/, "").split("-")
+    const start = parseInt(parts[0], 10)
+    const end = parts[1] ? parseInt(parts[1], 10) : fileSize - 1
+    const chunksize = (end - start) + 1
+    const file = fs.createReadStream(videoPath, { start, end })
+    
+    res.status(206)
+    res.set({
+      'Content-Range': `bytes ${start}-${end}/${fileSize}`,
+      'Accept-Ranges': 'bytes',
+      'Content-Length': chunksize,
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+    })
+    
+    file.pipe(res)
+  } else {
+    // Serve entire video
+    res.set({
+      'Content-Length': fileSize,
+      'Content-Type': 'video/mp4',
+      'Cache-Control': 'public, max-age=86400', // Cache for 24 hours
+    })
+    
+    fs.createReadStream(videoPath).pipe(res)
+  }
+  
+  return true
+}
+
+// Helper function to save video to storage
+const saveVideoToStorage = async (videoId: string, videoUrl: string): Promise<boolean> => {
+  try {
+    const videoPath = getVideoPath(videoId)
+    
+    console.log(`💾 Downloading video to storage: ${videoPath}`)
+    
+    const response = await axios.get(videoUrl, {
+      responseType: 'stream',
+      timeout: 60000, // 60 seconds for download
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+        'Referer': 'https://www.tiktok.com/',
+      }
+    })
+
+    if (response.status === 200) {
+      const writer = fs.createWriteStream(videoPath)
+      response.data.pipe(writer)
+      
+      return new Promise((resolve, reject) => {
+        writer.on('finish', () => {
+          console.log(`✅ Video saved to storage: ${videoId}`)
+          resolve(true)
+        })
+        writer.on('error', (error) => {
+          console.error(`❌ Error saving video: ${error}`)
+          reject(error)
+        })
+      })
+    }
+    
+    return false
+  } catch (error) {
+    console.error(`❌ Error downloading video: ${error}`)
+    return false
+  }
+}
 
 // Proxy TikTok thumbnails to bypass CORS and authentication issues
 router.get('/thumbnail/:videoId', async (req, res) => {
@@ -108,6 +210,91 @@ router.get('/thumbnail/:videoId', async (req, res) => {
   } catch (error) {
     console.error('❌ Thumbnail proxy error:', error)
     res.status(500).json({ error: 'Failed to fetch thumbnail' })
+  }
+})
+
+// Proxy TikTok videos with smart caching
+router.get('/video/:videoId', async (req, res) => {
+  try {
+    const { videoId } = req.params
+    
+    if (!videoId) {
+      return res.status(400).json({ error: 'Video ID is required' })
+    }
+
+    console.log(`🎬 Fetching TikTok video for video ${videoId}`)
+
+    // First, check if video exists in storage
+    if (videoExists(videoId)) {
+      console.log(`⚡ Serving video from storage: ${videoId}`)
+      if (serveVideoFromStorage(videoId, res)) {
+        return
+      }
+    }
+
+    // Video not in storage, fetch from RapidAPI
+    if (!process.env.RAPIDAPI_KEY) {
+      console.log(`❌ No RAPIDAPI_KEY configured`)
+      return res.status(404).json({ error: 'Video service not configured' })
+    }
+
+    // Construct TikTok URL from video ID
+    const tiktokUrl = `https://www.tiktok.com/@user/video/${videoId}`
+    
+    try {
+      console.log(`🔗 Using RapidAPI to get video URL for: ${tiktokUrl}`)
+      
+      const response = await axios.get('https://tiktok-video-no-watermark2.p.rapidapi.com/', {
+        params: { url: tiktokUrl, hd: '1' },
+        timeout: 30000, // 30 seconds timeout
+        headers: {
+          'X-RapidAPI-Key': process.env.RAPIDAPI_KEY,
+          'X-RapidAPI-Host': 'tiktok-video-no-watermark2.p.rapidapi.com'
+        }
+      })
+
+      if (response.data && response.data.data && response.data.data.play) {
+        const videoUrl = response.data.data.play
+        console.log(`✅ Got video URL from RapidAPI: ${videoUrl}`)
+        
+        // Save video to storage for future use (async, don't wait)
+        saveVideoToStorage(videoId, videoUrl).catch(error => {
+          console.error(`❌ Failed to save video to storage: ${error}`)
+        })
+        
+        // Stream the video directly to client
+        const videoResponse = await axios.get(videoUrl, {
+          responseType: 'stream',
+          timeout: 30000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+            'Referer': 'https://www.tiktok.com/',
+          }
+        })
+
+        if (videoResponse.status === 200) {
+          res.set({
+            'Content-Type': 'video/mp4',
+            'Cache-Control': 'public, max-age=3600',
+            'Access-Control-Allow-Origin': '*',
+            'Accept-Ranges': 'bytes',
+          })
+          
+          videoResponse.data.pipe(res)
+          return
+        }
+      }
+    } catch (rapidApiError: any) {
+      console.log(`❌ RapidAPI failed: ${rapidApiError.response?.status || (rapidApiError instanceof Error ? rapidApiError.message : String(rapidApiError))}`)
+    }
+
+    // If RapidAPI failed, return 404 so frontend can show fallback
+    console.log(`❌ RapidAPI video fetch failed for video ${videoId}`)
+    res.status(404).json({ error: 'Video not available' })
+
+  } catch (error) {
+    console.error('❌ Video proxy error:', error)
+    res.status(500).json({ error: 'Failed to fetch video' })
   }
 })
 

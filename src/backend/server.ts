@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import aiRoutes from './routes/ai.ts';
@@ -24,7 +23,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const DATA_PATH = path.join(__dirname, '../../data/data.json');
+// DATA_PATH removed - now reading directly from database
 
 // Helper functions for TikTok OAuth
 async function exchangeCodeForTokens(code: string): Promise<any> {
@@ -218,19 +217,40 @@ app.use('/api', adhocRoutes);
  */
 app.get('/api/data', async (_req, res) => {
   try {
-    if (!fs.existsSync(DATA_PATH)) {
-      return res.status(404).json({
-        error: 'No data found. Run "npm run fetch" first.',
-      });
-    }
-
-    const data = fs.readFileSync(DATA_PATH, 'utf-8');
-    const videos = JSON.parse(data);
-
     // Import database connection
     const { executeQuery } = await import('./database/connection.ts');
     
-    console.log(`📊 Loaded ${videos.length} videos from JSON file`)
+    // Get videos directly from database
+    const videos = await executeQuery(`
+      SELECT 
+        id,
+        user_id,
+        username,
+        view_count,
+        like_count,
+        comment_count,
+        share_count,
+        duration,
+        video_description,
+        cover_image_url,
+        share_url,
+        create_time,
+        posted_at_iso,
+        caption,
+        hashtags,
+        engagement_rate,
+        like_rate,
+        comment_rate,
+        share_rate,
+        views_24h,
+        velocity_24h,
+        created_at,
+        updated_at
+      FROM videos 
+      ORDER BY created_at DESC
+    `);
+    
+    console.log(`📊 Loaded ${videos.length} videos from database`)
     
     // Get AI analysis for all videos (with error handling)
     let aiAnalyses = [];
@@ -325,7 +345,10 @@ app.use(express.static(path.join(__dirname, '../../dist'), {
     }
     // Force revalidation for JS/CSS but allow caching with version check
     else if (filePath.endsWith('.js') || filePath.endsWith('.css')) {
-      res.setHeader('Cache-Control', 'no-cache, must-revalidate');
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      res.setHeader('Surrogate-Control', 'no-store');
     }
   }
 }));
